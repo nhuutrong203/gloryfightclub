@@ -28,9 +28,10 @@ const PATHS: Record<string, string> = {
   star: 'm12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z',
   edit: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z',
 };
-export function Icon({ name, className = 'size-5' }: { name: keyof typeof PATHS | string; className?: string }) {
+export function Icon({ name, className = '' }: { name: keyof typeof PATHS | string; className?: string }) {
+  // Giữ cỡ mặc định size-5 khi chỉ truyền màu (vd. "text-glory"), tránh icon phình to.
   return (
-    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg viewBox="0 0 24 24" className={/size-/.test(className) ? className : `size-5 ${className}`} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d={PATHS[name]} />
     </svg>
   );

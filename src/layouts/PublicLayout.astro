@@ -2,6 +2,8 @@
 import '../styles/global.css';
 import Logo from '../components/Logo.astro';
 import Icon from '../components/public/Icon.astro';
+import { sql } from 'drizzle-orm';
+import { db } from '../db';
 import { getSite, telHref } from '../lib/site';
 import { t, href, type Lang, type DictKey } from '../i18n';
 
@@ -24,22 +26,32 @@ const description = Astro.props.description || (lang === 'en' ? club.tagline_en 
 const image = new URL(Astro.props.image ?? '/og-default.png', Astro.site).href;
 const canonical = new URL(href(path, lang), Astro.site).href;
 
-const main: [string, DictKey][] = [
+// Ẩn link tới mục chưa có nội dung (trang rỗng chỉ hiện "Chưa có…"); có nội dung là tự hiện lại.
+const counts = (await db.get<Record<string, number>>(sql`select
+  (select count(*) from posts where is_public = 1 and published_at <= ${Date.now()}) as "/tin-tuc",
+  (select count(*) from testimonials where is_public = 1) as "/cam-nhan",
+  (select count(*) from faqs where is_public = 1) as "/hoi-dap",
+  (select count(*) from gallery_items where is_public = 1) as "/thu-vien",
+  (select count(*) from achievements where is_public = 1) as "/thanh-tich",
+  (select count(*) from belts) as "/cap-dai"`)) ?? {};
+const hasContent = ([p]: [string, DictKey]) => counts[p] !== 0;
+
+const main = ([
   ['/mon-hoc', 'nav_disciplines'],
   ['/lich-hoc', 'nav_schedule'],
   ['/huan-luyen-vien', 'nav_coaches'],
   ['/hoc-phi', 'nav_fees'],
   ['/tin-tuc', 'nav_news'],
   ['/lien-he', 'nav_contact'],
-];
-const more: [string, DictKey][] = [
+] as [string, DictKey][]).filter(hasContent);
+const more = ([
   ['/gioi-thieu', 'nav_about'],
   ['/thanh-tich', 'nav_achievements'],
   ['/cap-dai', 'nav_belts'],
   ['/thu-vien', 'nav_gallery'],
   ['/cam-nhan', 'nav_testimonials'],
   ['/hoi-dap', 'nav_faq'],
-];
+] as [string, DictKey][]).filter(hasContent);
 const current = (p: string) => path === p || path.startsWith(p + '/');
 const otherLang: Lang = lang === 'vi' ? 'en' : 'vi';
 const hotline = club.hotlines[0];
@@ -73,7 +85,7 @@ const onTrialPage = path === '/dang-ky-hoc-thu';
     <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] btn-red">Skip</a>
     <header id="site-header" class="sticky top-0 z-40 border-b border-white/10 bg-ink/80 backdrop-blur-md transition-[background-color,box-shadow] duration-300 data-[scrolled]:bg-ink/95 data-[scrolled]:shadow-[0_8px_30px_rgb(0_0_0/0.5)]">
       <div class="container-x flex h-16 items-center justify-between gap-4">
-        <a href={href('/', lang)} class="flex items-center gap-3 shrink-0" aria-label={`${club.name} — ${t(lang, 'home')}`}>
+        <a href={href('/', lang)} class="flex min-h-11 min-w-11 items-center gap-3 shrink-0" aria-label={`${club.name} — ${t(lang, 'home')}`}>
           <Logo class="h-10 w-auto text-white" title="" />
           <span class="font-display text-xl tracking-wider leading-[0.9] hidden sm:block" aria-hidden="true">GLORY<br /><span class="text-glory">FIGHT CLUB</span></span>
         </a>

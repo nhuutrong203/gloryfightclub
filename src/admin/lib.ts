@@ -58,7 +58,8 @@ export function toast(text: string, kind: Toast['kind'] = 'ok') {
 export const useToasts = () => useSyncExternalStore((f) => { toastSubs.add(f); return () => toastSubs.delete(f); }, () => toasts);
 
 // ───────── Định dạng ─────────
-export const vnd = (n: number | null | undefined) => (n == null ? '' : `${n.toLocaleString('vi-VN')} đ`);
+//  : không để chữ "đ" rớt xuống dòng riêng.
+export const vnd = (n: number | null | undefined) => (n == null ? '' : `${n.toLocaleString('vi-VN')} đ`);
 export const fmtDate = (d: string | number | null | undefined) => {
   if (d == null || d === '') return '';
   const x = typeof d === 'number' ? new Date(d) : new Date(`${d}T00:00:00`);

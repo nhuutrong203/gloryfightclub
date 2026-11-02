@@ -26,7 +26,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
           <label for="f-phone" class={label}>{t(lang, 'f_phone')} <span class="text-glory" aria-hidden="true">*</span></label>
           <input id="f-phone" name="phone" type="tel" required inputmode="tel" autocomplete="tel" placeholder="0912 345 678"
             pattern="^(\+?84|0)[\s.\-]?[35789](?:[\s.\-]?\d){8}$" aria-describedby="f-phone-err" class={field} />
-          <p id="f-phone-err" class="mt-2 hidden text-sm font-semibold text-glory" role="alert">{t(lang, 'f_phone_err')}</p>
+          <p id="f-phone-err" class="mt-2 hidden text-sm font-semibold text-glory-bright" role="alert">{t(lang, 'f_phone_err')}</p>
         </div>
         <div>
           <label for="f-age" class={label}>{t(lang, 'f_age')}</label>
@@ -69,7 +69,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
       </div>
     </div>
 
-    <aside class="space-y-6">
+    <div class="space-y-6">
       <div class="bg-coal p-6 sm:p-8 border-l-4 border-glory">
         <p class="eyebrow">{t(lang, 'hotline')}</p>
         {club.hotlines.map((p) => <a href={telHref(p)} class="mt-2 flex min-h-12 items-center gap-3 font-display text-3xl tracking-wide hover:text-glory"><Icon name="phone" class="size-6 text-glory" />{p}</a>)}
@@ -81,7 +81,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
           <p class="mt-2 text-sm text-white/75">{l.address}</p>
         </div>
       ))}
-    </aside>
+    </div>
   </section>
 
   <script>

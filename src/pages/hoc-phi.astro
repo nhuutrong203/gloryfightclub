@@ -14,6 +14,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
 <PublicLayout path="/hoc-phi" title={t(lang, 'fees_title')} description={t(lang, 'fees_sub')}>
   <PageHero eyebrow="Premium" title={t(lang, 'fees_title')} subtitle={t(lang, 'fees_sub')} />
   <section class="container-x pt-16 pb-12">
+    <h2 class="sr-only">{t(lang, 'fees_title')}</h2>
     <div class="grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
       {plans.map((p, i) => <PlanCard plan={p} lang={lang} i={i} />)}
     </div>

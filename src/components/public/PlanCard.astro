@@ -23,7 +23,7 @@ const icon = icons[(p.sort - 1) % icons.length] ?? 'star';
   </div>
   <div class="mt-6 border-t border-white/15 pt-6">
     <p class="font-display text-5xl sm:text-6xl leading-none">{formatVnd(p.pricePerMonth)}</p>
-    <p class="mt-1 font-display text-glory tracking-wider">{t(lang, 'per_month')}</p>
+    <p class="mt-1 font-display text-glory-bright tracking-wider">{t(lang, 'per_month')}</p>
   </div>
   <ul class="mt-6 space-y-3 flex-1">
     {lines(tr(p, 'features', lang)).map((f) => (

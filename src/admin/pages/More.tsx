@@ -77,7 +77,7 @@ export function More({ me, compact, path }: { me: Me; compact?: boolean; path?: 
             </ul>
           </section>
         ))}
-        <a href="/" target="_blank" rel="noopener" className="flex min-h-14 items-center gap-3 border border-neutral-200 bg-white px-4 font-semibold hover:bg-neutral-50"><Icon name="external" className="text-glory" />Xem website</a>
+        <a href="/" target="_blank" rel="noopener" className="flex min-h-14 items-center gap-3 border border-neutral-200 bg-white px-4 font-semibold hover:bg-neutral-50"><Icon name="external" className="size-5 text-glory" />Xem website</a>
         <Button variant="ghost" icon="logout" className="w-full" onClick={logout}>Đăng xuất</Button>
       </div>
     </Page>

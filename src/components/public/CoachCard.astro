@@ -31,7 +31,7 @@ const initials = c.fullName.trim().split(/\s+/).slice(-2).map((w) => w[0]).join(
     )}
   </div>
   <h3 class="mt-4 text-xl sm:text-3xl group-hover:text-glory transition-colors">{c.fullName}</h3>
-  <p class:list={['mt-1 text-xs sm:text-sm font-semibold leading-snug', tone === 'light' ? 'text-glory-dark' : 'text-glory']}>{tr(c, 'title', lang)}</p>
+  <p class:list={['mt-1 text-xs sm:text-sm font-semibold leading-snug', tone === 'light' ? 'text-glory-dark' : 'text-glory-bright']}>{tr(c, 'title', lang)}</p>
   {achievements.length > 0 && (
     <ul class:list={['mt-3 space-y-1.5 text-xs sm:text-sm', tone === 'light' ? 'text-ink/80' : 'text-white/75']}>
       {achievements.slice(0, 3).map((a) => <li class="flex gap-2"><Icon name="medal" class="size-4 shrink-0 mt-0.5" />{a}</li>)}

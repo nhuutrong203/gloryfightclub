@@ -14,7 +14,7 @@ const { club } = await getSite();
   <div class="container-x py-16 sm:py-24 grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end">
     <div class="reveal">
       <h2 class="text-5xl sm:text-7xl lg:text-8xl">{t(lang, 'final_cta_title')}</h2>
-      <p class="mt-5 max-w-xl text-lg text-white/90">{t(lang, 'final_cta_sub')}</p>
+      <p class="mt-5 max-w-xl text-lg text-white">{t(lang, 'final_cta_sub')}</p>
     </div>
     <div class="reveal flex flex-col gap-3 sm:flex-row lg:flex-col" style="--i:1">
       <a href={href('/dang-ky-hoc-thu', lang)} class="btn bg-ink text-white hover:bg-white hover:text-ink">{t(lang, 'cta_trial')}<Icon name="arrow-right" /></a>

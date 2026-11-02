@@ -31,9 +31,12 @@ export function Fees({ me }: { me: Me }) {
       {/* Chọn tháng */}
       <div className="mb-4 flex items-center gap-2">
         <Button variant="ghost" aria-label="Tháng trước" onClick={() => setMonth(shiftMonth(month, -1))}><Icon name="back" /></Button>
-        <label className="flex-1">
-          <span className="sr-only">Chọn tháng</span>
-          <input type="month" value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} className={`${inputCls} text-center font-display text-xl uppercase`} />
+        {/* Ô chọn tháng gốc hiện theo ngôn ngữ trình duyệt ("NOVEMBER") → phủ ô trong suốt lên nhãn tiếng Việt. */}
+        <label className={`${inputCls} relative flex flex-1 cursor-pointer items-center justify-center font-display text-xl uppercase`}>
+          {monthLabel(month)}
+          <input type="month" aria-label="Chọn tháng" value={month} onChange={(e) => e.target.value && setMonth(e.target.value)}
+            onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
+            className="absolute inset-0 cursor-pointer opacity-0" />
         </label>
         <Button variant="ghost" aria-label="Tháng sau" onClick={() => setMonth(shiftMonth(month, 1))}><Icon name="chevron" /></Button>
       </div>
