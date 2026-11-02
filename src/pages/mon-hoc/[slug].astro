@@ -31,7 +31,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
     </div>
   </PageHero>
 
-  {cover && <img src={cover} alt={tr(d, 'name', lang)} class="w-full max-h-[70vh] object-cover grayscale" />}
+  {cover && <img src={cover} alt={tr(d, 'name', lang)} class="w-full max-h-[70vh] object-cover" />}
 
   {tr(d, 'description', lang) && (
     <section class="container-x py-14">

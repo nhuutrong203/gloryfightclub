@@ -33,7 +33,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
   <!-- HERO -->
   <section class="relative isolate overflow-hidden min-h-[calc(100dvh-8rem)] lg:min-h-[calc(100dvh-4rem)] flex items-end">
     {heroImage
-      ? <img src={heroImage} alt="" class="absolute inset-0 -z-20 size-full object-cover grayscale opacity-60" fetchpriority="high" />
+      ? <img src={heroImage} alt="" class="absolute inset-0 -z-20 size-full object-cover opacity-60" fetchpriority="high" />
       : <Logo class="absolute -z-20 -right-28 top-1/2 -translate-y-1/2 h-[125%] w-auto text-white/[0.05]" title="" />}
     <div class="absolute inset-0 -z-10 bg-gradient-to-t from-ink via-ink/70 to-ink/10"></div>
     <div class="absolute -z-10 right-0 top-0 h-full w-24 sm:w-40 bg-glory/90 -skew-x-[14deg] translate-x-16 sm:translate-x-24"></div>

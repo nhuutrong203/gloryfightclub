@@ -16,7 +16,7 @@ const initials = c.fullName.trim().split(/\s+/).slice(-2).map((w) => w[0]).join(
 <a href={href(`/huan-luyen-vien/${c.slug}`, lang)} class:list={['reveal group block', className]} style={`--i:${i}`}>
   <div class="relative aspect-[4/5] overflow-hidden bg-ink">
     {photo
-      ? <img src={photo} alt={c.fullName} loading="lazy" class="size-full object-cover grayscale contrast-125 transition duration-300 group-hover:grayscale-0 group-hover:scale-105" />
+      ? <img src={photo} alt={c.fullName} loading="lazy" class="size-full object-cover transition duration-300 group-hover:scale-105" />
       : (
         <div class="relative size-full overflow-hidden bg-[radial-gradient(circle_at_70%_15%,#2b0d0c,#0a0a0a_65%)]">
           <Logo class="absolute -right-[18%] -top-[8%] h-[85%] w-auto text-white/[0.06] transition-transform duration-500 group-hover:scale-105" title="" />

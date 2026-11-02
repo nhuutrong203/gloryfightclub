@@ -29,7 +29,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
     <div class="container-x grid gap-10 py-10 sm:py-16 lg:grid-cols-[5fr_7fr] lg:items-end">
       <div class="relative aspect-[4/5] overflow-hidden bg-coal">
         {photo
-          ? <img src={photo} alt={c.fullName} class="size-full object-cover grayscale contrast-125" />
+          ? <img src={photo} alt={c.fullName} class="size-full object-cover" />
           : (
             <div class="relative size-full overflow-hidden bg-[radial-gradient(circle_at_70%_15%,#2b0d0c,#0a0a0a_65%)]">
               <Logo class="absolute -right-[18%] -top-[8%] h-[85%] w-auto text-white/[0.06]" title="" />
