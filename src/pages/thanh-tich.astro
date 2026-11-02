@@ -1,0 +1,42 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+import PageHero from '../components/public/PageHero.astro';
+import Icon from '../components/public/Icon.astro';
+import CtaBand from '../components/public/CtaBand.astro';
+import { publicAchievements, publicCoaches, richText } from '../lib/public';
+import { mediaUrl } from '../lib/site';
+import { t, tr, href, formatDate, type Lang } from '../i18n';
+
+const lang: Lang = Astro.locals.lang;
+const [achievements, coaches] = await Promise.all([publicAchievements(), publicCoaches()]);
+const coachOf = (id: number | null) => coaches.find((c) => c.id === id);
+Astro.response.headers.set('cache-control', 'public, max-age=60');
+---
+<PublicLayout path="/thanh-tich" title={t(lang, 'achievements_title')} description={t(lang, 'achievements_sub')}>
+  <PageHero eyebrow="Hall of Glory" title={t(lang, 'achievements_title')} subtitle={t(lang, 'achievements_sub')} />
+  <section class="container-x py-14 sm:py-20">
+    {achievements.length === 0 && <p class="text-white/75">{t(lang, 'achievements_empty')}</p>}
+    <ol class="relative ml-3 border-l-2 border-white/15 sm:ml-6">
+      {achievements.map((a, i) => {
+        const coach = coachOf(a.coachId);
+        const img = mediaUrl(a.imageKey);
+        return (
+          <li class="reveal relative pb-12 pl-8 sm:pl-12 last:pb-0" style={`--i:${i % 4}`}>
+            <span class="absolute -left-[13px] top-1 grid size-6 place-items-center bg-glory" aria-hidden="true"><span class="size-2 bg-white"></span></span>
+            <div class="grid gap-6 md:grid-cols-[1fr_auto]">
+              <div>
+                {a.eventDate && <p class="font-display tracking-wider text-ash">{formatDate(a.eventDate, lang)}</p>}
+                <h2 class="mt-1 text-4xl sm:text-5xl">{tr(a, 'title', lang)}</h2>
+                {a.eventName && <p class="mt-2 flex items-center gap-2 text-lg text-white/85"><Icon name="trophy" class="size-5 text-glory" />{a.eventName}</p>}
+                {coach && <a href={href(`/huan-luyen-vien/${coach.slug}`, lang)} class="mt-2 inline-flex min-h-11 items-center gap-2 font-semibold hover:text-glory">{coach.fullName}<Icon name="arrow-right" class="size-4" /></a>}
+                {tr(a, 'description', lang) && <div class="mt-3 max-w-2xl text-white/75" set:html={richText(tr(a, 'description', lang))} />}
+              </div>
+              {img && <img src={img} alt={tr(a, 'title', lang)} loading="lazy" class="w-full md:w-72 aspect-[4/3] object-cover" />}
+            </div>
+          </li>
+        );
+      })}
+    </ol>
+  </section>
+  <CtaBand lang={lang} />
+</PublicLayout>

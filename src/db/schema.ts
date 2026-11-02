@@ -235,7 +235,7 @@ export const payments = sqliteTable('payments', {
   note: text('note'),
   createdBy: integer('created_by').references(() => users.id, { onDelete: 'set null' }),
   createdAt: createdAt(),
-}, (t) => [index('payments_month_idx').on(t.month), index('payments_student_idx').on(t.studentId)]);
+}, (t) => [index('payments_month_idx').on(t.month), uniqueIndex('payments_student_month_idx').on(t.studentId, t.month)]);
 
 export const trialRegistrations = sqliteTable('trial_registrations', {
   id: id(),

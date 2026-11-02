@@ -1,0 +1,21 @@
+---
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import PageHero from '../../components/public/PageHero.astro';
+import CoachCard from '../../components/public/CoachCard.astro';
+import CtaBand from '../../components/public/CtaBand.astro';
+import { publicCoaches } from '../../lib/public';
+import { t, type Lang } from '../../i18n';
+
+const lang: Lang = Astro.locals.lang;
+const coaches = await publicCoaches();
+Astro.response.headers.set('cache-control', 'public, max-age=60');
+---
+<PublicLayout path="/huan-luyen-vien" title={t(lang, 'coaches_label')} description={t(lang, 'coaches_sub')}>
+  <PageHero eyebrow={t(lang, 'coaches_label')} title={t(lang, 'coaches_title')} subtitle={t(lang, 'coaches_sub')} />
+  <section class="container-x py-14 sm:py-20">
+    <div class="grid gap-x-6 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
+      {coaches.map((c, i) => <CoachCard coach={c} lang={lang} i={i % 3} class={i === 0 ? 'sm:col-span-2 lg:col-span-1' : ''} />)}
+    </div>
+  </section>
+  <CtaBand lang={lang} />
+</PublicLayout>

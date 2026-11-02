@@ -1,0 +1,82 @@
+---
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import PageHero from '../../components/public/PageHero.astro';
+import Icon from '../../components/public/Icon.astro';
+import ClassList from '../../components/public/ClassList.astro';
+import CoachCard from '../../components/public/CoachCard.astro';
+import PlanCard from '../../components/public/PlanCard.astro';
+import CtaBand from '../../components/public/CtaBand.astro';
+import { getSite, mediaUrl } from '../../lib/site';
+import { publicDisciplines, publicCoaches, publicClasses, publicPlans, richText } from '../../lib/public';
+import { t, tr, href, type Lang } from '../../i18n';
+
+const lang: Lang = Astro.locals.lang;
+const [{ locations }, disciplines, coaches, allClasses, plans] = await Promise.all([
+  getSite(), publicDisciplines(), publicCoaches(), publicClasses(), publicPlans(),
+]);
+const idx = disciplines.findIndex((d) => d.slug === Astro.params.slug);
+if (idx < 0) return Astro.rewrite('/404');
+const d = disciplines[idx];
+const teaching = coaches.filter((c) => c.disciplineIds.includes(d.id));
+const classes = allClasses.filter((c) => c.disciplineIds.includes(d.id));
+const cover = mediaUrl(d.coverKey);
+const others = disciplines.filter((x) => x.id !== d.id);
+Astro.response.headers.set('cache-control', 'public, max-age=60');
+---
+<PublicLayout path={`/mon-hoc/${d.slug}`} title={tr(d, 'name', lang)} description={tr(d, 'summary', lang)} image={cover}>
+  <PageHero eyebrow={t(lang, 'disciplines_title')} number={`0${idx + 1}`} title={tr(d, 'name', lang)} subtitle={tr(d, 'summary', lang)}>
+    <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+      <a href={`${href('/dang-ky-hoc-thu', lang)}?mon=${d.slug}`} class="btn-red">{t(lang, 'cta_trial')}<Icon name="arrow-right" /></a>
+      <a href={`${href('/lich-hoc', lang)}?mon=${d.slug}`} class="btn-ghost"><Icon name="calendar" />{t(lang, 'nav_schedule')}</a>
+    </div>
+  </PageHero>
+
+  {cover && <img src={cover} alt={tr(d, 'name', lang)} class="w-full max-h-[70vh] object-cover grayscale" />}
+
+  {tr(d, 'description', lang) && (
+    <section class="container-x py-14">
+      <div class="max-w-3xl text-lg leading-relaxed text-white/85" set:html={richText(tr(d, 'description', lang))} />
+    </section>
+  )}
+
+  {classes.length > 0 && (
+    <section class="container-x py-12">
+      <h2 class="text-4xl sm:text-5xl">{t(lang, 'classes_label')}</h2>
+      <div class="mt-6"><ClassList classes={classes} lang={lang} locations={locations} coaches={coaches} /></div>
+    </section>
+  )}
+
+  {teaching.length > 0 && (
+    <section class="bg-bone text-ink py-14 sm:py-20 mt-8">
+      <div class="container-x">
+        <h2 class="text-4xl sm:text-6xl">{t(lang, 'coaches_label')}</h2>
+        <div class="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+          {teaching.map((c, i) => <CoachCard coach={c} lang={lang} i={i} tone="light" />)}
+        </div>
+      </div>
+    </section>
+  )}
+
+  {d.hasBelts && (
+    <section class="container-x pt-14">
+      <a href={href('/cap-dai', lang) + `#${d.slug}`} class="group flex items-center justify-between gap-4 border-2 border-white/15 p-6 hover:border-glory transition-colors">
+        <span class="flex items-center gap-4"><Icon name="medal" class="size-8 text-glory" /><span class="font-display text-3xl uppercase">{t(lang, 'belts_title')} — {tr(d, 'name', lang)}</span></span>
+        <Icon name="arrow-right" class="size-6 transition-transform group-hover:translate-x-1" />
+      </a>
+    </section>
+  )}
+
+  <section class="container-x py-14 sm:py-20">
+    <h2 class="text-4xl sm:text-6xl">{t(lang, 'fees_title')}</h2>
+    <div class="mt-12 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+      {plans.map((p, i) => <PlanCard plan={p} lang={lang} i={i} />)}
+    </div>
+  </section>
+
+  <nav class="container-x pb-16" aria-label={t(lang, 'disciplines_title')}>
+    <div class="flex flex-wrap gap-3">
+      {others.map((o) => <a href={href(`/mon-hoc/${o.slug}`, lang)} class="btn border-2 border-white/15 !text-base hover:border-glory hover:text-glory">{tr(o, 'name', lang)}</a>)}
+    </div>
+  </nav>
+  <CtaBand lang={lang} />
+</PublicLayout>

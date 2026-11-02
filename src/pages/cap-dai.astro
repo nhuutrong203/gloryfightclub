@@ -1,0 +1,52 @@
+---
+import { asc } from 'drizzle-orm';
+import PublicLayout from '../layouts/PublicLayout.astro';
+import PageHero from '../components/public/PageHero.astro';
+import Icon from '../components/public/Icon.astro';
+import CtaBand from '../components/public/CtaBand.astro';
+import { db, schema } from '../db';
+import { publicDisciplines } from '../lib/public';
+import { t, tr, href, type Lang } from '../i18n';
+
+const lang: Lang = Astro.locals.lang;
+const [disciplines, belts] = await Promise.all([
+  publicDisciplines(),
+  db.select().from(schema.belts).orderBy(asc(schema.belts.rank)),
+]);
+const groups = disciplines.filter((d) => d.hasBelts)
+  .map((d) => ({ d, belts: belts.filter((b) => b.disciplineId === d.id) }))
+  .filter((g) => g.belts.length);
+// Viền sáng cho đai tối màu, viền tối cho đai sáng — để đai nào cũng nhìn rõ trên nền đen.
+const isDark = (hex: string) => { const n = parseInt(hex.slice(1), 16); return ((n >> 16) * 299 + ((n >> 8) & 255) * 587 + (n & 255) * 114) / 1000 < 60; };
+Astro.response.headers.set('cache-control', 'public, max-age=60');
+---
+<PublicLayout path="/cap-dai" title={t(lang, 'belts_title')} description={t(lang, 'belts_sub')}>
+  <PageHero eyebrow="Rank" title={t(lang, 'belts_title')} subtitle={t(lang, 'belts_sub')} />
+  {groups.length === 0 && <p class="container-x py-16 text-white/75">{t(lang, 'belts_empty')}</p>}
+  {groups.map(({ d, belts }, gi) => (
+    <section id={d.slug} class:list={['py-14 sm:py-20 scroll-mt-20', gi % 2 === 1 && 'bg-coal']}>
+      <div class="container-x">
+        <div class="flex flex-wrap items-end justify-between gap-4">
+          <h2 class="text-5xl sm:text-7xl">{tr(d, 'name', lang)}</h2>
+          <a href={href(`/mon-hoc/${d.slug}`, lang)} class="inline-flex min-h-11 items-center gap-2 font-display uppercase tracking-wider hover:text-glory">{t(lang, 'cta_more')}<Icon name="arrow-right" /></a>
+        </div>
+        <ol class="relative mt-10 grid gap-4 sm:grid-cols-2 lg:grid-flow-col lg:auto-cols-fr lg:grid-cols-none">
+          <span class="absolute left-0 right-0 top-8 hidden h-px bg-white/15 lg:block" aria-hidden="true"></span>
+          {belts.map((b, i) => (
+            <li class="reveal relative" style={`--i:${i}`}>
+              <div class="relative h-16 flex items-center" aria-hidden="true">
+                <div class:list={['h-7 w-full', isDark(b.color) && 'ring-1 ring-white/40']} style={`background:${b.color}`}></div>
+                <div class:list={['absolute right-6 h-12 w-5', isDark(b.color) && 'ring-1 ring-white/40']} style={`background:${b.color}`}></div>
+              </div>
+              <p class="mt-3 font-display text-ash">0{i + 1}</p>
+              <h3 class="text-2xl">{tr(b, 'name', lang)}</h3>
+              {tr(b, 'requirements', lang) && <p class="mt-1 text-sm text-white/75">{tr(b, 'requirements', lang)}</p>}
+              {b.minMonths && <p class="mt-1 text-sm text-ash">{t(lang, 'belts_min').replace('{n}', String(b.minMonths))}</p>}
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  ))}
+  <CtaBand lang={lang} />
+</PublicLayout>

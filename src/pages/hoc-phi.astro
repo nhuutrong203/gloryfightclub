@@ -1,0 +1,52 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+import PageHero from '../components/public/PageHero.astro';
+import PlanCard from '../components/public/PlanCard.astro';
+import Icon from '../components/public/Icon.astro';
+import CtaBand from '../components/public/CtaBand.astro';
+import { publicPlans, publicFaqs, richText } from '../lib/public';
+import { t, tr, href, type Lang } from '../i18n';
+
+const lang: Lang = Astro.locals.lang;
+const [plans, faqs] = await Promise.all([publicPlans(), publicFaqs()]);
+Astro.response.headers.set('cache-control', 'public, max-age=60');
+---
+<PublicLayout path="/hoc-phi" title={t(lang, 'fees_title')} description={t(lang, 'fees_sub')}>
+  <PageHero eyebrow="Premium" title={t(lang, 'fees_title')} subtitle={t(lang, 'fees_sub')} />
+  <section class="container-x pt-16 pb-12">
+    <div class="grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
+      {plans.map((p, i) => <PlanCard plan={p} lang={lang} i={i} />)}
+    </div>
+  </section>
+
+  <section class="container-x pb-16">
+    <div class="relative overflow-hidden flex flex-col gap-6 bg-coal border-2 border-white/10 p-8 sm:flex-row sm:items-center sm:justify-between">
+      <div class="absolute right-0 top-0 h-full w-24 bg-glory -skew-x-12 translate-x-10 opacity-90" aria-hidden="true"></div>
+      <div class="relative flex items-center gap-5">
+        <span class="grid size-16 shrink-0 place-items-center border-2 border-white/20"><Icon name="users" class="size-8" /></span>
+        <p class="font-display text-4xl sm:text-5xl uppercase leading-none">{t(lang, 'open_mat')}</p>
+      </div>
+      <p class="relative flex items-center gap-3 font-display text-2xl sm:text-3xl tracking-wide sm:mr-16"><Icon name="calendar" class="size-7 text-glory" />{t(lang, 'open_mat_time')}</p>
+    </div>
+  </section>
+
+  {faqs.length > 0 && (
+    <section class="bg-bone text-ink py-14 sm:py-20">
+      <div class="container-x grid gap-10 lg:grid-cols-[1fr_2fr]">
+        <div>
+          <h2 class="text-5xl sm:text-6xl">{t(lang, 'faq_title')}</h2>
+          <a href={href('/hoi-dap', lang)} class="mt-4 inline-flex min-h-11 items-center gap-2 font-display uppercase tracking-wider text-glory-dark hover:text-ink">{t(lang, 'cta_all')}<Icon name="arrow-right" /></a>
+        </div>
+        <div class="divide-y divide-ink/15 border-y border-ink/15">
+          {faqs.slice(0, 4).map((f) => (
+            <details class="group">
+              <summary class="flex min-h-14 items-center justify-between gap-4 py-4 font-semibold text-lg">{tr(f, 'question', lang)}<Icon name="chevron-down" class="size-5 shrink-0 transition-transform group-open:rotate-180" /></summary>
+              <div class="pb-5 text-ink/80" set:html={richText(tr(f, 'answer', lang))} />
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+  <CtaBand lang={lang} />
+</PublicLayout>

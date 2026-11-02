@@ -1,0 +1,35 @@
+---
+import Icon, { type IconName } from './Icon.astro';
+import { t, tr, formatVnd, type Lang } from '../../i18n';
+import { lines } from '../../lib/public';
+import type { schema } from '../../db';
+
+interface Props { plan: typeof schema.feePlans.$inferSelect; lang: Lang; i?: number }
+const { plan: p, lang, i = 0 } = Astro.props;
+// Icon theo thứ tự gói như poster của CLB.
+const icons: IconName[] = ['crown', 'shield', 'child', 'graduation'];
+const icon = icons[(p.sort - 1) % icons.length] ?? 'star';
+---
+<article class:list={['reveal relative flex flex-col p-6 sm:p-8 border-2 transition-transform duration-200 hover:-translate-y-1',
+  p.isFeatured ? 'border-glory bg-gradient-to-b from-glory/20 to-ink' : 'border-white/15 bg-coal']} style={`--i:${i}`}>
+  <p class:list={['absolute -top-4 left-6 px-4 py-1 font-display text-lg uppercase tracking-widest', p.isFeatured ? 'bg-glory text-white' : 'bg-white text-ink']}>
+    {tr(p, 'name', lang)}
+  </p>
+  <Icon name={icon} class="mt-4 size-10 text-white" />
+  <h3 class="mt-4 text-3xl">{tr(p, 'headline', lang)}</h3>
+  {p.condition && <p class="mt-1 text-sm text-ash">{tr(p, 'condition', lang)}</p>}
+  <div class="mt-6 border-t border-white/15 pt-6">
+    <p class="font-display text-5xl sm:text-6xl leading-none">{formatVnd(p.pricePerMonth)}</p>
+    <p class="mt-1 font-display text-glory tracking-wider">{t(lang, 'per_month')}</p>
+  </div>
+  <ul class="mt-6 space-y-3 flex-1">
+    {lines(tr(p, 'features', lang)).map((f) => (
+      <li class="flex gap-3 text-white/85"><Icon name="check" class="size-5 shrink-0 mt-0.5 text-glory" />{f}</li>
+    ))}
+  </ul>
+  {p.badge && (
+    <p class="mt-8 flex items-center justify-center gap-3 bg-white text-ink font-display tracking-widest py-2">
+      <Icon name="star" filled class="size-4 text-glory" />{p.badge}<Icon name="star" filled class="size-4 text-glory" />
+    </p>
+  )}
+</article>

@@ -1,8 +1,9 @@
 ---
 import '../styles/global.css';
 import Logo from '../components/Logo.astro';
+import Icon from '../components/public/Icon.astro';
 import { getSite, telHref } from '../lib/site';
-import { t, href, type Lang } from '../i18n';
+import { t, href, type Lang, type DictKey } from '../i18n';
 
 interface Props {
   title?: string;
@@ -10,24 +11,36 @@ interface Props {
   image?: string | null;
   /** Đường dẫn bản tiếng Việt của trang này, dùng cho nút đổi ngôn ngữ. */
   path?: string;
+  /** 'article' cho trang bài viết (Open Graph). */
+  ogType?: string;
+  noindex?: boolean;
 }
 
 const lang: Lang = Astro.locals.lang;
 const { club, locations } = await getSite();
-const { path = '/' } = Astro.props;
+const { path = '/', ogType = 'website', noindex = false } = Astro.props;
 const title = Astro.props.title ? `${Astro.props.title} | ${club.name}` : `${club.name} — ${club.slogan}`;
-const description = Astro.props.description ?? (lang === 'en' ? club.tagline_en : club.tagline) ?? club.tagline;
+const description = Astro.props.description || (lang === 'en' ? club.tagline_en : club.tagline) || club.tagline;
 const image = new URL(Astro.props.image ?? '/og-default.png', Astro.site).href;
 const canonical = new URL(href(path, lang), Astro.site).href;
 
-const nav = [
-  ['/mon-hoc', t(lang, 'nav_disciplines')],
-  ['/lich-hoc', t(lang, 'nav_schedule')],
-  ['/huan-luyen-vien', t(lang, 'nav_coaches')],
-  ['/hoc-phi', t(lang, 'nav_fees')],
-  ['/tin-tuc', t(lang, 'nav_news')],
-  ['/lien-he', t(lang, 'nav_contact')],
-] as const;
+const main: [string, DictKey][] = [
+  ['/mon-hoc', 'nav_disciplines'],
+  ['/lich-hoc', 'nav_schedule'],
+  ['/huan-luyen-vien', 'nav_coaches'],
+  ['/hoc-phi', 'nav_fees'],
+  ['/tin-tuc', 'nav_news'],
+  ['/lien-he', 'nav_contact'],
+];
+const more: [string, DictKey][] = [
+  ['/gioi-thieu', 'nav_about'],
+  ['/thanh-tich', 'nav_achievements'],
+  ['/cap-dai', 'nav_belts'],
+  ['/thu-vien', 'nav_gallery'],
+  ['/cam-nhan', 'nav_testimonials'],
+  ['/hoi-dap', 'nav_faq'],
+];
+const current = (p: string) => path === p || path.startsWith(p + '/');
 const otherLang: Lang = lang === 'vi' ? 'en' : 'vi';
 const hotline = club.hotlines[0];
 ---
@@ -38,12 +51,15 @@ const hotline = club.hotlines[0];
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex" />}
     <link rel="canonical" href={canonical} />
     <link rel="alternate" hreflang="vi" href={new URL(href(path, 'vi'), Astro.site).href} />
     <link rel="alternate" hreflang="en" href={new URL(href(path, 'en'), Astro.site).href} />
+    <link rel="alternate" hreflang="x-default" href={new URL(href(path, 'vi'), Astro.site).href} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="sitemap" href="/sitemap.xml" />
     <meta name="theme-color" content="#0a0a0a" />
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={ogType} />
     <meta property="og:site_name" content={club.name} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
@@ -52,62 +68,110 @@ const hotline = club.hotlines[0];
     <meta property="og:locale" content={lang === 'vi' ? 'vi_VN' : 'en_US'} />
     <meta name="twitter:card" content="summary_large_image" />
   </head>
-  <body class="min-h-dvh flex flex-col">
-    <header class="sticky top-0 z-40 bg-ink/90 backdrop-blur border-b border-white/10">
+  <body class="min-h-dvh flex flex-col overflow-x-clip">
+    <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] btn-red">Skip</a>
+    <header class="sticky top-0 z-40 bg-ink/90 backdrop-blur-md border-b border-white/10">
       <div class="container-x flex h-16 items-center justify-between gap-4">
-        <a href={href('/', lang)} class="flex items-center gap-3" aria-label={club.name}>
-          <Logo class="h-10 w-auto text-white" />
-          <span class="font-display text-xl tracking-wider leading-none hidden sm:block">GLORY<br /><span class="text-glory">FIGHT CLUB</span></span>
+        <a href={href('/', lang)} class="flex items-center gap-3 shrink-0" aria-label={`${club.name} — ${t(lang, 'home')}`}>
+          <Logo class="h-10 w-auto text-white" title="" />
+          <span class="font-display text-xl tracking-wider leading-[0.9] hidden sm:block" aria-hidden="true">GLORY<br /><span class="text-glory">FIGHT CLUB</span></span>
         </a>
-        <nav class="hidden lg:flex items-center gap-6 font-display uppercase tracking-wider">
-          {nav.map(([p, label]) => <a href={href(p, lang)} class="hover:text-glory">{label}</a>)}
+        <nav class="hidden lg:flex items-center gap-7 font-display uppercase tracking-wider" aria-label="Main">
+          {main.map(([p, k]) => (
+            <a href={href(p, lang)} aria-current={current(p) ? 'page' : undefined}
+              class:list={['relative py-2 transition-colors hover:text-glory', current(p) && 'text-glory after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:bg-glory']}>{t(lang, k)}</a>
+          ))}
         </nav>
-        <div class="flex items-center gap-3">
-          <a href={href(path, otherLang)} class="font-display text-sm tracking-widest text-ash hover:text-white" hreflang={otherLang}>{otherLang.toUpperCase()}</a>
-          <a href={href('/dang-ky-hoc-thu', lang)} class="btn-red !px-4 !py-2 !text-base hidden sm:inline-flex">{t(lang, 'cta_trial')}</a>
-          <details class="lg:hidden group">
-            <summary class="list-none cursor-pointer font-display uppercase tracking-wider px-2 py-1 border border-white/30" aria-label={t(lang, 'menu')}>{t(lang, 'menu')}</summary>
-            <div class="fixed inset-x-0 top-16 bottom-0 bg-ink p-6 flex flex-col gap-5 text-3xl font-display uppercase">
-              {nav.map(([p, label]) => <a href={href(p, lang)} class="hover:text-glory">{label}</a>)}
-              <a href={href('/dang-ky-hoc-thu', lang)} class="btn-red mt-4">{t(lang, 'cta_trial')}</a>
+        <div class="flex items-center gap-2 sm:gap-3">
+          <a href={href(path, otherLang)} hreflang={otherLang} lang={otherLang}
+            class="grid min-h-11 min-w-11 place-items-center font-display text-sm tracking-widest text-ash hover:text-white"
+            aria-label={otherLang === 'en' ? 'English' : 'Tiếng Việt'}>{otherLang.toUpperCase()}</a>
+          <a href={href('/dang-ky-hoc-thu', lang)} class="btn-red !min-h-10 !px-4 !py-2 !text-base hidden sm:inline-flex">{t(lang, 'cta_trial')}</a>
+          <details class="lg:hidden group" id="mnav">
+            <summary class="grid size-11 place-items-center border border-white/30" aria-label={t(lang, 'menu')}>
+              <Icon name="menu" class="size-6 group-open:hidden" />
+              <Icon name="x" class="size-6 hidden group-open:block" />
+            </summary>
+            <div class="fixed inset-x-0 top-16 bottom-0 overflow-y-auto bg-ink border-t border-white/10">
+              <nav class="container-x py-6" aria-label="Mobile">
+                <ul class="divide-y divide-white/10 border-y border-white/10">
+                  {main.map(([p, k], i) => (
+                    <li><a href={href(p, lang)} class:list={['flex items-center justify-between py-4 font-display text-4xl uppercase', current(p) ? 'text-glory' : 'hover:text-glory']}>
+                      <span><span class="mr-4 text-base text-ash align-middle">0{i + 1}</span>{t(lang, k)}</span><Icon name="arrow-up-right" class="size-6 text-ash" />
+                    </a></li>
+                  ))}
+                </ul>
+                <ul class="mt-6 grid grid-cols-2 gap-x-4 gap-y-1">
+                  {more.map(([p, k]) => <li><a href={href(p, lang)} class="block py-2 font-display uppercase tracking-wider text-white/75 hover:text-glory">{t(lang, k)}</a></li>)}
+                </ul>
+                <a href={href('/dang-ky-hoc-thu', lang)} class="btn-red mt-8 w-full">{t(lang, 'cta_trial')}</a>
+                <a href={telHref(hotline)} class="btn-ghost mt-3 w-full"><Icon name="phone" />{hotline}</a>
+              </nav>
             </div>
           </details>
         </div>
       </div>
     </header>
 
-    <main class="flex-1"><slot /></main>
+    <main id="main" class="flex-1"><slot /></main>
 
-    <footer class="border-t border-white/10 bg-coal mt-24">
-      <div class="container-x py-12 grid gap-10 md:grid-cols-3">
-        <div>
-          <Logo class="h-16 w-auto text-white" />
-          <p class="display text-2xl mt-4">{club.slogan}</p>
-        </div>
-        {locations.map((l) => (
-          <div>
-            <p class="eyebrow">{lang === 'en' ? (l.nameEn || l.name) : l.name}</p>
-            <p class="mt-2 text-sm text-white/80">{l.address}</p>
-            {l.mapUrl && <a href={l.mapUrl} target="_blank" rel="noopener" class="mt-2 inline-block text-sm underline hover:text-glory">{t(lang, 'directions')}</a>}
+    <footer class="relative overflow-hidden bg-coal mt-24 border-t-4 border-glory">
+      <Logo class="absolute -right-20 -bottom-24 h-96 w-auto text-white/[0.03]" title="" />
+      <div class="container-x py-14 grid gap-10 md:grid-cols-12">
+        <div class="md:col-span-4">
+          <Logo class="h-16 w-auto text-white" title="" />
+          <p class="display text-4xl mt-5">NO PAIN –<br /><span class="text-glory">NO GLORY</span></p>
+          <div class="mt-6 flex gap-2">
+            {club.facebook && <a href={club.facebook} target="_blank" rel="noopener" aria-label="Facebook" class="grid size-11 place-items-center border border-white/20 hover:bg-glory hover:border-glory transition-colors"><Icon name="facebook" /></a>}
+            {club.instagram && <a href={club.instagram} target="_blank" rel="noopener" aria-label="Instagram" class="grid size-11 place-items-center border border-white/20 hover:bg-glory hover:border-glory transition-colors"><Icon name="instagram" /></a>}
+            <a href={`https://zalo.me/${club.zalo}`} target="_blank" rel="noopener" aria-label="Zalo" class="grid size-11 place-items-center border border-white/20 hover:bg-glory hover:border-glory transition-colors font-display text-xs">Zalo</a>
           </div>
-        ))}
+        </div>
+        <nav class="md:col-span-3 grid grid-cols-2 gap-x-4 gap-y-2 content-start" aria-label="Footer">
+          {[...main, ...more].map(([p, k]) => <a href={href(p, lang)} class="py-1 text-white/75 hover:text-glory">{t(lang, k)}</a>)}
+        </nav>
+        <div class="md:col-span-5 grid gap-6 sm:grid-cols-2">
+          {locations.map((l) => (
+            <div>
+              <p class="eyebrow">{lang === 'en' ? (l.nameEn || l.name) : l.name}</p>
+              <p class="mt-2 text-sm text-white/80">{l.address}</p>
+              {l.mapUrl && <a href={l.mapUrl} target="_blank" rel="noopener" class="mt-2 inline-flex items-center gap-1 min-h-11 text-sm font-semibold hover:text-glory"><Icon name="map-pin" class="size-4" />{t(lang, 'directions')}</a>}
+            </div>
+          ))}
+          <div class="sm:col-span-2">
+            <p class="eyebrow">{t(lang, 'hotline')}</p>
+            <div class="mt-2 flex flex-wrap gap-x-6">
+              {club.hotlines.map((p) => <a href={telHref(p)} class="font-display text-2xl tracking-wide min-h-11 inline-flex items-center hover:text-glory">{p}</a>)}
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="container-x pb-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-ash">
-        {club.hotlines.map((p) => <a href={telHref(p)} class="hover:text-white">{p}</a>)}
-        {club.facebook && <a href={club.facebook} target="_blank" rel="noopener" class="hover:text-white">Facebook</a>}
-        {club.instagram && <a href={club.instagram} target="_blank" rel="noopener" class="hover:text-white">Instagram</a>}
-        <span class="ml-auto">© {new Date().getFullYear()} {club.name}. {t(lang, 'footer_rights')}</span>
-      </div>
+      <div class="container-x pb-8 text-sm text-ash">© {new Date().getFullYear()} {club.name}. {t(lang, 'footer_rights')}</div>
     </footer>
 
     <!-- Nút gọi nhanh + Zalo nổi (mobile là chính) -->
-    <div class="fixed right-4 bottom-4 z-50 flex flex-col gap-3">
+    <div class="fixed right-4 bottom-4 z-30 flex flex-col gap-3">
       <a href={`https://zalo.me/${club.zalo}`} target="_blank" rel="noopener" aria-label="Zalo"
-        class="size-14 rounded-full bg-[#0068ff] grid place-items-center font-display text-white shadow-lg shadow-black/50">Zalo</a>
+        class="size-14 rounded-full bg-[#0068ff] grid place-items-center font-display text-white shadow-lg shadow-black/50 transition-transform hover:scale-105">Zalo</a>
       <a href={telHref(hotline)} aria-label={`${t(lang, 'cta_call')} ${hotline}`}
-        class="size-14 rounded-full bg-glory grid place-items-center shadow-lg shadow-black/50">
-        <svg viewBox="0 0 24 24" class="size-6" fill="white" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z"/></svg>
+        class="relative size-14 rounded-full bg-glory grid place-items-center text-white shadow-lg shadow-black/50 transition-transform hover:scale-105">
+        <span class="absolute inset-0 rounded-full bg-glory animate-ping opacity-30 motion-reduce:hidden"></span>
+        <Icon name="phone" class="relative size-6" />
       </a>
     </div>
+
+    <script>
+      // Hiện dần các khối .reveal khi cuộn tới.
+      const io = new IntersectionObserver((entries) => {
+        for (const e of entries) if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); }
+      }, { rootMargin: '0px 0px -8% 0px' });
+      document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+
+      // Menu mobile: đóng khi bấm link hoặc Esc; khoá cuộn trang khi mở.
+      const nav = document.getElementById('mnav') as HTMLDetailsElement | null;
+      nav?.addEventListener('toggle', () => { document.documentElement.style.overflow = nav.open ? 'hidden' : ''; });
+      nav?.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => { nav.open = false; }));
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && nav?.open) nav.open = false; });
+    </script>
   </body>
 </html>

@@ -1,0 +1,24 @@
+---
+import Logo from '../Logo.astro';
+import Icon from './Icon.astro';
+import { getSite, telHref } from '../../lib/site';
+import { t, href, type Lang } from '../../i18n';
+
+// Dải kêu gọi đăng ký học thử cuối trang.
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const { club } = await getSite();
+---
+<section class="relative isolate overflow-hidden bg-glory text-white">
+  <Logo class="absolute -z-10 -right-10 top-1/2 -translate-y-1/2 h-[160%] w-auto text-black/15" title="" />
+  <div class="container-x py-16 sm:py-24 grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end">
+    <div class="reveal">
+      <h2 class="text-5xl sm:text-7xl lg:text-8xl">{t(lang, 'final_cta_title')}</h2>
+      <p class="mt-5 max-w-xl text-lg text-white/90">{t(lang, 'final_cta_sub')}</p>
+    </div>
+    <div class="reveal flex flex-col gap-3 sm:flex-row lg:flex-col" style="--i:1">
+      <a href={href('/dang-ky-hoc-thu', lang)} class="btn bg-ink text-white hover:bg-white hover:text-ink">{t(lang, 'cta_trial')}<Icon name="arrow-right" /></a>
+      <a href={telHref(club.hotlines[0])} class="btn border-2 border-white hover:bg-white hover:text-glory-dark"><Icon name="phone" />{club.hotlines[0]}</a>
+    </div>
+  </div>
+</section>

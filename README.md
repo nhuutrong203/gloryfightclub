@@ -17,6 +17,11 @@ npm run db:reset     # tạo bảng + nạp dữ liệu (thật + demo) vào D1 
 npm run dev          # mở http://localhost:4321  (bản EN: http://localhost:4321/en)
 ```
 
+**CMS:** http://localhost:4321/admin — tài khoản demo (chỉ ở máy): `admin` / `glory2026` (chủ CLB), `hlv` / `glory2026` (HLV, quyền hạn chế).
+Trên tên miền thật, CMS chạy ở `cms-gloryfightclub.huutrong203.id.vn`.
+
+> Astro 7 chỉ cho chạy **một** `npm run dev` mỗi dự án. Gặp lỗi "Another astro dev server is already running" → chạy `npx astro dev stop`.
+
 | Lệnh | Việc |
 |---|---|
 | `npm run dev` | Dev server, D1/R2 **giả lập ở máy** (chạy bằng runtime thật của Cloudflare – workerd) |
@@ -45,7 +50,12 @@ npx wrangler r2 bucket create glory-media
    npm run db:migrate:remote
    npm run db:seed:remote
    ```
-3. Deploy:
+3. Tạo tài khoản chủ CLB **thật** trên cloud (đừng dùng tài khoản demo):
+   ```bash
+   node scripts/create-user.mjs trung "MatKhauManh2026!" "Lê Thành Trung" owner --remote
+   ```
+   Các HLV: chủ CLB tự tạo trong CMS → Thêm → Tài khoản & phân quyền.
+4. Deploy:
    ```bash
    npm run deploy
    ```
@@ -61,6 +71,10 @@ Cloudflare Dashboard → **Workers & Pages** → `gloryfightclub` → **Settings
 
 Cloudflare tự tạo bản ghi DNS + chứng chỉ HTTPS cho đúng 2 tên miền con này; các bản ghi khác của tên miền không bị ảnh hưởng.
 Muốn đổi sang tên miền khác (vd. `gloryfightclub.vn`): thêm Custom domain mới và sửa `PUBLIC_HOST` / `CMS_HOST` trong `wrangler.jsonc`, rồi deploy lại.
+
+Nên bật thêm sau khi deploy (Cloudflare Dashboard, miễn phí):
+- **Turnstile** cho form học thử (chống spam) — hiện đang chống bằng ô ẩn (honeypot).
+- **Security → WAF → Rate limiting rules** cho đường dẫn `/api/auth/login` (vd. 10 lần / phút / IP).
 
 ## 4. Sao lưu / khôi phục
 
@@ -80,7 +94,10 @@ src/i18n.ts             từ điển giao diện VI/EN + helper chọn cột *_e
 src/lib/site.ts         thông tin CLB dùng chung (settings, cơ sở)
 src/layouts/            layout trang public (header, footer, SEO, nút Gọi/Zalo)
 src/components/         Logo (SVG) và các khối giao diện
-src/pages/              trang public; media/[...key].ts phục vụ ảnh từ R2
+src/pages/              trang public; admin/ (CMS); api/ (→ src/api, Hono); media/ (ảnh R2)
+src/api/                API: đăng nhập, học viên, học phí, học thử, tin tức, nội dung, upload, tài khoản
+src/admin/              giao diện CMS (React) — resources.ts khai báo các mục nội dung
+scripts/                create-user.mjs (tạo/đặt lại mật khẩu), clear-local-db.mjs
 seed/                   dữ liệu thật + demo
 docs/                   kế hoạch, logo gốc
 ```

@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "24e4a931-6d9a-47f8-af71-3d5f287cb943",
+  "id": "d3171a85-8f5f-471a-9111-d0840dede667",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "achievements": {
@@ -972,12 +972,13 @@
           ],
           "isUnique": false
         },
-        "payments_student_idx": {
-          "name": "payments_student_idx",
+        "payments_student_month_idx": {
+          "name": "payments_student_month_idx",
           "columns": [
-            "student_id"
+            "student_id",
+            "month"
           ],
-          "isUnique": false
+          "isUnique": true
         }
       },
       "foreignKeys": {

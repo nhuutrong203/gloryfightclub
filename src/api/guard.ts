@@ -1,0 +1,48 @@
+import type { Context, Next } from 'hono';
+import type { ZodType } from 'zod';
+import { can, type Permission } from '../lib/auth';
+import type { Env } from '.';
+
+/** Middleware: yêu cầu ít nhất một trong các quyền. */
+export const need = (...perms: Permission[]) => async (c: Context<Env>, next: Next) => {
+  const u = c.get('user');
+  if (!perms.some((p) => can(u, p))) return c.json({ error: 'Bạn không có quyền làm việc này' }, 403);
+  await next();
+};
+
+export const ownerOnly = async (c: Context<Env>, next: Next) => {
+  if (c.get('user').role !== 'owner') return c.json({ error: 'Chỉ chủ CLB được làm việc này' }, 403);
+  await next();
+};
+
+/** Đọc + validate JSON body; trả về [data, null] hoặc [null, Response lỗi]. */
+export async function body<T>(c: Context<any>, schema: ZodType<T>): Promise<[T, null] | [null, Response]> {
+  const raw = await c.req.json().catch(() => null);
+  const r = schema.safeParse(raw);
+  if (r.success) return [r.data, null];
+  const issue = r.error.issues[0];
+  return [null, c.json({ error: `Dữ liệu chưa hợp lệ: ${issue.path.join('.') || 'body'} — ${issue.message}` }, 400)];
+}
+
+export const idParam = (c: Context<any>) => {
+  const n = Number(c.req.param('id'));
+  return Number.isInteger(n) && n > 0 ? n : null;
+};
+
+/** CSV có BOM UTF-8 để Excel hiển thị đúng tiếng Việt. */
+export function csv(filename: string, header: string[], rows: unknown[][]) {
+  const cell = (v: unknown) => {
+    const s = v == null ? '' : String(v);
+    // Chặn công thức Excel (CSV injection) và escape dấu nháy.
+    const safe = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
+    return /[",\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+  };
+  const text = '﻿' + [header, ...rows].map((r) => r.map(cell).join(',')).join('\r\n');
+  return new Response(text, {
+    headers: {
+      'content-type': 'text/csv; charset=utf-8',
+      'content-disposition': `attachment; filename="${filename}"`,
+      'cache-control': 'no-store',
+    },
+  });
+}

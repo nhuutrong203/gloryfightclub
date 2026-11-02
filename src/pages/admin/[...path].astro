@@ -1,0 +1,25 @@
+---
+import '../../styles/global.css';
+import App from '../../admin/App';
+// Vỏ của CMS (React SPA). Dữ liệu đều lấy qua /api/admin/* sau khi đăng nhập.
+Astro.response.headers.set('cache-control', 'no-store');
+Astro.response.headers.set('x-robots-tag', 'noindex, nofollow');
+---
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#0a0a0a" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>Glory CMS</title>
+  </head>
+  <body class="admin">
+    <App client:only="react" />
+  </body>
+</html>
+<style is:global>
+  /* CMS dùng nền sáng cho dễ đọc, khác website public. */
+  html:has(body.admin) { background: #f5f5f5; color: #0a0a0a; }
+</style>

@@ -1,0 +1,94 @@
+---
+import { eq, and, asc } from 'drizzle-orm';
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import Logo from '../../components/Logo.astro';
+import Icon from '../../components/public/Icon.astro';
+import ClassList from '../../components/public/ClassList.astro';
+import CtaBand from '../../components/public/CtaBand.astro';
+import { db, schema } from '../../db';
+import { getSite, mediaUrl } from '../../lib/site';
+import { publicCoaches, publicClasses, publicDisciplines, lines, richText } from '../../lib/public';
+import { t, tr, href, type Lang } from '../../i18n';
+
+const lang: Lang = Astro.locals.lang;
+const [{ locations }, coaches, classes, disciplines] = await Promise.all([getSite(), publicCoaches(), publicClasses(), publicDisciplines()]);
+const c = coaches.find((x) => x.slug === Astro.params.slug);
+if (!c) return Astro.rewrite('/404');
+const achievementRows = await db.select().from(schema.achievements)
+  .where(and(eq(schema.achievements.coachId, c.id), eq(schema.achievements.isPublic, true))).orderBy(asc(schema.achievements.sort));
+const achievements = lines(tr(c, 'achievements', lang));
+const myClasses = classes.filter((x) => x.coachId === c.id);
+const myDisciplines = disciplines.filter((d) => c.disciplineIds.includes(d.id));
+const photo = mediaUrl(c.photoKey);
+const others = coaches.filter((x) => x.id !== c.id);
+const desc = [tr(c, 'title', lang), achievements[0]].filter(Boolean).join(' — ');
+Astro.response.headers.set('cache-control', 'public, max-age=60');
+---
+<PublicLayout path={`/huan-luyen-vien/${c.slug}`} title={c.fullName} description={desc} image={photo}>
+  <section class="relative isolate overflow-hidden border-b border-white/10">
+    <div class="container-x grid gap-10 py-10 sm:py-16 lg:grid-cols-[5fr_7fr] lg:items-end">
+      <div class="relative aspect-[4/5] overflow-hidden bg-coal">
+        {photo
+          ? <img src={photo} alt={c.fullName} class="size-full object-cover grayscale contrast-125" />
+          : <div class="size-full grid place-items-center bg-[radial-gradient(circle_at_30%_20%,#2a2a2a,#0a0a0a_70%)]"><Logo class="w-1/2 h-auto text-white/10" title="" /></div>}
+        <div class="absolute left-0 bottom-0 h-2 w-2/3 bg-glory"></div>
+      </div>
+      <div>
+        <a href={href('/huan-luyen-vien', lang)} class="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-ash hover:text-white"><Icon name="arrow-left" class="size-4" />{t(lang, 'coaches_label')}</a>
+        <p class="eyebrow mt-4">{tr(c, 'title', lang)}</p>
+        <h1 class="mt-3 text-6xl sm:text-8xl">{c.fullName}</h1>
+        {myDisciplines.length > 0 && (
+          <div class="mt-6 flex flex-wrap gap-2">
+            {myDisciplines.map((d) => <a href={href(`/mon-hoc/${d.slug}`, lang)} class="min-h-11 inline-flex items-center border border-white/25 px-4 font-display uppercase tracking-wider hover:border-glory hover:text-glory">{tr(d, 'name', lang)}</a>)}
+          </div>
+        )}
+        {tr(c, 'bio', lang) && <div class="mt-8 max-w-2xl text-lg text-white/85" set:html={richText(tr(c, 'bio', lang))} />}
+      </div>
+    </div>
+  </section>
+
+  {(achievements.length > 0 || achievementRows.length > 0) && (
+    <section class="bg-bone text-ink py-14 sm:py-20">
+      <div class="container-x">
+        <h2 class="text-5xl sm:text-7xl">{t(lang, 'achievements_title')}</h2>
+        <ul class="mt-10 grid gap-px bg-ink/15 border border-ink/15 sm:grid-cols-2">
+          {achievements.map((a, i) => (
+            <li class="reveal flex gap-4 bg-bone p-6" style={`--i:${i}`}>
+              <Icon name="medal" class="size-8 shrink-0 text-glory-dark" />
+              <span class="font-display text-2xl sm:text-3xl uppercase leading-tight">{a}</span>
+            </li>
+          ))}
+          {/* Bảng thành tích chỉ hiện khi HLV chưa có danh sách dạng chữ, tránh trùng. */}
+          {(achievements.length ? [] : achievementRows).map((r, i) => (
+            <li class="reveal flex gap-4 bg-bone p-6" style={`--i:${i}`}>
+              <Icon name="trophy" class="size-8 shrink-0 text-glory-dark" />
+              <span><span class="block font-display text-2xl sm:text-3xl uppercase leading-tight">{tr(r, 'title', lang)}</span>{r.eventName && <span class="text-ink/70">{r.eventName}</span>}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )}
+
+  {myClasses.length > 0 && (
+    <section class="container-x py-14">
+      <h2 class="text-4xl sm:text-5xl">{t(lang, 'classes_label')}</h2>
+      <div class="mt-6"><ClassList classes={myClasses} lang={lang} locations={locations} /></div>
+    </section>
+  )}
+
+  {others.length > 0 && (
+    <nav class="container-x py-14" aria-label={t(lang, 'coaches_label')}>
+      <p class="eyebrow">{t(lang, 'coaches_title')}</p>
+      <div class="mt-4 grid gap-px bg-white/10 border border-white/10 sm:grid-cols-2 lg:grid-cols-3">
+        {others.map((o) => (
+          <a href={href(`/huan-luyen-vien/${o.slug}`, lang)} class="group flex items-center justify-between gap-4 bg-ink p-5 hover:bg-coal">
+            <span><span class="block font-display text-2xl uppercase group-hover:text-glory">{o.fullName}</span><span class="text-sm text-ash">{tr(o, 'title', lang)}</span></span>
+            <Icon name="arrow-right" class="size-5 shrink-0" />
+          </a>
+        ))}
+      </div>
+    </nav>
+  )}
+  <CtaBand lang={lang} />
+</PublicLayout>

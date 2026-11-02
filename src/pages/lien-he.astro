@@ -1,0 +1,62 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+import PageHero from '../components/public/PageHero.astro';
+import Icon from '../components/public/Icon.astro';
+import { getSite, telHref } from '../lib/site';
+import { t, tr, href, type Lang } from '../i18n';
+
+const lang: Lang = Astro.locals.lang;
+const { club, locations } = await getSite();
+Astro.response.headers.set('cache-control', 'public, max-age=60');
+---
+<PublicLayout path="/lien-he" title={t(lang, 'contact_title')} description={t(lang, 'contact_sub')}>
+  <PageHero eyebrow="Contact" title={t(lang, 'contact_title')} subtitle={t(lang, 'contact_sub')} />
+
+  <section class="container-x py-12 grid gap-px bg-white/10 border border-white/10 md:grid-cols-3">
+    <div class="bg-ink p-6 sm:p-8">
+      <p class="eyebrow flex items-center gap-2"><Icon name="phone" class="size-4" />{t(lang, 'hotline')}</p>
+      <ul class="mt-4 space-y-1">
+        {club.hotlines.map((p) => <li><a href={telHref(p)} class="inline-flex min-h-12 items-center font-display text-3xl sm:text-4xl tracking-wide hover:text-glory">{p}</a></li>)}
+      </ul>
+    </div>
+    <div class="bg-ink p-6 sm:p-8">
+      <p class="eyebrow flex items-center gap-2"><Icon name="message" class="size-4" />Zalo</p>
+      <a href={`https://zalo.me/${club.zalo}`} target="_blank" rel="noopener" class="btn mt-4 bg-[#0068ff] text-white hover:bg-white hover:text-ink w-full sm:w-auto">Chat Zalo<Icon name="arrow-up-right" /></a>
+    </div>
+    <div class="bg-ink p-6 sm:p-8">
+      <p class="eyebrow">{t(lang, 'social')}</p>
+      <div class="mt-4 flex flex-col gap-2">
+        {club.facebook && <a href={club.facebook} target="_blank" rel="noopener" class="inline-flex min-h-12 items-center gap-3 font-display text-2xl uppercase hover:text-glory"><Icon name="facebook" class="size-6" />Facebook</a>}
+        {club.instagram && <a href={club.instagram} target="_blank" rel="noopener" class="inline-flex min-h-12 items-center gap-3 font-display text-2xl uppercase hover:text-glory"><Icon name="instagram" class="size-6" />Instagram</a>}
+      </div>
+    </div>
+  </section>
+
+  {locations.map((l, i) => (
+    <section class:list={['py-12 sm:py-16', i % 2 === 1 && 'bg-coal']}>
+      <div class="container-x grid gap-8 lg:grid-cols-[2fr_3fr] lg:items-center">
+        <div>
+          <p class="font-display text-8xl text-outline-white leading-none" aria-hidden="true">0{i + 1}</p>
+          <h2 class="mt-2 text-4xl sm:text-5xl">{tr(l, 'name', lang)}</h2>
+          <p class="mt-4 flex gap-3 text-lg text-white/85"><Icon name="map-pin" class="size-6 shrink-0 text-glory mt-0.5" />{l.address}</p>
+          {l.phone && <a href={telHref(l.phone)} class="mt-2 inline-flex min-h-11 items-center gap-3 text-lg hover:text-glory"><Icon name="phone" class="size-5 text-glory" />{l.phone}</a>}
+          <div class="mt-6 flex flex-col gap-3 sm:flex-row">
+            {l.mapUrl && <a href={l.mapUrl} target="_blank" rel="noopener" class="btn-red"><Icon name="map-pin" />{t(lang, 'directions')}</a>}
+            <a href={`${href('/lich-hoc', lang)}?co-so=${l.id}`} class="btn-ghost"><Icon name="calendar" />{t(lang, 'nav_schedule')}</a>
+          </div>
+        </div>
+        <div class="aspect-[4/3] sm:aspect-[16/9] bg-coal border border-white/10">
+          <iframe src={`https://www.google.com/maps?q=${encodeURIComponent(l.address)}&output=embed`} title={`${t(lang, 'map_title')} — ${tr(l, 'name', lang)}`}
+            loading="lazy" referrerpolicy="no-referrer-when-downgrade" class="size-full grayscale invert-[0.9] hue-rotate-180 contrast-90"></iframe>
+        </div>
+      </div>
+    </section>
+  ))}
+
+  <section class="container-x pt-12">
+    <a href={href('/dang-ky-hoc-thu', lang)} class="group flex items-center justify-between gap-6 bg-glory p-8 sm:p-12 hover:bg-white hover:text-ink transition-colors">
+      <span class="font-display text-4xl sm:text-6xl uppercase leading-none">{t(lang, 'cta_trial')}</span>
+      <Icon name="arrow-right" class="size-10 shrink-0 transition-transform group-hover:translate-x-2" />
+    </a>
+  </section>
+</PublicLayout>

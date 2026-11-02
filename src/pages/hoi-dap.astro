@@ -1,0 +1,31 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+import PageHero from '../components/public/PageHero.astro';
+import Icon from '../components/public/Icon.astro';
+import CtaBand from '../components/public/CtaBand.astro';
+import { publicFaqs, richText } from '../lib/public';
+import { t, tr, type Lang } from '../i18n';
+
+const lang: Lang = Astro.locals.lang;
+const faqs = await publicFaqs();
+Astro.response.headers.set('cache-control', 'public, max-age=60');
+---
+<PublicLayout path="/hoi-dap" title={t(lang, 'faq_title')} description={t(lang, 'faq_sub')}>
+  <PageHero eyebrow="FAQ" title={t(lang, 'faq_title')} subtitle={t(lang, 'faq_sub')} />
+  <section class="container-x py-14 sm:py-20">
+    {faqs.length === 0 && <p class="text-white/75">{t(lang, 'faq_empty')}</p>}
+    <div class="mx-auto max-w-3xl divide-y divide-white/10 border-y border-white/10">
+      {faqs.map((f, i) => (
+        <details class="group" open={i === 0}>
+          <summary class="flex min-h-16 items-center gap-5 py-5 text-left">
+            <span class="font-display text-2xl text-glory w-10 shrink-0">{String(i + 1).padStart(2, '0')}</span>
+            <span class="flex-1 text-lg sm:text-xl font-semibold">{tr(f, 'question', lang)}</span>
+            <span class="grid size-10 shrink-0 place-items-center border border-white/20 transition-colors group-open:bg-glory group-open:border-glory"><Icon name="chevron-down" class="size-5 transition-transform group-open:rotate-180" /></span>
+          </summary>
+          <div class="pb-6 pl-15 text-white/80 sm:pl-15" set:html={richText(tr(f, 'answer', lang))} />
+        </details>
+      ))}
+    </div>
+  </section>
+  <CtaBand lang={lang} />
+</PublicLayout>

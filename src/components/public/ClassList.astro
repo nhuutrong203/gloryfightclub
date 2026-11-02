@@ -1,0 +1,29 @@
+---
+import Icon from './Icon.astro';
+import { tr, t, dayShort, type Lang } from '../../i18n';
+import type { PublicClass } from '../../lib/public';
+
+// Danh sách ca tập gọn (trang môn học, HLV, trang chủ). Không có ca nào thì không hiện gì.
+interface Props {
+  classes: PublicClass[];
+  lang: Lang;
+  locations: { id: number; name: string; nameEn: string | null }[];
+  coaches?: { id: number; fullName: string }[];
+  showDays?: boolean;
+}
+const { classes, lang, locations, coaches = [], showDays = true } = Astro.props;
+const locName = (id: number) => { const l = locations.find((x) => x.id === id); return l ? tr(l, 'name', lang) : ''; };
+const coachName = (id: number | null) => coaches.find((c) => c.id === id)?.fullName;
+---
+{classes.length > 0 && (
+  <ul class="divide-y divide-white/10 border-y border-white/10">
+    {classes.map((c) => (
+      <li class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 py-4 sm:grid-cols-[9rem_8rem_1fr_auto] sm:items-center">
+        {showDays && <span class="font-display text-xl tracking-wider text-glory">{[...c.days].map((d) => dayShort(d, lang)).join(' · ')}</span>}
+        <span class="flex items-center gap-1.5 font-display text-xl tracking-wide"><Icon name="clock" class="size-4 text-ash" />{c.startTime}–{c.endTime}</span>
+        <span class="col-span-2 sm:col-span-1 font-semibold">{tr(c, 'name', lang)}{coachName(c.coachId) && <span class="text-ash font-normal"> · {t(lang, 'coach')} {coachName(c.coachId)}</span>}</span>
+        <span class="col-span-2 sm:col-span-1 flex items-center gap-1.5 text-sm text-ash"><Icon name="map-pin" class="size-4" />{locName(c.locationId)}</span>
+      </li>
+    ))}
+  </ul>
+)}

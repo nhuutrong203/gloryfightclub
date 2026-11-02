@@ -1,0 +1,140 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+import PageHero from '../components/public/PageHero.astro';
+import Icon from '../components/public/Icon.astro';
+import CtaBand from '../components/public/CtaBand.astro';
+import { getSite, mediaUrl, telHref } from '../lib/site';
+import { publicClasses, publicCoaches, publicDisciplines, todayDigit } from '../lib/public';
+import { t, tr, href, DAYS, dayShort, dayLong, type Lang } from '../i18n';
+
+const lang: Lang = Astro.locals.lang;
+const [{ club, locations }, allClasses, disciplines, coaches] = await Promise.all([
+  getSite(), publicClasses(), publicDisciplines(), publicCoaches(),
+]);
+const q = Astro.url.searchParams;
+const loc = locations.find((l) => String(l.id) === q.get('co-so')) ?? locations[0];
+const mon = disciplines.find((d) => d.slug === q.get('mon'));
+const classes = allClasses.filter((c) => c.locationId === loc?.id && (!mon || c.disciplineIds.includes(mon.id)));
+const slots = [...new Set(classes.map((c) => `${c.startTime}–${c.endTime}`))].sort();
+const cell = (slot: string, d: string) => classes.filter((c) => `${c.startTime}–${c.endTime}` === slot && c.days.includes(d));
+const byDay = DAYS.map((d) => ({ d, items: classes.filter((c) => c.days.includes(d)) }));
+const today = todayDigit();
+const image = mediaUrl(loc?.scheduleImageKey);
+const coachName = (id: number | null) => coaches.find((c) => c.id === id)?.fullName;
+const link = (params: Record<string, string | undefined>) => {
+  const u = new URLSearchParams();
+  const merged = { 'co-so': loc ? String(loc.id) : undefined, mon: mon?.slug, ...params };
+  for (const [k, v] of Object.entries(merged)) if (v) u.set(k, v);
+  return `${href('/lich-hoc', lang)}?${u}`;
+};
+Astro.response.headers.set('cache-control', 'public, max-age=60');
+---
+<PublicLayout path="/lich-hoc" title={t(lang, 'schedule_title')} description={t(lang, 'schedule_sub')}>
+  <PageHero eyebrow="Timetable" title={t(lang, 'schedule_title')} subtitle={t(lang, 'schedule_sub')} />
+
+  <section class="container-x py-10">
+    <!-- Chọn cơ sở -->
+    <div class="grid grid-cols-2 gap-px bg-white/10 border border-white/10" role="tablist" aria-label={t(lang, 'f_location')}>
+      {locations.map((l) => (
+        <a href={link({ 'co-so': String(l.id) })} role="tab" aria-selected={l.id === loc?.id ? 'true' : 'false'}
+          class:list={['flex min-h-16 flex-col justify-center px-4 py-3 transition-colors', l.id === loc?.id ? 'bg-glory text-white' : 'bg-ink hover:bg-coal']}>
+          <span class="font-display text-xl sm:text-2xl uppercase leading-tight">{tr(l, 'name', lang)}</span>
+          <span class:list={['hidden sm:block text-sm truncate', l.id === loc?.id ? 'text-white/85' : 'text-ash']}>{l.address}</span>
+        </a>
+      ))}
+    </div>
+
+    <!-- Lọc môn -->
+    <div class="mt-6 -mx-4 px-4 flex gap-2 overflow-x-auto pb-2" aria-label={t(lang, 'f_discipline')}>
+      <a href={link({ mon: '' })} class:list={['shrink-0 min-h-11 inline-flex items-center px-4 border font-display uppercase tracking-wider text-sm', !mon ? 'bg-white text-ink border-white' : 'border-white/20 hover:border-white']}>{t(lang, 'schedule_all')}</a>
+      {disciplines.map((d) => (
+        <a href={link({ mon: d.slug })} class:list={['shrink-0 min-h-11 inline-flex items-center px-4 border font-display uppercase tracking-wider text-sm', mon?.id === d.id ? 'bg-white text-ink border-white' : 'border-white/20 hover:border-white']}>{tr(d, 'name', lang)}</a>
+      ))}
+    </div>
+
+    {image && <img src={image} alt={`${t(lang, 'schedule_image_alt')} — ${loc ? tr(loc, 'name', lang) : ''}`} class="mt-8 w-full h-auto border border-white/10" />}
+
+    {classes.length === 0 && !image && (
+      <div class="mt-8 border-2 border-dashed border-white/20 p-8 sm:p-12 text-center">
+        <Icon name="calendar" class="mx-auto size-12 text-glory" />
+        <p class="mt-4 mx-auto max-w-lg text-lg">{t(lang, 'schedule_none')}</p>
+        <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <a href={telHref(club.hotlines[0])} class="btn-red"><Icon name="phone" />{club.hotlines[0]}</a>
+          <a href={`https://zalo.me/${club.zalo}`} target="_blank" rel="noopener" class="btn-ghost">Zalo</a>
+        </div>
+      </div>
+    )}
+
+    {classes.length > 0 && (
+      <>
+        <!-- Desktop: bảng tuần như poster -->
+        <div class="mt-8 hidden lg:block border border-white/10">
+          <table class="w-full table-fixed border-collapse">
+            <thead>
+              <tr class="bg-coal">
+                <th scope="col" class="w-36 p-3 text-left font-display uppercase tracking-wider text-ash">{t(lang, 'time')}</th>
+                {DAYS.map((d) => (
+                  <th scope="col" class:list={['p-3 font-display uppercase tracking-wider text-lg', d === today ? 'bg-glory text-white' : d === '8' ? 'text-glory' : '']}>{dayLong(d, lang)}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {slots.map((slot) => (
+                <tr class="border-t border-white/10">
+                  <th scope="row" class="p-3 text-left font-display text-xl tracking-wide whitespace-nowrap">{slot}</th>
+                  {DAYS.map((d) => (
+                    <td class:list={['border-l border-white/10 p-2 align-top', d === today && 'bg-glory/[0.07]']}>
+                      {cell(slot, d).map((c) => (
+                        <div class="bg-coal px-3 py-2 mb-1 last:mb-0">
+                          <p class="font-display uppercase leading-tight tracking-wide">{tr(c, 'name', lang)}</p>
+                          {coachName(c.coachId) && <p class="text-xs text-ash truncate">{coachName(c.coachId)}</p>}
+                        </div>
+                      ))}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Mobile/tablet: theo từng ngày -->
+        <div class="lg:hidden">
+          <nav class="sticky top-16 z-20 -mx-4 mt-8 grid grid-cols-7 bg-ink/95 backdrop-blur border-y border-white/10" aria-label={t(lang, 'schedule_title')}>
+            {DAYS.map((d) => (
+              <a href={`#d${d}`} class:list={['grid min-h-12 place-items-center font-display tracking-wider', d === today ? 'bg-glory text-white' : 'hover:text-glory']}>{dayShort(d, lang)}</a>
+            ))}
+          </nav>
+          <div class="mt-4 space-y-8">
+            {byDay.map(({ d, items }) => (
+              <section id={`d${d}`} class="scroll-mt-32">
+                <h2 class:list={['flex items-center gap-3 text-3xl', d === today && 'text-glory']}>{dayLong(d, lang)}{d === today && <span class="bg-glory px-2 py-0.5 text-sm text-white tracking-widest">{lang === 'en' ? 'TODAY' : 'HÔM NAY'}</span>}</h2>
+                {items.length === 0
+                  ? <p class="mt-2 text-ash">—</p>
+                  : (
+                    <ul class="mt-3 space-y-2">
+                      {items.map((c) => (
+                        <li class="flex items-stretch border border-white/10 bg-coal">
+                          <span class="flex w-28 shrink-0 flex-col justify-center border-r border-white/10 px-3 py-3 font-display text-xl leading-tight">{c.startTime}<span class="text-ash text-base">{c.endTime}</span></span>
+                          <span class="flex flex-col justify-center px-4 py-3 min-w-0">
+                            <span class="font-display text-xl uppercase tracking-wide">{tr(c, 'name', lang)}</span>
+                            {coachName(c.coachId) && <span class="text-sm text-ash">{t(lang, 'coach')} {coachName(c.coachId)}</span>}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+              </section>
+            ))}
+          </div>
+        </div>
+      </>
+    )}
+
+    <div class="mt-10 flex flex-col gap-4 border-l-4 border-glory bg-coal p-6 sm:flex-row sm:items-center sm:justify-between">
+      <p class="font-display text-2xl uppercase">{t(lang, 'open_mat')} <span class="text-glory">{t(lang, 'free')}</span> · {t(lang, 'open_mat_time')}</p>
+      <a href={href('/hoc-phi', lang)} class="inline-flex min-h-11 items-center gap-2 font-display uppercase tracking-wider hover:text-glory">{t(lang, 'nav_fees')}<Icon name="arrow-right" /></a>
+    </div>
+  </section>
+  <CtaBand lang={lang} />
+</PublicLayout>

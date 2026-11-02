@@ -1,0 +1,106 @@
+---
+import { eq } from 'drizzle-orm';
+import PublicLayout from '../layouts/PublicLayout.astro';
+import PageHero from '../components/public/PageHero.astro';
+import Icon from '../components/public/Icon.astro';
+import Marquee from '../components/public/Marquee.astro';
+import CoachCard from '../components/public/CoachCard.astro';
+import CtaBand from '../components/public/CtaBand.astro';
+import { db, schema } from '../db';
+import { getSite } from '../lib/site';
+import { publicCoaches, publicAchievements, publicDisciplines, richText } from '../lib/public';
+import { t, tr, href, type Lang } from '../i18n';
+
+type About = { history?: string; history_en?: string; philosophy?: string; philosophy_en?: string; values?: string[]; values_en?: string[] };
+
+const lang: Lang = Astro.locals.lang;
+const [{ club, locations }, coaches, achievements, disciplines, aboutRow] = await Promise.all([
+  getSite(), publicCoaches(), publicAchievements(), publicDisciplines(),
+  db.select().from(schema.settings).where(eq(schema.settings.key, 'about')).limit(1),
+]);
+const about = (aboutRow[0]?.value ?? {}) as About;
+const pick = (vi?: string, en?: string) => (lang === 'en' ? en || vi : vi) ?? '';
+const history = pick(about.history, about.history_en);
+const philosophy = pick(about.philosophy, about.philosophy_en);
+const values = (lang === 'en' && about.values_en?.length ? about.values_en : about.values) ?? [];
+const tagline = (lang === 'en' ? club.tagline_en : club.tagline) || club.tagline;
+const featured = coaches.filter((c) => c.isFeatured).slice(0, 3);
+Astro.response.headers.set('cache-control', 'public, max-age=60');
+---
+<PublicLayout path="/gioi-thieu" title={t(lang, 'about_title')} description={history.slice(0, 160) || tagline}>
+  <PageHero eyebrow={club.name} title={t(lang, 'about_title')} subtitle={tagline} />
+
+  <section class="container-x py-14 sm:py-20 grid gap-12 lg:grid-cols-2">
+    <div>
+      {history ? (
+        <>
+          <p class="eyebrow">01</p>
+          <h2 class="mt-2 text-5xl sm:text-6xl">{t(lang, 'about_history')}</h2>
+          <div class="mt-6 text-lg text-white/85" set:html={richText(history)} />
+        </>
+      ) : (
+        <p class="display text-6xl sm:text-8xl">{club.slogan.split('–')[0]}<br /><span class="text-glory">–{club.slogan.split('–')[1]}</span></p>
+      )}
+    </div>
+    <dl class="grid grid-cols-2 gap-px self-start bg-white/10 border border-white/10">
+      {[
+        [disciplines.length, t(lang, 'nav_disciplines')],
+        [coaches.length, t(lang, 'coaches_label')],
+        [locations.length, t(lang, 'locations_title')],
+        [achievements.length, t(lang, 'achievements_title')],
+      ].map(([n, label]) => (
+        <div class="bg-ink p-6 sm:p-8"><dd class="font-display text-6xl sm:text-7xl text-glory">{n}</dd><dt class="mt-1 font-display uppercase tracking-wider">{label}</dt></div>
+      ))}
+    </dl>
+  </section>
+
+  {philosophy && (
+    <section class="bg-bone text-ink py-14 sm:py-20">
+      <div class="container-x max-w-4xl">
+        <p class="eyebrow !text-glory-dark">02</p>
+        <h2 class="mt-2 text-5xl sm:text-6xl">{t(lang, 'about_philosophy')}</h2>
+        <div class="mt-6 text-xl leading-relaxed" set:html={richText(philosophy)} />
+      </div>
+    </section>
+  )}
+
+  {values.length > 0 && (
+    <section class="container-x py-14 sm:py-20">
+      <p class="eyebrow">03</p>
+      <h2 class="mt-2 text-5xl sm:text-6xl">{t(lang, 'about_values')}</h2>
+      <ul class="mt-10 grid gap-px bg-white/10 border border-white/10 sm:grid-cols-2 lg:grid-cols-3">
+        {values.map((v, i) => (
+          <li class="reveal bg-ink p-6 sm:p-8" style={`--i:${i}`}>
+            <span class="font-display text-5xl text-outline-white" aria-hidden="true">0{i + 1}</span>
+            <p class="mt-3 font-display text-3xl uppercase">{v}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+
+  <Marquee />
+
+  {featured.length > 0 && (
+    <section class="container-x py-14 sm:py-20">
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <h2 class="text-5xl sm:text-7xl">{t(lang, 'coaches_title')}</h2>
+        <a href={href('/huan-luyen-vien', lang)} class="inline-flex min-h-11 items-center gap-2 font-display uppercase tracking-wider hover:text-glory">{t(lang, 'cta_all')}<Icon name="arrow-right" /></a>
+      </div>
+      <div class="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        {featured.map((c, i) => <CoachCard coach={c} lang={lang} i={i} />)}
+      </div>
+    </section>
+  )}
+
+  {achievements.length > 0 && (
+    <section class="container-x pb-14">
+      <ul class="grid gap-px bg-white/10 border border-white/10 sm:grid-cols-2 lg:grid-cols-4">
+        {achievements.slice(0, 4).map((a) => (
+          <li class="bg-ink p-6"><Icon name="medal" class="size-8 text-glory" /><p class="mt-3 font-display text-2xl uppercase">{tr(a, 'title', lang)}</p>{a.eventName && <p class="text-sm text-ash">{a.eventName}</p>}</li>
+        ))}
+      </ul>
+    </section>
+  )}
+  <CtaBand lang={lang} />
+</PublicLayout>

@@ -1,0 +1,35 @@
+---
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import PageHero from '../../components/public/PageHero.astro';
+import Icon from '../../components/public/Icon.astro';
+import CtaBand from '../../components/public/CtaBand.astro';
+import { publicDisciplines, publicClasses } from '../../lib/public';
+import { t, tr, href, type Lang } from '../../i18n';
+
+const lang: Lang = Astro.locals.lang;
+const [disciplines, classes] = await Promise.all([publicDisciplines(), publicClasses()]);
+const classCount = (id: number) => classes.filter((c) => c.disciplineIds.includes(id)).length;
+Astro.response.headers.set('cache-control', 'public, max-age=60');
+---
+<PublicLayout path="/mon-hoc" title={t(lang, 'disciplines_title')} description={t(lang, 'disciplines_sub')}>
+  <PageHero eyebrow="MMA · Kudo · Muay Thai · BJJ · Boxing" title={t(lang, 'disciplines_title')} subtitle={t(lang, 'disciplines_sub')} />
+  <section class="container-x py-12 sm:py-16">
+    <div class="divide-y divide-white/10 border-y border-white/10">
+      {disciplines.map((d, i) => (
+        <a href={href(`/mon-hoc/${d.slug}`, lang)} class="reveal group grid gap-4 py-8 sm:py-10 md:grid-cols-[8rem_1fr_auto] md:items-center transition-colors hover:bg-coal md:px-6" style={`--i:${i}`}>
+          <span class="font-display text-7xl sm:text-8xl text-outline-white leading-none group-hover:text-glory group-hover:[-webkit-text-stroke:0]" aria-hidden="true">0{i + 1}</span>
+          <div>
+            <h2 class="text-5xl sm:text-6xl group-hover:text-glory transition-colors">{tr(d, 'name', lang)}</h2>
+            <p class="mt-3 max-w-2xl text-white/75">{tr(d, 'summary', lang)}</p>
+            <p class="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-ash">
+              <span class="inline-flex items-center gap-1.5"><Icon name="calendar" class="size-4" />{classCount(d.id)} {t(lang, 'classes_label').toLowerCase()}</span>
+              {d.hasBelts && <span class="inline-flex items-center gap-1.5"><Icon name="medal" class="size-4" />{t(lang, 'nav_belts')}</span>}
+            </p>
+          </div>
+          <span class="grid size-14 place-items-center border-2 border-white/20 transition-colors group-hover:bg-glory group-hover:border-glory"><Icon name="arrow-right" class="size-6" /></span>
+        </a>
+      ))}
+    </div>
+  </section>
+  <CtaBand lang={lang} />
+</PublicLayout>

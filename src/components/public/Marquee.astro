@@ -1,0 +1,15 @@
+---
+// Dải chữ chạy ngang "NO PAIN – NO GLORY" (trang trí).
+interface Props { text?: string; class?: string }
+const { text = 'NO PAIN – NO GLORY', class: className = 'bg-glory text-white' } = Astro.props;
+const items = Array.from({ length: 8 }, () => text);
+---
+<div class:list={['overflow-hidden py-3 select-none', className]} aria-hidden="true">
+  <div class="flex w-max animate-marquee">
+    {[...items, ...items].map((s) => (
+      <span class="font-display text-2xl sm:text-3xl uppercase tracking-wider px-6 flex items-center gap-6 whitespace-nowrap">
+        {s}<span class="inline-block size-2 bg-current rotate-45"></span>
+      </span>
+    ))}
+  </div>
+</div>

@@ -19,11 +19,11 @@ Website quảng bá + CMS quản lý võ sinh cho **GLORY FIGHT CLUB** (MMA, Kud
 ## Trạng thái
 - [x] Lập kế hoạch v3 → `docs/PLAN.md` (đã duyệt)
 - [x] GĐ 0 — Nền móng: Astro 7 + Cloudflare adapter 14, schema + migration `0000_init`, seed thật/demo, logo SVG, layout public, trang chủ khung (VI/EN)
-- [ ] GĐ 1 — Website public MVP
-- [ ] GĐ 2 — CMS lõi
-- [ ] GĐ 3 — Nghiệp vụ CLB (học phí, CSV, tài khoản + phân quyền)
-- [ ] GĐ 4 — Hoàn thiện nội dung
-- [ ] GĐ 5 — Deploy
+- [x] GĐ 1 — Website public: 19 trang VI/EN (trang chủ, môn, lịch, HLV, tin tức, thư viện, cấp đai, học phí, thành tích, cảm nhận, hỏi đáp, giới thiệu, liên hệ, học thử, 404, sitemap, robots)
+- [x] GĐ 2 — CMS lõi: đăng nhập, tổng quan, học viên, học thử → học viên, tin tức + upload R2, nội dung website
+- [x] GĐ 3 — Học phí theo tháng, xuất CSV, tài khoản + phân quyền HLV
+- [x] GĐ 4 — Cài đặt CLB (liên hệ, hero, trang giới thiệu), thư viện, thành tích, cảm nhận, FAQ, cấp đai trong CMS
+- [ ] GĐ 5 — Deploy (cần anh `wrangler login` — xem README mục 2–3)
 
 ## Stack
 Astro 7 SSR + `@astrojs/cloudflare` 14 (Cloudflare Workers) · React (CMS SPA) · Hono (API trong `/api/*`) · Cloudflare D1 + Drizzle ORM · Cloudflare R2 (ảnh) · Tailwind CSS v4.
@@ -42,8 +42,11 @@ Astro 7 SSR + `@astrojs/cloudflare` 14 (Cloudflare Workers) · React (CMS SPA) �
 ```bash
 npm install
 npm run db:reset   # D1 local: tạo bảng + seed/seed.sql (thật) + seed/sample.sql (demo)
-npm run dev        # http://localhost:4321 , bản EN /en
+npm run dev        # web http://localhost:4321 (EN /en) · CMS http://localhost:4321/admin
 ```
+Tài khoản demo LOCAL (trong `seed/sample.sql`): `admin` (chủ CLB) và `hlv` (HLV), mật khẩu `glory2026`.
+Tạo tài khoản thật: `node scripts/create-user.mjs <username> <mật-khẩu> "<Họ tên>" owner [--remote]`.
+**Astro 7 chỉ cho 1 dev server / dự án** — muốn chạy lệnh khác cần DB thì dùng chung server đang chạy, hoặc `npx astro dev stop`.
 Chi tiết lệnh, deploy, gắn domain: `README.md`. Trong Claude desktop: `.claude/launch.json` có cấu hình `glory-dev`.
 
 ## Ghi chú kỹ thuật (Astro 7 / adapter 14)
@@ -56,6 +59,25 @@ Chi tiết lệnh, deploy, gắn domain: `README.md`. Trong Claude desktop: `.cl
 - Sửa schema: sửa `src/db/schema.ts` → `npm run db:generate` → `npm run db:migrate`. Chưa deploy lần nào nên GĐ 0–1 có thể gộp lại migration `0000`.
 - `db:reset` cần tắt dev server trước (Windows khoá file SQLite) — script `scripts/clear-local-db.mjs` báo lỗi rõ.
 - `seed/seed.sql` chỉ chứa dữ liệu thật (được nạp lên cloud); dữ liệu giả để ở `seed/sample.sql`, đánh dấu "(mẫu)".
+
+## Cấu trúc chính
+```
+src/pages/            trang public (.astro) · api/[...path].ts → Hono · admin/[...path].astro → React CMS · media/[...key].ts (chỉ key public/…)
+src/components/public trang trí public: Icon, PageHero, Marquee, PlanCard, CoachCard, PostCard, ClassList, CtaBand
+src/lib/              auth.ts (PBKDF2, session, PERMISSIONS) · util.ts (vnNow, slugify, normalizePhone) · site.ts · public.ts (truy vấn public, richText, youtubeEmbed)
+src/api/              index.ts (CSRF origin check, auth middleware) · guard.ts (need(), body(), csv()) · auth · public (form học thử) · content (CRUD chung) · students · fees · trials · posts · admin (me, lookups, dashboard, settings, upload, users)
+src/admin/            React CMS: App.tsx (router tự viết, khung, menu dưới) · lib.ts (api, useApi, toast, uploadImage nén WebP) · ui.tsx · resources.ts · pages/*
+```
+- `src/admin/resources.ts` là **nguồn duy nhất** cho các mục nội dung đơn giản: vừa sinh form CMS vừa sinh zod + cột được ghi ở API. Thêm cột nội dung → thêm field ở đây.
+- Quyền: `students.view`, `students.edit`, `fees.view`, `fees.edit`, `posts`, `content`, `delete`. Owner luôn đủ quyền; tài khoản chỉ owner quản lý. Kiểm tra quyền ở API bằng `need()`, UI chỉ ẩn/hiện.
+- Tìm học viên bỏ dấu làm trong JS (`matchQuery`) — ổn tới vài nghìn học viên.
+- Học phí: 1 dòng `payments` / học viên / tháng (unique). Dashboard "chưa đóng" = học viên `active` không có payment tháng hiện tại.
+- Upload: client nén ≤1600px WebP (fallback JPEG), server kiểm tra magic bytes, ≤8MB, key `public/YYYY-MM/<uuid>.ext`.
+- Form học thử: honeypot `website`; trẻ <16 tuổi khi chuyển thành học viên thì SĐT đăng ký thành SĐT phụ huynh.
+
+## Việc nên làm khi deploy (GĐ 5)
+- Thêm Cloudflare Turnstile cho form học thử; Rate Limiting rule cho `/api/auth/login`.
+- Tạo tài khoản chủ CLB thật bằng `scripts/create-user.mjs … --remote` (KHÔNG nạp `seed/sample.sql` lên cloud).
 
 ## Còn chờ từ anh Trọng / thầy
 - Ảnh lịch cơ sở 2 (hoặc thầy tự nhập/up trong CMS).

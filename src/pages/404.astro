@@ -1,0 +1,23 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+import Logo from '../components/Logo.astro';
+import Icon from '../components/public/Icon.astro';
+import { t, href, type Lang } from '../i18n';
+
+const lang: Lang = Astro.locals.lang ?? 'vi';
+Astro.response.status = 404;
+---
+<PublicLayout title={t(lang, 'notfound_title')} noindex>
+  <section class="relative isolate overflow-hidden min-h-[70dvh] grid place-items-center py-20">
+    <Logo class="absolute -z-10 h-[120%] w-auto text-white/[0.04]" title="" />
+    <div class="container-x text-center">
+      <p class="font-display text-[clamp(8rem,30vw,16rem)] leading-none text-glory">404</p>
+      <h1 class="text-5xl sm:text-7xl">{t(lang, 'notfound_title')}</h1>
+      <p class="mt-4 text-lg text-white/80">{t(lang, 'notfound_sub')}</p>
+      <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+        <a href={href('/', lang)} class="btn-red"><Icon name="arrow-left" />{t(lang, 'home')}</a>
+        <a href={href('/lich-hoc', lang)} class="btn-ghost">{t(lang, 'nav_schedule')}</a>
+      </div>
+    </div>
+  </section>
+</PublicLayout>

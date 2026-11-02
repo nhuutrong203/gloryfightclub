@@ -1,0 +1,107 @@
+---
+import { eq, asc, desc } from 'drizzle-orm';
+import PublicLayout from '../layouts/PublicLayout.astro';
+import PageHero from '../components/public/PageHero.astro';
+import Icon from '../components/public/Icon.astro';
+import { db, schema } from '../db';
+import { youtubeEmbed } from '../lib/public';
+import { t, tr, href, type Lang } from '../i18n';
+
+const lang: Lang = Astro.locals.lang;
+const all = await db.select().from(schema.galleryItems).where(eq(schema.galleryItems.isPublic, true))
+  .orderBy(asc(schema.galleryItems.sort), desc(schema.galleryItems.createdAt));
+const albums = [...new Set(all.map((g) => g.album).filter((a): a is string => !!a))];
+const album = Astro.url.searchParams.get('album');
+const items = album ? all.filter((g) => g.album === album) : all;
+const photos = items.filter((g) => g.type === 'photo' && g.key);
+const videos = items.filter((g) => g.type === 'video' && g.videoUrl);
+const albumLink = (a?: string) => (a ? `${href('/thu-vien', lang)}?album=${encodeURIComponent(a)}` : href('/thu-vien', lang));
+Astro.response.headers.set('cache-control', 'public, max-age=60');
+---
+<PublicLayout path="/thu-vien" title={t(lang, 'gallery_title')} description={t(lang, 'gallery_sub')}>
+  <PageHero eyebrow="Gallery" title={t(lang, 'gallery_title')} subtitle={t(lang, 'gallery_sub')} />
+  <section class="container-x py-10">
+    {albums.length > 0 && (
+      <div class="-mx-4 px-4 flex gap-2 overflow-x-auto pb-2">
+        <a href={albumLink()} class:list={['shrink-0 min-h-11 inline-flex items-center px-4 border font-display uppercase tracking-wider text-sm', !album ? 'bg-white text-ink border-white' : 'border-white/20 hover:border-white']}>{t(lang, 'gallery_all')}</a>
+        {albums.map((a) => <a href={albumLink(a)} class:list={['shrink-0 min-h-11 inline-flex items-center px-4 border font-display uppercase tracking-wider text-sm', album === a ? 'bg-white text-ink border-white' : 'border-white/20 hover:border-white']}>{a}</a>)}
+      </div>
+    )}
+
+    {items.length === 0 && (
+      <div class="mt-8 border-2 border-dashed border-white/20 p-12 text-center">
+        <Icon name="image" class="mx-auto size-12 text-glory" />
+        <p class="mt-4 text-lg text-white/80">{t(lang, 'gallery_empty')}</p>
+      </div>
+    )}
+
+    {photos.length > 0 && (
+      <ul class="mt-8 grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-4" id="gallery">
+        {photos.map((g, i) => (
+          <li class:list={['reveal', i % 7 === 0 && 'sm:col-span-2 sm:row-span-2']} style={`--i:${i % 6}`}>
+            <button type="button" data-src={`/media/${g.key}`} data-caption={tr(g, 'caption', lang)} data-idx={i}
+              class="group relative block size-full aspect-square overflow-hidden bg-coal" aria-label={tr(g, 'caption', lang) || `${t(lang, 'gallery_title')} ${i + 1}`}>
+              <img src={`/media/${g.key}`} alt={tr(g, 'caption', lang)} loading="lazy" class="size-full object-cover transition duration-300 group-hover:scale-105" />
+            </button>
+          </li>
+        ))}
+      </ul>
+    )}
+
+    {videos.length > 0 && (
+      <div class="mt-12 grid gap-6 md:grid-cols-2">
+        {videos.map((g) => {
+          const embed = youtubeEmbed(g.videoUrl);
+          return embed ? (
+            <figure>
+              <div class="aspect-video bg-coal"><iframe src={embed} title={tr(g, 'caption', lang) || 'Video'} loading="lazy" class="size-full" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+              {tr(g, 'caption', lang) && <figcaption class="mt-2 text-white/80">{tr(g, 'caption', lang)}</figcaption>}
+            </figure>
+          ) : (
+            <a href={g.videoUrl} target="_blank" rel="noopener" class="group flex items-center gap-5 border-2 border-white/15 p-6 hover:border-glory">
+              <span class="grid size-14 shrink-0 place-items-center bg-glory"><Icon name="play" filled class="size-6" /></span>
+              <span class="min-w-0"><span class="block font-display text-2xl uppercase">{t(lang, 'watch_video')}</span><span class="text-white/75">{tr(g, 'caption', lang)}</span></span>
+              <Icon name="external" class="ml-auto size-5 shrink-0" />
+            </a>
+          );
+        })}
+      </div>
+    )}
+  </section>
+
+  <!-- Lightbox -->
+  <dialog id="lightbox" class="m-0 h-dvh max-h-none w-screen max-w-none bg-ink/95 p-0 text-white backdrop:bg-black/80" aria-label={t(lang, 'gallery_title')}>
+    <div class="relative grid h-full place-items-center p-4 sm:p-12">
+      <img id="lb-img" alt="" class="max-h-[85dvh] max-w-full object-contain" />
+      <p id="lb-cap" class="absolute bottom-4 inset-x-4 text-center text-white/85"></p>
+      <button type="button" data-lb="close" class="absolute right-3 top-3 grid size-12 place-items-center bg-white/10 hover:bg-glory" aria-label={t(lang, 'close')}><Icon name="x" /></button>
+      <button type="button" data-lb="prev" class="absolute left-3 top-1/2 -translate-y-1/2 grid size-12 place-items-center bg-white/10 hover:bg-glory" aria-label={t(lang, 'prev')}><Icon name="chevron-left" /></button>
+      <button type="button" data-lb="next" class="absolute right-3 top-1/2 -translate-y-1/2 grid size-12 place-items-center bg-white/10 hover:bg-glory" aria-label={t(lang, 'next')}><Icon name="chevron-right" /></button>
+    </div>
+  </dialog>
+
+  <script>
+    const dlg = document.getElementById('lightbox') as HTMLDialogElement | null;
+    const btns = [...document.querySelectorAll<HTMLButtonElement>('#gallery button[data-src]')];
+    const img = document.getElementById('lb-img') as HTMLImageElement;
+    const cap = document.getElementById('lb-cap') as HTMLElement;
+    let cur = 0;
+    const show = (i: number) => {
+      cur = (i + btns.length) % btns.length;
+      img.src = btns[cur].dataset.src!;
+      img.alt = cap.textContent = btns[cur].dataset.caption ?? '';
+    };
+    btns.forEach((b, i) => b.addEventListener('click', () => { show(i); dlg?.showModal(); }));
+    dlg?.addEventListener('click', (e) => {
+      const act = (e.target as HTMLElement).closest<HTMLElement>('[data-lb]')?.dataset.lb;
+      if (act === 'close' || e.target === dlg) dlg.close();
+      if (act === 'prev') show(cur - 1);
+      if (act === 'next') show(cur + 1);
+    });
+    dlg?.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') show(cur - 1);
+      if (e.key === 'ArrowRight') show(cur + 1);
+    });
+    dlg?.addEventListener('close', () => btns[cur]?.focus());
+  </script>
+</PublicLayout>

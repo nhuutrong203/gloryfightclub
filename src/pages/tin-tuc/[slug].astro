@@ -1,0 +1,34 @@
+---
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import PostCard from '../../components/public/PostCard.astro';
+import Icon from '../../components/public/Icon.astro';
+import CtaBand from '../../components/public/CtaBand.astro';
+import { postBySlug, publishedPosts } from '../../lib/public';
+import { mediaUrl } from '../../lib/site';
+import { t, tr, href, type Lang } from '../../i18n';
+
+const lang: Lang = Astro.locals.lang;
+const post = await postBySlug(Astro.params.slug ?? '');
+if (!post) return Astro.rewrite('/404');
+const latest = (await publishedPosts(4)).filter((p) => p.id !== post.id).slice(0, 3);
+const body = tr(post, 'content', lang);
+const title = tr(post, 'title', lang) || body.slice(0, 60);
+Astro.response.headers.set('cache-control', 'public, max-age=60');
+---
+<PublicLayout path={`/tin-tuc/${post.slug}`} title={title} description={body.slice(0, 160)} image={mediaUrl(post.images[0])} ogType="article">
+  <section class="container-x py-10 sm:py-14">
+    <div class="mx-auto max-w-2xl">
+      <a href={href('/tin-tuc', lang)} class="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-ash hover:text-white"><Icon name="arrow-left" class="size-4" />{t(lang, 'news_title')}</a>
+      <div class="mt-4"><PostCard post={post} lang={lang} full /></div>
+    </div>
+  </section>
+  {latest.length > 0 && (
+    <section class="container-x pb-16">
+      <h2 class="text-4xl">{t(lang, 'news_title')}</h2>
+      <div class="mt-6 grid gap-6 md:grid-cols-3 items-start">
+        {latest.map((p, i) => <PostCard post={p} lang={lang} i={i} />)}
+      </div>
+    </section>
+  )}
+  <CtaBand lang={lang} />
+</PublicLayout>

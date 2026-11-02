@@ -148,7 +148,7 @@ CREATE TABLE `payments` (
 );
 --> statement-breakpoint
 CREATE INDEX `payments_month_idx` ON `payments` (`month`);--> statement-breakpoint
-CREATE INDEX `payments_student_idx` ON `payments` (`student_id`);--> statement-breakpoint
+CREATE UNIQUE INDEX `payments_student_month_idx` ON `payments` (`student_id`,`month`);--> statement-breakpoint
 CREATE TABLE `post_images` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`post_id` integer NOT NULL,

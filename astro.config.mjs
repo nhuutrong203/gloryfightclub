@@ -11,6 +11,8 @@ export default defineConfig({
   adapter: cloudflare({ imageService: 'passthrough' }),
   // Session đăng nhập CMS tự quản lý trong D1, không cần KV của Astro.
   session: false,
+  // Thanh công cụ dev của Astro che nút ở cuối màn hình điện thoại khi thử CMS.
+  devToolbar: { enabled: false },
   integrations: [react()],
   vite: { plugins: [tailwindcss()] },
 });
