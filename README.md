@@ -57,6 +57,7 @@ npx wrangler r2 bucket create glory-media
    node scripts/create-user.mjs trung "MatKhauManh2026!" "Lê Thành Trung" owner --remote
    ```
    Các HLV: chủ CLB tự tạo trong CMS → Thêm → Tài khoản & phân quyền.
+   (Đã tạo ngày 2026-11-02: tài khoản chủ CLB `lethanhtrung1996`. Quên mật khẩu → chạy lại lệnh trên với mật khẩu mới để đặt lại.)
 4. Deploy:
    ```bash
    npm run deploy

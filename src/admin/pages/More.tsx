@@ -21,7 +21,8 @@ export function menuGroups(me: Me): { title: string; items: Item[] }[] {
       items: can(me, 'content')
         ? [res('classes', 'calendar'), res('coaches', 'users'), res('disciplines', 'star'), res('feePlans', 'wallet'), res('locations', 'home'),
            res('gallery', 'image'), res('achievements', 'star'), res('testimonials'), res('faqs'), res('belts'),
-           { to: '/admin/cai-dat', label: 'Thông tin CLB & trang chủ', icon: 'settings' }]
+           { to: '/admin/cai-dat', label: 'Thông tin CLB & trang chủ', icon: 'settings' },
+           { to: '/admin/chu-website', label: 'Chữ trên website', icon: 'edit' }]
         : [],
     },
     {

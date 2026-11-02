@@ -21,7 +21,7 @@ const isDark = (hex: string) => { const n = parseInt(hex.slice(1), 16); return (
 Astro.response.headers.set('cache-control', 'public, max-age=60');
 ---
 <PublicLayout path="/cap-dai" title={t(lang, 'belts_title')} description={t(lang, 'belts_sub')}>
-  <PageHero eyebrow="Rank" title={t(lang, 'belts_title')} subtitle={t(lang, 'belts_sub')} />
+  <PageHero eyebrow={t(lang, 'eb_belts')} title={t(lang, 'belts_title')} subtitle={t(lang, 'belts_sub')} />
   {groups.length === 0 && <p class="container-x py-16 text-white/75">{t(lang, 'belts_empty')}</p>}
   {groups.map(({ d, belts }, gi) => (
     <section id={d.slug} class:list={['py-14 sm:py-20 scroll-mt-20', gi % 2 === 1 && 'bg-coal']}>

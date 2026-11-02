@@ -1,7 +1,9 @@
 ---
-// Dải chữ chạy ngang "NO PAIN – NO GLORY" (trang trí).
+import { getSite } from '../../lib/site';
+// Dải chữ chạy ngang, mặc định là slogan CLB (sửa trong CMS → Thông tin CLB).
 interface Props { text?: string; class?: string }
-const { text = 'NO PAIN – NO GLORY', class: className = 'bg-glory text-white' } = Astro.props;
+const { club } = await getSite();
+const { text = club.slogan, class: className = 'bg-glory text-white' } = Astro.props;
 const items = Array.from({ length: 8 }, () => text);
 ---
 <div class:list={['overflow-hidden py-3 select-none', className]} aria-hidden="true">

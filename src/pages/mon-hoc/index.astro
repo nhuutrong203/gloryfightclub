@@ -12,7 +12,7 @@ const classCount = (id: number) => classes.filter((c) => c.disciplineIds.include
 Astro.response.headers.set('cache-control', 'public, max-age=60');
 ---
 <PublicLayout path="/mon-hoc" title={t(lang, 'disciplines_title')} description={t(lang, 'disciplines_sub')}>
-  <PageHero eyebrow="MMA · Kudo · Muay Thai · BJJ · Boxing" title={t(lang, 'disciplines_title')} subtitle={t(lang, 'disciplines_sub')} />
+  <PageHero eyebrow={disciplines.map((d) => tr(d, 'name', lang)).join(' · ')} title={t(lang, 'disciplines_title')} subtitle={t(lang, 'disciplines_sub')} />
   <section class="container-x py-12 sm:py-16">
     <div class="divide-y divide-white/10 border-y border-white/10">
       {disciplines.map((d, i) => (

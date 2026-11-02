@@ -10,7 +10,7 @@ const { club, locations } = await getSite();
 Astro.response.headers.set('cache-control', 'public, max-age=60');
 ---
 <PublicLayout path="/lien-he" title={t(lang, 'contact_title')} description={t(lang, 'contact_sub')}>
-  <PageHero eyebrow="Contact" title={t(lang, 'contact_title')} subtitle={t(lang, 'contact_sub')} />
+  <PageHero eyebrow={t(lang, 'eb_contact')} title={t(lang, 'contact_title')} subtitle={t(lang, 'contact_sub')} />
 
   <section class="container-x py-12 grid gap-px bg-white/10 border border-white/10 md:grid-cols-3">
     <div class="bg-ink p-6 sm:p-8">

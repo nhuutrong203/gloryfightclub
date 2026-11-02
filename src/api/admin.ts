@@ -55,7 +55,9 @@ adminRoutes.get('/dashboard', async (c) => {
 });
 
 // ── Cài đặt chung (key/value JSON) ──
-const SETTING_KEYS = ['club', 'hero', 'about'] as const;
+const SETTING_KEYS = ['club', 'hero', 'about', 'texts'] as const;
+// texts = { vi: { key: 'chữ' }, en: {...} } — chỉ chuỗi, để trang public render an toàn.
+const textsSchema = z.object({ vi: z.record(z.string().max(64), z.string().max(1000)), en: z.record(z.string().max(64), z.string().max(1000)) });
 adminRoutes.get('/settings', need('content'), async (c) => {
   const rows = await db.select().from(schema.settings).where(inArray(schema.settings.key, [...SETTING_KEYS]));
   return c.json(Object.fromEntries(rows.map((r) => [r.key, r.value])));
@@ -63,7 +65,7 @@ adminRoutes.get('/settings', need('content'), async (c) => {
 adminRoutes.put('/settings/:key', need('content'), async (c) => {
   const key = c.req.param('key') ?? '';
   if (!SETTING_KEYS.includes(key as any)) return c.notFound();
-  const [value, err] = await body(c, z.record(z.string(), z.unknown()));
+  const [value, err] = await body(c, key === 'texts' ? textsSchema : z.record(z.string(), z.unknown()));
   if (err) return err;
   if (JSON.stringify(value).length > 50_000) return c.json({ error: 'Nội dung quá dài' }, 400);
   await db.insert(schema.settings).values({ key, value }).onConflictDoUpdate({ target: schema.settings.key, set: { value } });

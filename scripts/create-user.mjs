@@ -3,6 +3,9 @@
 // Ví dụ tạo tài khoản chủ CLB trên cloud:
 //   node scripts/create-user.mjs trung "MatKhauManh!" "Lê Thành Trung" owner --remote
 import { execFileSync } from 'node:child_process';
+import { writeFileSync, rmSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { webcrypto as crypto } from 'node:crypto';
 
 const args = process.argv.slice(2).filter((a) => a !== '--remote');
@@ -27,5 +30,13 @@ const sql = `INSERT INTO users (username, password_hash, full_name, role, permis
 ON CONFLICT(username) DO UPDATE SET password_hash = excluded.password_hash, is_active = 1;
 DELETE FROM sessions WHERE user_id = (SELECT id FROM users WHERE username = ${q(username.toLowerCase())});`;
 
-execFileSync('npx', ['wrangler', 'd1', 'execute', 'glory-db', remote ? '--remote' : '--local', '--command', sql], { stdio: 'inherit', shell: true });
+// Ghi SQL ra file tạm: truyền qua --command bị shell Windows cắt mất dấu nháy/xuống dòng.
+const dir = mkdtempSync(join(tmpdir(), 'glory-'));
+const file = join(dir, 'user.sql');
+writeFileSync(file, sql);
+try {
+  execFileSync('npx', ['wrangler', 'd1', 'execute', 'glory-db', remote ? '--remote' : '--local', `--file=${file}`, '--yes'], { stdio: 'inherit', shell: true });
+} finally {
+  rmSync(dir, { recursive: true, force: true }); // file chứa hash mật khẩu
+}
 console.log(`\n✔ Đã tạo/cập nhật tài khoản "${username}" (${role}) trên D1 ${remote ? 'CLOUD' : 'local'}.`);

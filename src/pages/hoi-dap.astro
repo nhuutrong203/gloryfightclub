@@ -11,7 +11,7 @@ const faqs = await publicFaqs();
 Astro.response.headers.set('cache-control', 'public, max-age=60');
 ---
 <PublicLayout path="/hoi-dap" title={t(lang, 'faq_title')} description={t(lang, 'faq_sub')}>
-  <PageHero eyebrow="FAQ" title={t(lang, 'faq_title')} subtitle={t(lang, 'faq_sub')} />
+  <PageHero eyebrow={t(lang, 'eb_faq')} title={t(lang, 'faq_title')} subtitle={t(lang, 'faq_sub')} />
   <section class="container-x py-14 sm:py-20">
     {faqs.length === 0 && <p class="text-white/75">{t(lang, 'faq_empty')}</p>}
     <div class="mx-auto max-w-3xl divide-y divide-white/10 border-y border-white/10">

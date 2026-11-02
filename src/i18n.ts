@@ -1,6 +1,6 @@
 export type Lang = 'vi' | 'en';
 
-const dict = {
+export const dict = {
   vi: {
     nav_about: 'Giới thiệu',
     nav_disciplines: 'Môn học',
@@ -109,6 +109,13 @@ const dict = {
     view_coach: 'Xem hồ sơ',
     posted: 'Đăng',
     read_more: 'Đọc tiếp',
+    eb_schedule: 'Timetable',
+    eb_fees: 'Premium',
+    eb_belts: 'Rank',
+    eb_faq: 'FAQ',
+    eb_contact: 'Contact',
+    eb_achievements: 'Hall of Glory',
+    eb_gallery: 'Gallery',
   },
   en: {
     nav_about: 'About',
@@ -218,12 +225,25 @@ const dict = {
     view_coach: 'View profile',
     posted: 'Posted',
     read_more: 'Read more',
+    eb_schedule: 'Timetable',
+    eb_fees: 'Premium',
+    eb_belts: 'Rank',
+    eb_faq: 'FAQ',
+    eb_contact: 'Contact',
+    eb_achievements: 'Hall of Glory',
+    eb_gallery: 'Gallery',
   },
 } as const;
 
 export type DictKey = keyof (typeof dict)['vi'];
 
-export const t = (lang: Lang, key: DictKey) => dict[lang][key];
+/** Chữ thầy sửa trong CMS (Cài đặt → Chữ trên website); middleware nạp mỗi request. */
+export type TextOverrides = Partial<Record<Lang, Partial<Record<DictKey, string>>>>;
+// Biến cấp module dùng chung giữa các request: an toàn vì mọi request nạp cùng một giá trị (cài đặt chung).
+let overrides: TextOverrides = {};
+export const setTextOverrides = (o: TextOverrides | null | undefined) => { overrides = o ?? {}; };
+
+export const t = (lang: Lang, key: DictKey) => overrides[lang]?.[key] || dict[lang][key];
 
 /** Lấy cột song ngữ: tr(row, 'name', 'en') → row.nameEn, trống thì row.name. */
 export function tr<T extends object>(row: T, field: string, lang: Lang): string {

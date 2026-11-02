@@ -133,7 +133,7 @@ const onTrialPage = path === '/dang-ky-hoc-thu';
       <div class="container-x py-14 grid gap-10 md:grid-cols-12">
         <div class="md:col-span-4">
           <Logo class="h-16 w-auto text-white" title="" />
-          <p class="display text-4xl mt-5">NO PAIN –<br /><span class="text-glory">NO GLORY</span></p>
+          <p class="display text-4xl mt-5">{club.slogan.split('–').map((part, i) => <span class:list={['block', i > 0 && 'text-glory']}>{part.trim()}</span>)}</p>
           <div class="mt-6 flex gap-2">
             {club.facebook && <a href={club.facebook} target="_blank" rel="noopener" aria-label="Facebook" class="grid size-11 place-items-center border border-white/20 hover:bg-glory hover:border-glory transition-colors"><Icon name="facebook" /></a>}
             {club.instagram && <a href={club.instagram} target="_blank" rel="noopener" aria-label="Instagram" class="grid size-11 place-items-center border border-white/20 hover:bg-glory hover:border-glory transition-colors"><Icon name="instagram" /></a>}

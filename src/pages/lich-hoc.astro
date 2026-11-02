@@ -30,7 +30,7 @@ const link = (params: Record<string, string | undefined>) => {
 Astro.response.headers.set('cache-control', 'public, max-age=60');
 ---
 <PublicLayout path="/lich-hoc" title={t(lang, 'schedule_title')} description={t(lang, 'schedule_sub')}>
-  <PageHero eyebrow="Timetable" title={t(lang, 'schedule_title')} subtitle={t(lang, 'schedule_sub')} />
+  <PageHero eyebrow={t(lang, 'eb_schedule')} title={t(lang, 'schedule_title')} subtitle={t(lang, 'schedule_sub')} />
 
   <section class="container-x py-10">
     <!-- Chọn cơ sở -->

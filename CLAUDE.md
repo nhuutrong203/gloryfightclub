@@ -23,7 +23,7 @@ Website quảng bá + CMS quản lý võ sinh cho **GLORY FIGHT CLUB** (MMA, Kud
 - [x] GĐ 2 — CMS lõi: đăng nhập, tổng quan, học viên, học thử → học viên, tin tức + upload R2, nội dung website
 - [x] GĐ 3 — Học phí theo tháng, xuất CSV, tài khoản + phân quyền HLV
 - [x] GĐ 4 — Cài đặt CLB (liên hệ, hero, trang giới thiệu), thư viện, thành tích, cảm nhận, FAQ, cấp đai trong CMS
-- [x] GĐ 5 — Deploy (2026-11-02): Worker `gloryfightclub` trên tài khoản Cloudflare coftivenist@gmail.com, D1 `glory-db` (APAC), R2 `glory-media`, 2 custom domain. Cloud chỉ có dữ liệu thật (seed.sql), **chưa có tài khoản CMS** — chủ CLB tạo bằng `scripts/create-user.mjs … --remote`.
+- [x] GĐ 5 — Deploy (2026-11-02): Worker `gloryfightclub` trên tài khoản Cloudflare coftivenist@gmail.com, D1 `glory-db` (APAC), R2 `glory-media`, 2 custom domain. Cloud chỉ có dữ liệu thật (seed.sql). Tài khoản chủ CLB trên cloud: `lethanhtrung1996` (owner, tạo 2026-11-02; mật khẩu do anh Trọng giữ, KHÔNG ghi vào repo).
 
 ## Stack
 Astro 7 SSR + `@astrojs/cloudflare` 14 (Cloudflare Workers) · React (CMS SPA) · Hono (API trong `/api/*`) · Cloudflare D1 + Drizzle ORM · Cloudflare R2 (ảnh) · Tailwind CSS v4.
@@ -39,7 +39,8 @@ Astro 7 SSR + `@astrojs/cloudflare` 14 (Cloudflare Workers) · React (CMS SPA) �
 - Menu/footer tự ẩn link tới mục chưa có nội dung (tin tức, cảm nhận, FAQ, thư viện, thành tích, cấp đai) — đếm trong `PublicLayout`.
 - Điện thoại: thanh hành động cố định dưới đáy (Gọi · Zalo · Học thử), `body` có padding-bottom tương ứng; nút nổi tròn chỉ hiện từ `lg`.
 - Chuyển trang: CSS `@view-transition` (không cần JS). Hiệu ứng luôn có nhánh `prefers-reduced-motion`.
-- Mọi nội dung public đọc từ D1, không hard-code.
+- Mọi nội dung public đọc từ D1, không hard-code. Chữ giao diện cố định nằm trong `dict` (`src/i18n.ts`) và **sửa được trong CMS → Chữ trên website** (settings key `texts` = `{vi:{key:chữ}, en:{…}}`, middleware nạp vào `setTextOverrides`, `t()` ưu tiên bản đã sửa). Thêm chữ mới → thêm khoá vào `dict`, KHÔNG viết chuỗi cứng trong trang; nhóm hiển thị ở `src/admin/pages/Texts.tsx` (`GROUPS`).
+- Slogan (dải chữ chạy, footer) lấy từ `club.slogan`; dòng tên môn ở đầu trang chủ / Môn học lấy từ bảng `disciplines`.
 - Mọi input từ form/API phải validate bằng zod ở phía server.
 - **Cập nhật file này sau mỗi lần làm xong việc** (trạng thái, lệnh chạy, cấu trúc thay đổi).
 
@@ -78,6 +79,7 @@ src/admin/            React CMS: App.tsx (router tự viết, khung, menu dướ
 - Tìm học viên bỏ dấu làm trong JS (`matchQuery`) — ổn tới vài nghìn học viên.
 - Học phí: 1 dòng `payments` / học viên / tháng (unique). Dashboard "chưa đóng" = học viên `active` không có payment tháng hiện tại.
 - Upload: client nén ≤1600px WebP (fallback JPEG), server kiểm tra magic bytes, ≤8MB, key `public/YYYY-MM/<uuid>.ext`.
+- CMS: tab "Học thử" có huy hiệu đỏ đếm đăng ký mới (tải lại mỗi phút + khi chuyển trang).
 - Form học thử: honeypot `website`; trẻ <16 tuổi khi chuyển thành học viên thì SĐT đăng ký thành SĐT phụ huynh.
 
 ## Production
