@@ -1,6 +1,6 @@
 # GLORY FIGHT CLUB — Kế hoạch triển khai (v3, chờ duyệt)
 
-> Trạng thái: **ĐÃ DUYỆT** · GĐ 0–4 đã xong (2026-11-02), còn GĐ 5 (deploy). Tiến độ chi tiết: CLAUDE.md.
+> Trạng thái: **ĐÃ DUYỆT** · GĐ 0–5 đã xong (2026-11-02), web đang chạy thật. Tiến độ chi tiết: CLAUDE.md.
 > v2: 2 cơ sở, lịch thật, bỏ ảnh học viên, bỏ "trợ giảng", 2 tên miền con, repo GitHub.
 > v3: **song ngữ Việt–Anh**; lịch cơ sở 2 nhập qua CMS hoặc up ảnh; chủ CLB tự phân quyền cho HLV; **bỏ điểm danh và thi lên đai**; thêm thông tin phụ huynh cho học viên nhỏ; dữ liệu HLV + thành tích thật từ gloryfightclub.vn.
 

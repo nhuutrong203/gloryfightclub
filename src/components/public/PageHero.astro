@@ -13,7 +13,7 @@ const { eyebrow, title, subtitle, number } = Astro.props;
       {number && <span class="font-display text-6xl sm:text-8xl text-outline-white leading-none" aria-hidden="true">{number}</span>}
       <div class="min-w-0">
         {eyebrow && <p class="eyebrow">{eyebrow}</p>}
-        <h1 class="mt-2 text-5xl sm:text-7xl lg:text-8xl break-words">{title}</h1>
+        <h1 class="mt-5 text-5xl sm:text-7xl lg:text-8xl break-words">{title}</h1>
       </div>
     </div>
     {subtitle && <p class="mt-6 max-w-2xl text-lg text-white/75">{subtitle}</p>}

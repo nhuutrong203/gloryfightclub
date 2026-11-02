@@ -1,5 +1,7 @@
 # GLORY FIGHT CLUB — Website + CMS
 
+**Đang chạy:** website https://gloryfightclub.huutrong203.id.vn · CMS https://cms-gloryfightclub.huutrong203.id.vn
+
 Website quảng bá (song ngữ Việt–Anh) và hệ thống quản lý học viên cho Glory Fight Club.
 Chạy trên **Cloudflare Workers** · **D1** (database) · **R2** (ảnh). Framework: Astro 7 + React + Tailwind v4 + Drizzle.
 
@@ -36,7 +38,7 @@ Dữ liệu seed:
 - `seed/seed.sql` — **dữ liệu thật** (2 cơ sở, môn, HLV, lịch cơ sở 1, gói học phí, thành tích). Nạp lên cloud được.
 - `seed/sample.sql` — **dữ liệu demo** (tin tức, cảm nhận, FAQ, học viên…, có chữ "mẫu"). **Chỉ dùng ở local.**
 
-## 2. Đưa lên Cloudflare (lần đầu)
+## 2. Đưa lên Cloudflare (lần đầu — ĐÃ LÀM ngày 2026-11-02, giữ lại để tham khảo)
 
 ```bash
 npx wrangler login                       # đăng nhập tài khoản Cloudflare (mở trình duyệt)
@@ -74,7 +76,8 @@ Muốn đổi sang tên miền khác (vd. `gloryfightclub.vn`): thêm Custom dom
 
 Nên bật thêm sau khi deploy (Cloudflare Dashboard, miễn phí):
 - **Turnstile** cho form học thử (chống spam) — hiện đang chống bằng ô ẩn (honeypot).
-- **Security → WAF → Rate limiting rules** cho đường dẫn `/api/auth/login` (vd. 10 lần / phút / IP).
+
+Cập nhật web sau khi sửa code: `npm run deploy`. Nếu có sửa database (schema): `npm run db:generate` → `npm run db:migrate:remote` rồi mới `npm run deploy`.
 
 ## 4. Sao lưu / khôi phục
 

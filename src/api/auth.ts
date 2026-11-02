@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { and, eq, lt, ne } from 'drizzle-orm';
+import { env } from 'cloudflare:workers';
 import { z } from 'zod';
 import { db, schema } from '../db';
 import { SESSION_COOKIE, SESSION_DAYS, hashPassword, newToken, sha256Hex, verifyPassword } from '../lib/auth';
@@ -16,9 +17,10 @@ const cookieOpts = (c: { req: { url: string } }) => ({
   maxAge: SESSION_DAYS * 86400,
 });
 
-// shortcut: chưa giới hạn số lần đăng nhập sai (PBKDF2 đã làm chậm dò mật khẩu);
-// khi deploy nên thêm Rate Limiting rule của Cloudflare cho /api/auth/login.
 authRoutes.post('/login', async (c) => {
+  // Chống dò mật khẩu: tối đa 10 lần / phút / IP (cấu hình ở wrangler.jsonc).
+  const ip = c.req.header('cf-connecting-ip') ?? 'local';
+  if (!(await env.LOGIN_LIMITER.limit({ key: ip })).success) return c.json({ error: 'Thử quá nhiều lần, đợi 1 phút rồi thử lại' }, 429);
   const [data, err] = await body(c, z.object({ username: z.string().trim().min(1).max(64), password: z.string().min(1).max(200) }));
   if (err) return err;
   const user = await db.select().from(schema.users).where(eq(schema.users.username, data.username.toLowerCase())).get();

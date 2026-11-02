@@ -12,12 +12,18 @@
     {
       "binding": "DB",
       "database_name": "glory-db",
-      // Thay bằng id thật sau khi chạy: npx wrangler d1 create glory-db (xem README)
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "abdfce93-2cee-4e7a-8388-ee3850d794bc",
       "migrations_dir": "migrations"
     }
   ],
   "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "glory-media" }],
+  // Giới hạn đăng nhập: 10 lần / 60 giây / IP (Workers Rate Limiting).
+  "ratelimits": [{ "name": "LOGIN_LIMITER", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } }],
+  // Hai tên miền con trỏ vào cùng Worker; middleware phân luồng public / CMS.
+  "routes": [
+    { "pattern": "gloryfightclub.huutrong203.id.vn", "custom_domain": true },
+    { "pattern": "cms-gloryfightclub.huutrong203.id.vn", "custom_domain": true }
+  ],
 
   // `npm run dev:remote` (CLOUDFLARE_ENV=remote): chạy local nhưng đọc/ghi D1 + R2 THẬT trên cloud.
   // Binding không được kế thừa giữa các env nên phải khai báo lại ở đây.
@@ -31,12 +37,13 @@
         {
           "binding": "DB",
           "database_name": "glory-db",
-          "database_id": "00000000-0000-0000-0000-000000000000",
+          "database_id": "abdfce93-2cee-4e7a-8388-ee3850d794bc",
           "migrations_dir": "migrations",
           "remote": true
         }
       ],
-      "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "glory-media", "remote": true }]
+      "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "glory-media", "remote": true }],
+      "ratelimits": [{ "name": "LOGIN_LIMITER", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } }]
     }
   }
 }

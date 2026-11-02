@@ -14,7 +14,7 @@ Website quảng bá + CMS quản lý võ sinh cho **GLORY FIGHT CLUB** (MMA, Kud
 - Mỗi cơ sở: lịch nhập trong CMS hoặc ảnh lịch (`locations.schedule_image_key`).
 - Cơ sở 1: 125/9/18 Nguyễn Thị Nhuần, An Phú Đông. Logo gốc (raster): `docs/logo-source.png`.
 - Tên miền `huutrong203.id.vn` đã ở nameserver Cloudflare → deploy chỉ cần thêm 2 Custom Domain cho Worker, không đụng bản ghi DNS khác.
-- Giai đoạn hiện tại: **chạy local**, deploy Cloudflare sau.
+- **Đang chạy thật** tại https://gloryfightclub.huutrong203.id.vn và https://cms-gloryfightclub.huutrong203.id.vn. Deploy lại: `npm run deploy`.
 
 ## Trạng thái
 - [x] Lập kế hoạch v3 → `docs/PLAN.md` (đã duyệt)
@@ -23,7 +23,7 @@ Website quảng bá + CMS quản lý võ sinh cho **GLORY FIGHT CLUB** (MMA, Kud
 - [x] GĐ 2 — CMS lõi: đăng nhập, tổng quan, học viên, học thử → học viên, tin tức + upload R2, nội dung website
 - [x] GĐ 3 — Học phí theo tháng, xuất CSV, tài khoản + phân quyền HLV
 - [x] GĐ 4 — Cài đặt CLB (liên hệ, hero, trang giới thiệu), thư viện, thành tích, cảm nhận, FAQ, cấp đai trong CMS
-- [ ] GĐ 5 — Deploy (cần anh `wrangler login` — xem README mục 2–3)
+- [x] GĐ 5 — Deploy (2026-11-02): Worker `gloryfightclub` trên tài khoản Cloudflare coftivenist@gmail.com, D1 `glory-db` (APAC), R2 `glory-media`, 2 custom domain. Cloud chỉ có dữ liệu thật (seed.sql), **chưa có tài khoản CMS** — chủ CLB tạo bằng `scripts/create-user.mjs … --remote`.
 
 ## Stack
 Astro 7 SSR + `@astrojs/cloudflare` 14 (Cloudflare Workers) · React (CMS SPA) · Hono (API trong `/api/*`) · Cloudflare D1 + Drizzle ORM · Cloudflare R2 (ảnh) · Tailwind CSS v4.
@@ -75,9 +75,11 @@ src/admin/            React CMS: App.tsx (router tự viết, khung, menu dướ
 - Upload: client nén ≤1600px WebP (fallback JPEG), server kiểm tra magic bytes, ≤8MB, key `public/YYYY-MM/<uuid>.ext`.
 - Form học thử: honeypot `website`; trẻ <16 tuổi khi chuyển thành học viên thì SĐT đăng ký thành SĐT phụ huynh.
 
-## Việc nên làm khi deploy (GĐ 5)
-- Thêm Cloudflare Turnstile cho form học thử; Rate Limiting rule cho `/api/auth/login`.
-- Tạo tài khoản chủ CLB thật bằng `scripts/create-user.mjs … --remote` (KHÔNG nạp `seed/sample.sql` lên cloud).
+## Production
+- Đăng nhập CMS giới hạn 10 lần/phút/IP bằng binding `LOGIN_LIMITER` (Workers Rate Limiting, `wrangler.jsonc`).
+- KHÔNG nạp `seed/sample.sql` lên cloud. Sửa schema → `db:generate` → `db:migrate:remote` TRƯỚC `npm run deploy`.
+- D1 local lưu theo `database_id`: đổi id thì phải `npm run db:reset` lại.
+- Còn có thể thêm: Cloudflare Turnstile cho form học thử (hiện chỉ có honeypot).
 
 ## Còn chờ từ anh Trọng / thầy
 - Ảnh lịch cơ sở 2 (hoặc thầy tự nhập/up trong CMS).
