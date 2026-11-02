@@ -14,7 +14,8 @@ Website quảng bá + CMS quản lý võ sinh cho **GLORY FIGHT CLUB** (MMA, Kud
 - Mỗi cơ sở: lịch nhập trong CMS hoặc ảnh lịch (`locations.schedule_image_key`).
 - Cơ sở 1: 125/9/18 Nguyễn Thị Nhuần, An Phú Đông. Logo gốc (raster): `docs/logo-source.png`.
 - Tên miền `huutrong203.id.vn` đã ở nameserver Cloudflare → deploy chỉ cần thêm 2 Custom Domain cho Worker, không đụng bản ghi DNS khác.
-- **Đang chạy thật** tại https://gloryfightclub.huutrong203.id.vn và https://cms-gloryfightclub.huutrong203.id.vn. Deploy lại: `npm run deploy`.
+- **Đang chạy thật** tại https://gloryfightclub.huutrong203.id.vn và https://cms-gloryfightclub.huutrong203.id.vn. **Push lên `main` = tự deploy** (GitHub Actions `.github/workflows/deploy.yml`: wrangler types → astro check → D1 migrations --remote → deploy; cần secret `CLOUDFLARE_API_TOKEN`). Deploy tay: `npm run deploy`.
+- Sửa schema: tạo migration bằng `npm run db:generate` và commit — CI tự áp lên D1 cloud trước khi deploy. Migration phải tương thích ngược (thêm cột/bảng), vì code cũ vẫn chạy trong lúc migrate.
 
 ## Trạng thái
 - [x] Lập kế hoạch v3 → `docs/PLAN.md` (đã duyệt)

@@ -80,6 +80,20 @@ Nên bật thêm sau khi deploy (Cloudflare Dashboard, miễn phí):
 
 Cập nhật web sau khi sửa code: `npm run deploy`. Nếu có sửa database (schema): `npm run db:generate` → `npm run db:migrate:remote` rồi mới `npm run deploy`.
 
+## Tự động deploy (GitHub Actions)
+
+Mỗi lần **push lên nhánh `main`**, GitHub tự chạy `.github/workflows/deploy.yml`:
+kiểm tra TypeScript → áp migration D1 mới (nếu có) → build + deploy lên Cloudflare. Xem tiến trình ở tab **Actions** của repo.
+Code lỗi TypeScript thì dừng lại, **không** deploy — web đang chạy không bị ảnh hưởng.
+
+**Cài đặt 1 lần:**
+1. Cloudflare Dashboard → góc phải trên (biểu tượng người) → **My Profile → API Tokens → Create Token**.
+2. Chọn mẫu **"Edit Cloudflare Workers"** → **Add more** quyền: `Account` · `D1` · `Edit` → Account Resources: chọn tài khoản `Coftivenist@gmail.com's Account`; Zone Resources: `huutrong203.id.vn` → **Create Token** → copy token (chỉ hiện 1 lần).
+3. GitHub repo → **Settings → Secrets and variables → Actions → New repository secret** → Name: `CLOUDFLARE_API_TOKEN`, Secret: dán token → **Add secret**.
+4. Vào tab **Actions** → workflow **Deploy** → **Run workflow** để thử (hoặc push một commit bất kỳ).
+
+Vẫn deploy tay được bằng `npm run deploy` như cũ.
+
 ## 4. Sao lưu / khôi phục
 
 D1 có **Time Travel**: khôi phục database về bất kỳ thời điểm nào trong 30 ngày qua.

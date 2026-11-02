@@ -1,0 +1,47 @@
+# Push lên main → kiểm tra code → cập nhật cấu trúc D1 (nếu có migration mới) → deploy Cloudflare.
+# Cần 1 secret trong GitHub repo: CLOUDFLARE_API_TOKEN (xem README mục "Tự động deploy").
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # bấm "Run workflow" trên GitHub để deploy lại bằng tay
+
+# Không chạy 2 lần deploy chồng nhau; lần mới đợi lần cũ xong.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: Kiểm tra đã cài token Cloudflare
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::Chưa có secret CLOUDFLARE_API_TOKEN. Xem README mục 'Tự động deploy' để tạo token và thêm vào GitHub."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Kiểm tra TypeScript
+        run: |
+          npx wrangler types   # sinh worker-configuration.d.ts (không commit vào git)
+          npx astro check
+
+      - name: Cập nhật cấu trúc database (chỉ chạy migration mới)
+        run: npx wrangler d1 migrations apply glory-db --remote
+
+      - name: Build + deploy
+        run: npm run deploy

@@ -1,6 +1,8 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "gloryfightclub",
+  // Tài khoản Cloudflare (coftivenist@gmail.com) — không bí mật; cần cho deploy tự động từ GitHub.
+  "account_id": "f98648b45817ea1db6836671f8bd969a",
   "main": "@astrojs/cloudflare/entrypoints/server",
   "compatibility_date": "2026-10-01",
   "observability": { "enabled": true },
