@@ -15,7 +15,7 @@
     "db:migrate:remote": "wrangler d1 migrations apply glory-db --remote",
     "db:seed": "wrangler d1 execute glory-db --local --file=seed/seed.sql && wrangler d1 execute glory-db --local --file=seed/sample.sql",
     "db:seed:remote": "wrangler d1 execute glory-db --remote --file=seed/seed.sql",
-    "db:reset": "node -e \"require('fs').rmSync('.wrangler/state',{recursive:true,force:true})\" && npm run db:migrate && npm run db:seed",
+    "db:reset": "node scripts/clear-local-db.mjs && npm run db:migrate && npm run db:seed",
     "cf-typegen": "wrangler types"
   },
   "dependencies": {

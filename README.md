@@ -21,7 +21,7 @@ npm run dev          # mở http://localhost:4321  (bản EN: http://localhost:4
 |---|---|
 | `npm run dev` | Dev server, D1/R2 **giả lập ở máy** (chạy bằng runtime thật của Cloudflare – workerd) |
 | `npm run dev:remote` | Dev server nhưng đọc/ghi **D1 + R2 thật trên cloud** (cẩn thận: sửa là sửa dữ liệu thật) |
-| `npm run db:reset` | Xoá D1 local, tạo lại bảng, nạp `seed/seed.sql` + `seed/sample.sql` |
+| `npm run db:reset` | Xoá D1 local, tạo lại bảng, nạp `seed/seed.sql` + `seed/sample.sql`. **Tắt `npm run dev` trước** (Windows không xoá được file DB đang mở) |
 | `npm run db:generate` | Sau khi sửa `src/db/schema.ts`: sinh file migration mới vào `migrations/` |
 | `npm run db:migrate` | Áp migration vào D1 local |
 | `npm run build` / `npm run preview` | Build production / chạy thử bản build |

@@ -54,6 +54,7 @@ Chi tiết lệnh, deploy, gắn domain: `README.md`. Trong Claude desktop: `.cl
 - `session: false` (tự quản lý session trong D1), `imageService: 'passthrough'` (ảnh nén sẵn ở trình duyệt).
 - Bản EN: middleware rewrite `/en/*` → cùng trang, `Astro.locals.lang = 'en'`. Dùng `t()`, `tr(row, 'field', lang)`, `href(path, lang)` trong `src/i18n.ts`.
 - Sửa schema: sửa `src/db/schema.ts` → `npm run db:generate` → `npm run db:migrate`. Chưa deploy lần nào nên GĐ 0–1 có thể gộp lại migration `0000`.
+- `db:reset` cần tắt dev server trước (Windows khoá file SQLite) — script `scripts/clear-local-db.mjs` báo lỗi rõ.
 - `seed/seed.sql` chỉ chứa dữ liệu thật (được nạp lên cloud); dữ liệu giả để ở `seed/sample.sql`, đánh dấu "(mẫu)".
 
 ## Còn chờ từ anh Trọng / thầy
