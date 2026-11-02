@@ -1,0 +1,37 @@
+@import 'tailwindcss';
+@import '@fontsource/anton';
+@import '@fontsource/be-vietnam-pro/400.css';
+@import '@fontsource/be-vietnam-pro/600.css';
+@import '@fontsource/be-vietnam-pro/800.css';
+
+@theme {
+  --color-ink: #0a0a0a;
+  --color-coal: #1a1a1a;
+  --color-ash: #8a8a8a;
+  --color-bone: #fafafa;
+  --color-glory: #e10600;
+  --font-display: 'Anton', 'Impact', sans-serif;
+  --font-sans: 'Be Vietnam Pro', system-ui, sans-serif;
+}
+
+@layer base {
+  html { @apply bg-ink text-bone font-sans antialiased; scroll-behavior: smooth; }
+  h1, h2, h3, .display { @apply font-display uppercase leading-[0.95] tracking-wide; }
+  :focus-visible { @apply outline-2 outline-offset-2 outline-glory; }
+}
+
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 px-6 py-3 font-display uppercase tracking-wider text-lg transition;
+}
+@utility btn-red {
+  @apply btn bg-glory text-white hover:bg-white hover:text-ink;
+}
+@utility btn-ghost {
+  @apply btn border-2 border-white text-white hover:bg-white hover:text-ink;
+}
+@utility container-x {
+  @apply mx-auto w-full max-w-7xl px-4 sm:px-6;
+}
+@utility eyebrow {
+  @apply font-display uppercase tracking-[0.2em] text-glory text-sm;
+}

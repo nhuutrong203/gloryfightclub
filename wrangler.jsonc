@@ -1,0 +1,42 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "gloryfightclub",
+  "main": "@astrojs/cloudflare/entrypoints/server",
+  "compatibility_date": "2026-10-01",
+  "observability": { "enabled": true },
+  "vars": {
+    "PUBLIC_HOST": "gloryfightclub.huutrong203.id.vn",
+    "CMS_HOST": "cms-gloryfightclub.huutrong203.id.vn"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "glory-db",
+      // Thay bằng id thật sau khi chạy: npx wrangler d1 create glory-db (xem README)
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "glory-media" }],
+
+  // `npm run dev:remote` (CLOUDFLARE_ENV=remote): chạy local nhưng đọc/ghi D1 + R2 THẬT trên cloud.
+  // Binding không được kế thừa giữa các env nên phải khai báo lại ở đây.
+  "env": {
+    "remote": {
+      "vars": {
+        "PUBLIC_HOST": "gloryfightclub.huutrong203.id.vn",
+        "CMS_HOST": "cms-gloryfightclub.huutrong203.id.vn"
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "glory-db",
+          "database_id": "00000000-0000-0000-0000-000000000000",
+          "migrations_dir": "migrations",
+          "remote": true
+        }
+      ],
+      "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "glory-media", "remote": true }]
+    }
+  }
+}

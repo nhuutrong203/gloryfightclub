@@ -1,0 +1,11 @@
+---
+// Logo "GL" lục giác, vẽ lại từ docs/logo-source.png. Màu theo currentColor.
+interface Props { class?: string; title?: string }
+const { class: className = 'h-10 w-auto', title = 'Glory Fight Club' } = Astro.props;
+---
+<svg viewBox="230 115 797 990" class={className} fill="currentColor" role="img" aria-label={title} xmlns="http://www.w3.org/2000/svg">
+  <path d="M610 131 238 360v498l372 235v-87L307 811V403l303-190z" />
+  <path d="M647 131l372 229v498L647 1093v-87l303-195V403L647 213z" />
+  <path d="M607 285 364 442v335l243 163V530l-109 72v78l43-28v156l-107-71V483l173-114z" />
+  <path d="M648 285l72 48v485l97-66v-45l67-42v125L648 950z" />
+</svg>

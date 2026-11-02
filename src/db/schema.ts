@@ -1,0 +1,252 @@
+import { sql } from 'drizzle-orm';
+import { sqliteTable, text, integer, primaryKey, uniqueIndex, index } from 'drizzle-orm/sqlite-core';
+
+// Quy ước: ngày = text 'YYYY-MM-DD'; thời điểm = integer unix ms; ảnh = key R2.
+// Cột chữ hiển thị public có cặp `_en` (trống thì trang EN dùng bản tiếng Việt).
+
+const id = () => integer('id').primaryKey({ autoIncrement: true });
+const createdAt = () => integer('created_at').notNull().default(sql`(unixepoch() * 1000)`);
+const updatedAt = () => integer('updated_at').notNull().default(sql`(unixepoch() * 1000)`);
+const isPublic = () => integer('is_public', { mode: 'boolean' }).notNull().default(true);
+const sort = () => integer('sort').notNull().default(0);
+
+// ───────────── Hệ thống ─────────────
+
+export const users = sqliteTable('users', {
+  id: id(),
+  username: text('username').notNull().unique(),
+  passwordHash: text('password_hash').notNull(),
+  fullName: text('full_name').notNull(),
+  role: text('role', { enum: ['owner', 'coach'] }).notNull().default('coach'),
+  // Quyền chủ CLB tick cho HLV; owner luôn toàn quyền.
+  permissions: text('permissions', { mode: 'json' }).$type<string[]>().notNull().default(sql`'[]'`),
+  coachId: integer('coach_id').references(() => coaches.id, { onDelete: 'set null' }),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  createdAt: createdAt(),
+});
+
+export const sessions = sqliteTable('sessions', {
+  id: text('id').primaryKey(), // SHA-256 của token trong cookie
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  expiresAt: integer('expires_at').notNull(),
+});
+
+// Thông tin chung của CLB: hotline, zalo, mạng xã hội, hero, trang giới thiệu…
+export const settings = sqliteTable('settings', {
+  key: text('key').primaryKey(),
+  value: text('value', { mode: 'json' }).notNull(),
+});
+
+// ───────────── Nội dung public ─────────────
+
+export const locations = sqliteTable('locations', {
+  id: id(),
+  name: text('name').notNull(),
+  nameEn: text('name_en'),
+  address: text('address').notNull(),
+  mapUrl: text('map_url'),
+  phone: text('phone'),
+  scheduleImageKey: text('schedule_image_key'), // có ảnh thì trang Lịch học hiện ảnh này
+  sort: sort(),
+});
+
+export const disciplines = sqliteTable('disciplines', {
+  id: id(),
+  slug: text('slug').notNull().unique(),
+  name: text('name').notNull(),
+  nameEn: text('name_en'),
+  summary: text('summary'),
+  summaryEn: text('summary_en'),
+  description: text('description'),
+  descriptionEn: text('description_en'),
+  coverKey: text('cover_key'),
+  hasBelts: integer('has_belts', { mode: 'boolean' }).notNull().default(false),
+  isPublic: isPublic(),
+  sort: sort(),
+});
+
+// Lớp / ca tập. days = các thứ theo cách gọi VN: '246' = T2·T4·T6, '357', '8' = CN.
+export const classes = sqliteTable('classes', {
+  id: id(),
+  name: text('name').notNull(),
+  nameEn: text('name_en'),
+  disciplineIds: text('discipline_ids', { mode: 'json' }).$type<number[]>().notNull().default(sql`'[]'`),
+  locationId: integer('location_id').notNull().references(() => locations.id),
+  days: text('days').notNull(),
+  startTime: text('start_time').notNull(), // 'HH:MM'
+  endTime: text('end_time').notNull(),
+  coachId: integer('coach_id').references(() => coaches.id, { onDelete: 'set null' }),
+  level: text('level', { enum: ['all', 'beginner', 'intermediate', 'advanced', 'kids'] }).notNull().default('all'),
+  note: text('note'),
+  noteEn: text('note_en'),
+  isPublic: isPublic(),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+}, (t) => [index('classes_location_idx').on(t.locationId)]);
+
+export const coaches = sqliteTable('coaches', {
+  id: id(),
+  slug: text('slug').notNull().unique(),
+  fullName: text('full_name').notNull(),
+  photoKey: text('photo_key'),
+  title: text('title'), // vd. "Head Coach"
+  titleEn: text('title_en'),
+  bio: text('bio'),
+  bioEn: text('bio_en'),
+  achievements: text('achievements'), // mỗi dòng 1 thành tích
+  achievementsEn: text('achievements_en'),
+  disciplineIds: text('discipline_ids', { mode: 'json' }).$type<number[]>().notNull().default(sql`'[]'`),
+  isFeatured: integer('is_featured', { mode: 'boolean' }).notNull().default(false),
+  isPublic: isPublic(),
+  sort: sort(),
+});
+
+export const belts = sqliteTable('belts', {
+  id: id(),
+  disciplineId: integer('discipline_id').notNull().references(() => disciplines.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  nameEn: text('name_en'),
+  color: text('color').notNull(), // hex
+  rank: integer('rank').notNull(),
+  requirements: text('requirements'),
+  requirementsEn: text('requirements_en'),
+  minMonths: integer('min_months'),
+});
+
+// Gói tập theo tháng (Premium, Standard, Trẻ em, HSSV…).
+export const feePlans = sqliteTable('fee_plans', {
+  id: id(),
+  name: text('name').notNull(),
+  nameEn: text('name_en'),
+  headline: text('headline'), // vd. "Tập tất cả các môn"
+  headlineEn: text('headline_en'),
+  condition: text('condition'), // vd. "Trừ lớp trẻ em và lớp Fighter"
+  conditionEn: text('condition_en'),
+  pricePerMonth: integer('price_per_month').notNull(), // VND
+  features: text('features'), // mỗi dòng 1 ý
+  featuresEn: text('features_en'),
+  badge: text('badge'), // vd. "BEST CHOICE"
+  isFeatured: integer('is_featured', { mode: 'boolean' }).notNull().default(false),
+  isPublic: isPublic(),
+  sort: sort(),
+});
+
+export const posts = sqliteTable('posts', {
+  id: id(),
+  slug: text('slug').notNull().unique(),
+  title: text('title'),
+  titleEn: text('title_en'),
+  content: text('content').notNull(),
+  contentEn: text('content_en'),
+  publishedAt: integer('published_at').notNull(), // > now = hẹn giờ đăng
+  isPublic: isPublic(),
+  createdBy: integer('created_by').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+}, (t) => [index('posts_published_idx').on(t.publishedAt)]);
+
+export const postImages = sqliteTable('post_images', {
+  id: id(),
+  postId: integer('post_id').notNull().references(() => posts.id, { onDelete: 'cascade' }),
+  key: text('key').notNull(),
+  sort: sort(),
+});
+
+export const galleryItems = sqliteTable('gallery_items', {
+  id: id(),
+  type: text('type', { enum: ['photo', 'video'] }).notNull(),
+  key: text('key'), // ảnh
+  videoUrl: text('video_url'), // link YouTube / Facebook
+  caption: text('caption'),
+  captionEn: text('caption_en'),
+  album: text('album'),
+  isPublic: isPublic(),
+  sort: sort(),
+  createdAt: createdAt(),
+});
+
+export const testimonials = sqliteTable('testimonials', {
+  id: id(),
+  authorName: text('author_name').notNull(),
+  authorRole: text('author_role'), // vd. "Phụ huynh bé Minh"
+  authorRoleEn: text('author_role_en'),
+  content: text('content').notNull(),
+  contentEn: text('content_en'),
+  photoKey: text('photo_key'),
+  isPublic: isPublic(),
+  sort: sort(),
+});
+
+export const faqs = sqliteTable('faqs', {
+  id: id(),
+  question: text('question').notNull(),
+  questionEn: text('question_en'),
+  answer: text('answer').notNull(),
+  answerEn: text('answer_en'),
+  isPublic: isPublic(),
+  sort: sort(),
+});
+
+export const achievements = sqliteTable('achievements', {
+  id: id(),
+  title: text('title').notNull(),
+  titleEn: text('title_en'),
+  eventName: text('event_name'),
+  eventDate: text('event_date'),
+  description: text('description'),
+  descriptionEn: text('description_en'),
+  imageKey: text('image_key'),
+  coachId: integer('coach_id').references(() => coaches.id, { onDelete: 'set null' }),
+  isPublic: isPublic(),
+  sort: sort(),
+});
+
+// ───────────── Học viên (riêng tư — không bao giờ trả ra public) ─────────────
+
+export const students = sqliteTable('students', {
+  id: id(),
+  code: text('code').notNull().unique(), // GF0001
+  fullName: text('full_name').notNull(),
+  phone: text('phone'),
+  birthYear: integer('birth_year'),
+  parentName: text('parent_name'),
+  parentPhone: text('parent_phone'),
+  locationId: integer('location_id').references(() => locations.id, { onDelete: 'set null' }),
+  feePlanId: integer('fee_plan_id').references(() => feePlans.id, { onDelete: 'set null' }), // gói đang đóng → gợi ý số tiền khi thu
+  joinedAt: text('joined_at').notNull(),
+  status: text('status', { enum: ['active', 'paused', 'quit'] }).notNull().default('active'),
+  note: text('note'),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+}, (t) => [index('students_name_idx').on(t.fullName), index('students_phone_idx').on(t.phone)]);
+
+export const studentClasses = sqliteTable('student_classes', {
+  studentId: integer('student_id').notNull().references(() => students.id, { onDelete: 'cascade' }),
+  classId: integer('class_id').notNull().references(() => classes.id, { onDelete: 'cascade' }),
+}, (t) => [primaryKey({ columns: [t.studentId, t.classId] })]);
+
+export const payments = sqliteTable('payments', {
+  id: id(),
+  studentId: integer('student_id').notNull().references(() => students.id, { onDelete: 'cascade' }),
+  feePlanId: integer('fee_plan_id').references(() => feePlans.id, { onDelete: 'set null' }),
+  month: text('month').notNull(), // 'YYYY-MM'
+  amount: integer('amount').notNull(), // VND
+  paidAt: text('paid_at').notNull(),
+  method: text('method', { enum: ['cash', 'transfer'] }).notNull().default('cash'),
+  note: text('note'),
+  createdBy: integer('created_by').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: createdAt(),
+}, (t) => [index('payments_month_idx').on(t.month), index('payments_student_idx').on(t.studentId)]);
+
+export const trialRegistrations = sqliteTable('trial_registrations', {
+  id: id(),
+  fullName: text('full_name').notNull(),
+  phone: text('phone').notNull(),
+  age: integer('age'),
+  disciplineId: integer('discipline_id').references(() => disciplines.id, { onDelete: 'set null' }),
+  locationId: integer('location_id').references(() => locations.id, { onDelete: 'set null' }),
+  preferredTime: text('preferred_time'),
+  note: text('note'),
+  status: text('status', { enum: ['new', 'contacted', 'enrolled', 'rejected'] }).notNull().default('new'),
+  studentId: integer('student_id').references(() => students.id, { onDelete: 'set null' }),
+  createdAt: createdAt(),
+}, (t) => [uniqueIndex('trial_student_idx').on(t.studentId), index('trial_status_idx').on(t.status)]);

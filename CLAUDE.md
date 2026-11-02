@@ -1,0 +1,63 @@
+# CLAUDE.md — Glory Club
+
+## Dự án
+Website quảng bá + CMS quản lý võ sinh cho **GLORY FIGHT CLUB** (MMA, Kudo, Muay Thai/Kickboxing, BJJ/Grappling, Boxing), 2 cơ sở ở TP.HCM.
+- **Dự án cá nhân, độc lập hoàn toàn với công ty NEAX.** Chỉ làm trong thư mục này, chỉ commit/push lên `https://github.com/nhuutrong203/gloryfightclub`.
+- Public (`gloryfightclub.huutrong203.id.vn`): chỉ quảng bá/tuyển sinh, không đăng nhập cho khách, không like/comment.
+- CMS (`cms-gloryfightclub.huutrong203.id.vn`): cho chủ CLB và các HLV (không có vai trò "trợ giảng"); ưu tiên dễ dùng trên điện thoại.
+- Không lưu ảnh học viên. Lớp gọi theo nhóm ngày: `246` = T2·T4·T6, `357` = T3·T5·T7, `8` = CN.
+- Học phí đóng theo tháng, 4 gói: Premium 1.500.000 (mọi môn, trừ lớp trẻ em + lớp Fighter), Standard 1.000.000 (2 môn), Trẻ em 700.000 (6–15 tuổi), HSSV 800.000 (1 môn). Open mat – Sparring CN 18:00–21:00 miễn phí.
+- **Không** có thanh toán online / mã QR trên web: học viên quét mã chuyển khoản tại CLB; CMS chỉ ghi nhận đã thu (tiền mặt / chuyển khoản).
+- **Không** có điểm danh, **không** có thi lên đai (CMS chỉ quản lý học viên + học phí + nội dung web).
+- Web public **song ngữ**: VI ở `/`, EN ở `/en/...`; cột chữ public có cặp `_en`, trống thì fallback VI. CMS chỉ tiếng Việt.
+- Vai trò: `owner` (chủ CLB Lê Thành Trung, toàn quyền) và `coach` (quyền do owner tick; mặc định: học viên + đăng tin, không học phí, không xóa).
+- Mỗi cơ sở: lịch nhập trong CMS hoặc ảnh lịch (`locations.schedule_image_key`).
+- Cơ sở 1: 125/9/18 Nguyễn Thị Nhuần, An Phú Đông. Logo gốc (raster): `docs/logo-source.png`.
+- Tên miền `huutrong203.id.vn` đã ở nameserver Cloudflare → deploy chỉ cần thêm 2 Custom Domain cho Worker, không đụng bản ghi DNS khác.
+- Giai đoạn hiện tại: **chạy local**, deploy Cloudflare sau.
+
+## Trạng thái
+- [x] Lập kế hoạch v3 → `docs/PLAN.md` (đã duyệt)
+- [x] GĐ 0 — Nền móng: Astro 7 + Cloudflare adapter 14, schema + migration `0000_init`, seed thật/demo, logo SVG, layout public, trang chủ khung (VI/EN)
+- [ ] GĐ 1 — Website public MVP
+- [ ] GĐ 2 — CMS lõi
+- [ ] GĐ 3 — Nghiệp vụ CLB (học phí, CSV, tài khoản + phân quyền)
+- [ ] GĐ 4 — Hoàn thiện nội dung
+- [ ] GĐ 5 — Deploy
+
+## Stack
+Astro 7 SSR + `@astrojs/cloudflare` 14 (Cloudflare Workers) · React (CMS SPA) · Hono (API trong `/api/*`) · Cloudflare D1 + Drizzle ORM · Cloudflare R2 (ảnh) · Tailwind CSS v4.
+
+## Quy ước
+- Giao diện, nội dung, seed: **tiếng Việt**. Code, tên bảng/cột: tiếng Anh, snake_case cho DB.
+- Ngày: text `YYYY-MM-DD`; thời điểm: integer unix ms; múi giờ nghiệp vụ `Asia/Ho_Chi_Minh`.
+- Ảnh lưu **key R2**, không lưu URL; phục vụ qua `/media/*`. R2 chỉ chứa ảnh công khai.
+- Dữ liệu học viên không bao giờ được trả về từ route public hay host public.
+- Màu: đen `#0A0A0A`, trắng, đỏ nhấn `#E10600`. Font: Anton (tiêu đề) + Be Vietnam Pro (nội dung).
+- Mọi nội dung public đọc từ D1, không hard-code.
+- Mọi input từ form/API phải validate bằng zod ở phía server.
+- **Cập nhật file này sau mỗi lần làm xong việc** (trạng thái, lệnh chạy, cấu trúc thay đổi).
+
+## Cách chạy
+```bash
+npm install
+npm run db:reset   # D1 local: tạo bảng + seed/seed.sql (thật) + seed/sample.sql (demo)
+npm run dev        # http://localhost:4321 , bản EN /en
+```
+Chi tiết lệnh, deploy, gắn domain: `README.md`. Trong Claude desktop: `.claude/launch.json` có cấu hình `glory-dev`.
+
+## Ghi chú kỹ thuật (Astro 7 / adapter 14)
+- Bindings lấy bằng `import { env } from 'cloudflare:workers'` (KHÔNG còn `Astro.locals.runtime`). DB: `import { db, schema } from '../db'`.
+- `astro dev` chạy trong workerd thật; D1/R2 local lưu ở `.wrangler/state`.
+- `npm run dev:remote` = `CLOUDFLARE_ENV=remote` → dùng `env.remote` trong `wrangler.jsonc` (bindings `remote: true`).
+- Tailwind v4: class dùng chung khai báo bằng `@utility` trong `src/styles/global.css` (không dùng `@layer components` + `@apply`).
+- `session: false` (tự quản lý session trong D1), `imageService: 'passthrough'` (ảnh nén sẵn ở trình duyệt).
+- Bản EN: middleware rewrite `/en/*` → cùng trang, `Astro.locals.lang = 'en'`. Dùng `t()`, `tr(row, 'field', lang)`, `href(path, lang)` trong `src/i18n.ts`.
+- Sửa schema: sửa `src/db/schema.ts` → `npm run db:generate` → `npm run db:migrate`. Chưa deploy lần nào nên GĐ 0–1 có thể gộp lại migration `0000`.
+- `seed/seed.sql` chỉ chứa dữ liệu thật (được nạp lên cloud); dữ liệu giả để ở `seed/sample.sql`, đánh dấu "(mẫu)".
+
+## Còn chờ từ anh Trọng / thầy
+- Ảnh lịch cơ sở 2 (hoặc thầy tự nhập/up trong CMS).
+- Thành tích + ảnh của HLV Tỉnh, Đức, Vĩnh Tâm, Nhi Thảo; HLV phụ trách từng ca.
+- "Lớp Fighter" là lớp nào, lịch ra sao. Lớp Kudo Kids học giờ nào, cơ sở nào.
+- Hệ thống đai Kudo trong seed là bản rút gọn — cần thầy xác nhận.

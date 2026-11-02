@@ -1,0 +1,113 @@
+---
+import '../styles/global.css';
+import Logo from '../components/Logo.astro';
+import { getSite, telHref } from '../lib/site';
+import { t, href, type Lang } from '../i18n';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string | null;
+  /** Đường dẫn bản tiếng Việt của trang này, dùng cho nút đổi ngôn ngữ. */
+  path?: string;
+}
+
+const lang: Lang = Astro.locals.lang;
+const { club, locations } = await getSite();
+const { path = '/' } = Astro.props;
+const title = Astro.props.title ? `${Astro.props.title} | ${club.name}` : `${club.name} — ${club.slogan}`;
+const description = Astro.props.description ?? (lang === 'en' ? club.tagline_en : club.tagline) ?? club.tagline;
+const image = new URL(Astro.props.image ?? '/og-default.png', Astro.site).href;
+const canonical = new URL(href(path, lang), Astro.site).href;
+
+const nav = [
+  ['/mon-hoc', t(lang, 'nav_disciplines')],
+  ['/lich-hoc', t(lang, 'nav_schedule')],
+  ['/huan-luyen-vien', t(lang, 'nav_coaches')],
+  ['/hoc-phi', t(lang, 'nav_fees')],
+  ['/tin-tuc', t(lang, 'nav_news')],
+  ['/lien-he', t(lang, 'nav_contact')],
+] as const;
+const otherLang: Lang = lang === 'vi' ? 'en' : 'vi';
+const hotline = club.hotlines[0];
+---
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang="vi" href={new URL(href(path, 'vi'), Astro.site).href} />
+    <link rel="alternate" hreflang="en" href={new URL(href(path, 'en'), Astro.site).href} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="theme-color" content="#0a0a0a" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={club.name} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={image} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content={lang === 'vi' ? 'vi_VN' : 'en_US'} />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body class="min-h-dvh flex flex-col">
+    <header class="sticky top-0 z-40 bg-ink/90 backdrop-blur border-b border-white/10">
+      <div class="container-x flex h-16 items-center justify-between gap-4">
+        <a href={href('/', lang)} class="flex items-center gap-3" aria-label={club.name}>
+          <Logo class="h-10 w-auto text-white" />
+          <span class="font-display text-xl tracking-wider leading-none hidden sm:block">GLORY<br /><span class="text-glory">FIGHT CLUB</span></span>
+        </a>
+        <nav class="hidden lg:flex items-center gap-6 font-display uppercase tracking-wider">
+          {nav.map(([p, label]) => <a href={href(p, lang)} class="hover:text-glory">{label}</a>)}
+        </nav>
+        <div class="flex items-center gap-3">
+          <a href={href(path, otherLang)} class="font-display text-sm tracking-widest text-ash hover:text-white" hreflang={otherLang}>{otherLang.toUpperCase()}</a>
+          <a href={href('/dang-ky-hoc-thu', lang)} class="btn-red !px-4 !py-2 !text-base hidden sm:inline-flex">{t(lang, 'cta_trial')}</a>
+          <details class="lg:hidden group">
+            <summary class="list-none cursor-pointer font-display uppercase tracking-wider px-2 py-1 border border-white/30" aria-label={t(lang, 'menu')}>{t(lang, 'menu')}</summary>
+            <div class="fixed inset-x-0 top-16 bottom-0 bg-ink p-6 flex flex-col gap-5 text-3xl font-display uppercase">
+              {nav.map(([p, label]) => <a href={href(p, lang)} class="hover:text-glory">{label}</a>)}
+              <a href={href('/dang-ky-hoc-thu', lang)} class="btn-red mt-4">{t(lang, 'cta_trial')}</a>
+            </div>
+          </details>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1"><slot /></main>
+
+    <footer class="border-t border-white/10 bg-coal mt-24">
+      <div class="container-x py-12 grid gap-10 md:grid-cols-3">
+        <div>
+          <Logo class="h-16 w-auto text-white" />
+          <p class="display text-2xl mt-4">{club.slogan}</p>
+        </div>
+        {locations.map((l) => (
+          <div>
+            <p class="eyebrow">{lang === 'en' ? (l.nameEn || l.name) : l.name}</p>
+            <p class="mt-2 text-sm text-white/80">{l.address}</p>
+            {l.mapUrl && <a href={l.mapUrl} target="_blank" rel="noopener" class="mt-2 inline-block text-sm underline hover:text-glory">{t(lang, 'directions')}</a>}
+          </div>
+        ))}
+      </div>
+      <div class="container-x pb-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-ash">
+        {club.hotlines.map((p) => <a href={telHref(p)} class="hover:text-white">{p}</a>)}
+        {club.facebook && <a href={club.facebook} target="_blank" rel="noopener" class="hover:text-white">Facebook</a>}
+        {club.instagram && <a href={club.instagram} target="_blank" rel="noopener" class="hover:text-white">Instagram</a>}
+        <span class="ml-auto">© {new Date().getFullYear()} {club.name}. {t(lang, 'footer_rights')}</span>
+      </div>
+    </footer>
+
+    <!-- Nút gọi nhanh + Zalo nổi (mobile là chính) -->
+    <div class="fixed right-4 bottom-4 z-50 flex flex-col gap-3">
+      <a href={`https://zalo.me/${club.zalo}`} target="_blank" rel="noopener" aria-label="Zalo"
+        class="size-14 rounded-full bg-[#0068ff] grid place-items-center font-display text-white shadow-lg shadow-black/50">Zalo</a>
+      <a href={telHref(hotline)} aria-label={`${t(lang, 'cta_call')} ${hotline}`}
+        class="size-14 rounded-full bg-glory grid place-items-center shadow-lg shadow-black/50">
+        <svg viewBox="0 0 24 24" class="size-6" fill="white" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z"/></svg>
+      </a>
+    </div>
+  </body>
+</html>

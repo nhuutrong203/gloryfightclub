@@ -1,0 +1,101 @@
+---
+import { asc, eq } from 'drizzle-orm';
+import PublicLayout from '../layouts/PublicLayout.astro';
+import Logo from '../components/Logo.astro';
+import { db, schema } from '../db';
+import { getSite, mediaUrl } from '../lib/site';
+import { t, tr, href, formatVnd, type Lang } from '../i18n';
+
+// Trang chủ khung (GĐ 0). GĐ 1 bổ sung: lịch hôm nay, tin mới, cảm nhận.
+const lang: Lang = Astro.locals.lang;
+const { hero } = await getSite();
+const [disciplines, coaches, plans] = await Promise.all([
+  db.select().from(schema.disciplines).where(eq(schema.disciplines.isPublic, true)).orderBy(asc(schema.disciplines.sort)),
+  db.select().from(schema.coaches).where(eq(schema.coaches.isPublic, true)).orderBy(asc(schema.coaches.sort)),
+  db.select().from(schema.feePlans).where(eq(schema.feePlans.isPublic, true)).orderBy(asc(schema.feePlans.sort)),
+]);
+const heroImage = mediaUrl(hero.image_key);
+Astro.response.headers.set('cache-control', 'public, max-age=60');
+---
+<PublicLayout path="/">
+  <!-- HERO -->
+  <section class="relative isolate overflow-hidden min-h-[88dvh] flex items-end">
+    {heroImage
+      ? <img src={heroImage} alt="" class="absolute inset-0 -z-10 size-full object-cover opacity-50" />
+      : <Logo class="absolute -z-10 -right-24 top-1/2 -translate-y-1/2 h-[120%] w-auto text-white/[0.04]" />}
+    <div class="absolute inset-0 -z-10 bg-gradient-to-t from-ink via-ink/60 to-transparent"></div>
+    <div class="container-x pb-16 pt-32">
+      <p class="eyebrow">MMA · Kudo · Muay Thai · BJJ · Boxing</p>
+      <h1 class="mt-4 text-6xl sm:text-8xl lg:text-9xl">
+        {(lang === 'en' ? hero.title_en : hero.title).split('–').map((part: string, i: number) =>
+          <span class:list={['block', i === 1 && 'text-glory']}>{part.trim()}</span>)}
+      </h1>
+      <p class="mt-6 max-w-xl text-lg text-white/80">{lang === 'en' ? hero.subtitle_en : hero.subtitle}</p>
+      <div class="mt-8 flex flex-wrap gap-4">
+        <a href={href('/dang-ky-hoc-thu', lang)} class="btn-red">{t(lang, 'cta_trial')}</a>
+        <a href={href('/lich-hoc', lang)} class="btn-ghost">{t(lang, 'nav_schedule')}</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- MÔN HỌC -->
+  <section class="container-x py-20">
+    <h2 class="text-5xl sm:text-7xl">{t(lang, 'disciplines_title')}</h2>
+    <div class="mt-10 grid gap-px bg-white/10 sm:grid-cols-2 lg:grid-cols-3">
+      {disciplines.map((d, i) => (
+        <a href={href(`/mon-hoc/${d.slug}`, lang)} class="group bg-ink p-8 hover:bg-coal">
+          <span class="font-display text-glory text-xl">0{i + 1}</span>
+          <h3 class="mt-3 text-4xl group-hover:text-glory">{tr(d, 'name', lang)}</h3>
+          <p class="mt-3 text-white/70">{tr(d, 'summary', lang)}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <!-- FIGHTERS OF GLORY -->
+  <section class="bg-bone text-ink py-20">
+    <div class="container-x">
+      <h2 class="text-5xl sm:text-7xl">{t(lang, 'coaches_title')}</h2>
+      <p class="mt-2 text-lg">{t(lang, 'coaches_sub')}</p>
+      <div class="mt-10 flex gap-6 overflow-x-auto snap-x pb-4">
+        {coaches.map((c) => (
+          <a href={href(`/huan-luyen-vien/${c.slug}`, lang)} class="snap-start shrink-0 w-72 group">
+            <div class="aspect-[3/4] bg-ink grid place-items-center overflow-hidden">
+              {c.photoKey
+                ? <img src={mediaUrl(c.photoKey)} alt={c.fullName} class="size-full object-cover grayscale group-hover:grayscale-0 transition" loading="lazy" />
+                : <Logo class="w-1/2 h-auto text-white/15" />}
+            </div>
+            <h3 class="mt-4 text-3xl">{c.fullName}</h3>
+            <p class="text-sm font-semibold text-glory">{tr(c, 'title', lang)}</p>
+            {tr(c, 'achievements', lang) && (
+              <ul class="mt-2 text-sm space-y-1">
+                {tr(c, 'achievements', lang).split('\n').slice(0, 3).map((a) => <li>— {a}</li>)}
+              </ul>
+            )}
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- HỌC PHÍ -->
+  <section class="container-x py-20">
+    <h2 class="text-5xl sm:text-7xl">{t(lang, 'fees_title')}</h2>
+    <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      {plans.map((p) => (
+        <div class:list={['border p-6 flex flex-col', p.isFeatured ? 'border-glory bg-glory/10' : 'border-white/15']}>
+          <p class:list={['eyebrow', !p.isFeatured && '!text-ash']}>{tr(p, 'name', lang)}</p>
+          <h3 class="mt-3 text-2xl">{tr(p, 'headline', lang)}</h3>
+          {p.condition && <p class="text-sm text-ash">{tr(p, 'condition', lang)}</p>}
+          <p class="mt-6 font-display text-5xl">{formatVnd(p.pricePerMonth)}</p>
+          <p class="font-display text-glory tracking-wider">{t(lang, 'per_month')}</p>
+          <ul class="mt-6 space-y-2 text-sm text-white/80 flex-1">
+            {tr(p, 'features', lang).split('\n').filter(Boolean).map((f) => <li>✓ {f}</li>)}
+          </ul>
+          {p.badge && <p class="mt-6 bg-white text-ink text-center font-display tracking-widest py-1">★ {p.badge} ★</p>}
+        </div>
+      ))}
+    </div>
+    <p class="mt-8 font-display text-2xl tracking-wide">{t(lang, 'open_mat')}</p>
+  </section>
+</PublicLayout>
