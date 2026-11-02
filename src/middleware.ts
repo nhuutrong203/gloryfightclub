@@ -4,7 +4,8 @@ import { eq } from 'drizzle-orm';
 import { db, schema } from './db';
 import { setTextOverrides, type TextOverrides } from './i18n';
 
-const CMS_PATH = /^\/(admin|api)(\/|$)/;
+// /media cũng phải chạy ở host CMS: ô xem trước ảnh trong CMS tải ảnh từ đây.
+const CMS_PATH = /^\/(admin|api|media)(\/|$)/;
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname, host } = context.url;
@@ -18,7 +19,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
 
   // Chữ giao diện thầy sửa trong CMS: nạp trước khi render trang public (không cần cho API/ảnh).
-  if (!CMS_PATH.test(pathname) && !pathname.startsWith('/media/') && !pathname.startsWith('/_')) {
+  if (!CMS_PATH.test(pathname) && !pathname.startsWith('/_')) {
     const row = await db.select({ value: schema.settings.value }).from(schema.settings).where(eq(schema.settings.key, 'texts')).get();
     setTextOverrides(row?.value as TextOverrides | undefined);
   }

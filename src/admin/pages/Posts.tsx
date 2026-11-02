@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { api, can, mediaUrl, navigate, toast, uploadImage, useApi, type Me } from '../lib';
+import { api, can, mediaUrl, navigate, toast, uploadMany, useApi, type Me } from '../lib';
 import { A, Badge, Button, Empty, ErrorBox, Icon, LinkButton, Loading, Page, TextArea, TextInput, Toggle, confirmDanger } from '../ui';
 
 type Post = { id: number; slug: string; title: string | null; titleEn: string | null; content: string; contentEn: string | null; publishedAt: number; isPublic: boolean; images: string[] };
@@ -66,13 +66,7 @@ export function PostEdit({ id, me }: { id: string; me: Me }) {
   async function addFiles(files: FileList) {
     const arr = [...files].slice(0, 20 - form.images.length);
     setUploading(arr.length);
-    for (const f of arr) {
-      try {
-        const key = await uploadImage(f);
-        setForm((x) => ({ ...x, images: [...x.images, key] }));
-      } catch (e: any) { toast(e.message, 'err'); }
-      setUploading((n) => n - 1);
-    }
+    await uploadMany(arr, (key) => setForm((x) => ({ ...x, images: [...x.images, key] })), () => setUploading((n) => n - 1));
   }
   const move = (i: number, d: number) => setForm((x) => {
     const imgs = [...x.images];

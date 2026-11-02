@@ -206,7 +206,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
       { name: 'eventName', label: 'Giải đấu / sự kiện', type: 'text' },
       { name: 'eventDate', label: 'Ngày', type: 'date' },
       { name: 'coachId', label: 'HLV / võ sĩ', type: 'select', ref: 'coaches' },
-      { name: 'imageKey', label: 'Ảnh', type: 'image' },
+      { name: 'imageKey', label: 'Ảnh huy chương / giấy chứng nhận / lên bục', type: 'image', help: 'Ảnh thật giúp khách tin hơn — hiện ở trang chủ, trang HLV và trang Thành tích.' },
       { name: 'description', label: 'Mô tả', type: 'textarea', en: true },
       pub,
       sort,

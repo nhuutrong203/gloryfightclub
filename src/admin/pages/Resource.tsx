@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { api, can, mediaUrl, navigate, toast, useApi, type Me } from '../lib';
+import { useEffect, useRef, useState } from 'react';
+import { api, can, mediaUrl, navigate, toast, uploadMany, useApi, type Me } from '../lib';
 import { A, Badge, Button, Chips, Empty, ErrorBox, Icon, ImageInput, LinkButton, Loading, Page, Select, TextArea, TextInput, Toggle, confirmDanger, EnHint } from '../ui';
 import { DAY_LABEL, RESOURCES, type Field, type ResourceKey } from '../resources';
 import type { Lookups } from './Students';
@@ -19,7 +19,8 @@ export function ResourceList({ res, me }: { res: ResourceKey; me: Me }) {
     : [{ title: '', rows: data ?? [] }];
 
   return (
-    <Page title={r.title} back="/admin/them" actions={can(me, 'content') && <LinkButton to={`/admin/noi-dung/${res}/moi`} icon="plus" variant="primary">Thêm</LinkButton>}>
+    <Page title={r.title} back="/admin/them" actions={can(me, 'content') && <LinkButton to={`/admin/noi-dung/${res}/moi`} icon="plus" variant={res === 'gallery' ? 'ghost' : 'primary'}>Thêm</LinkButton>}>
+      {res === 'gallery' && can(me, 'content') && <GalleryBulk onDone={reload} />}
       {error ? <ErrorBox message={error} retry={reload} /> : !data ? <Loading /> : data.length === 0 ? <Empty>Chưa có mục nào.</Empty> : (
         <div className="space-y-6">
           {groups.map((g) => (
@@ -164,5 +165,43 @@ export function ResourceEdit({ res, id, me }: { res: ResourceKey; id: string; me
         )}
       </form>
     </Page>
+  );
+}
+
+/** Thư viện: chọn nhiều ảnh một lần → mỗi ảnh thành 1 mục (album tuỳ chọn). */
+function GalleryBulk({ onDone }: { onDone: () => void }) {
+  const ref = useRef<HTMLInputElement>(null);
+  const [album, setAlbum] = useState('');
+  const [left, setLeft] = useState(0);
+  const [total, setTotal] = useState(0);
+  async function go(files: File[]) {
+    if (!files.length) return;
+    setTotal(files.length);
+    setLeft(files.length);
+    let ok = 0;
+    await uploadMany(files, async (key) => {
+      await api('/admin/content/gallery', { body: { type: 'photo', key, album: album.trim() || null, isPublic: true } });
+      ok++;
+    }, () => setLeft((n) => n - 1));
+    toast(`Đã thêm ${ok}/${files.length} ảnh vào thư viện`);
+    setTotal(0);
+    onDone();
+  }
+  return (
+    <div className="mb-6 border-2 border-dashed border-neutral-300 bg-white p-4"
+      onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); go([...e.dataTransfer.files].filter((f) => f.type.startsWith('image/'))); }}>
+      <p className="font-semibold">Thêm nhiều ảnh cùng lúc</p>
+      <p className="text-sm text-neutral-500">Chọn nhiều ảnh từ điện thoại (hoặc kéo thả vào đây) — mỗi ảnh tự thành một mục, hiện ngay trên website.</p>
+      <div className="mt-3 flex flex-wrap items-end gap-2">
+        <label className="min-w-48 flex-1">
+          <span className="mb-1 block text-sm font-semibold">Album (tuỳ chọn)</span>
+          <input className="min-h-12 w-full border border-neutral-300 px-3" placeholder="Vd: Giải Kudo 2025" value={album} onChange={(e) => setAlbum(e.target.value)} />
+        </label>
+        <Button type="button" icon="image" loading={total > 0} onClick={() => ref.current?.click()}>
+          {total > 0 ? `Đang tải ${total - left}/${total}` : 'Chọn nhiều ảnh'}
+        </Button>
+      </div>
+      <input ref={ref} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { go([...(e.target.files ?? [])]); e.target.value = ''; }} />
+    </div>
   );
 }

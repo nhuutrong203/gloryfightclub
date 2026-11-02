@@ -73,22 +73,56 @@ export const shiftMonth = (m: string, delta: number) => {
 };
 
 // ───────── Ảnh: nén trên trình duyệt rồi upload R2 ─────────
-export async function uploadImage(file: File, maxSide = 1600): Promise<string> {
+/** Ảnh điện thoại 3–8MB → ≤1600px WebP (~150–300KB). Ảnh đã nhỏ thì gửi thẳng, khỏi nén lại. */
+async function shrink(file: File, maxSide: number): Promise<Blob> {
+  if (file.size <= 400_000 && /^image\/(jpeg|webp)$/.test(file.type)) return file;
   const bmp = await createImageBitmap(file);
   const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
   const canvas = document.createElement('canvas');
   canvas.width = Math.round(bmp.width * scale);
   canvas.height = Math.round(bmp.height * scale);
   canvas.getContext('2d')!.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+  bmp.close();
   const encode = (type: string, q: number) =>
     new Promise<Blob>((ok, fail) => canvas.toBlob((b) => (b ? ok(b) : fail(new Error('Không nén được ảnh'))), type, q));
-  let blob = await encode('image/webp', 0.82);
+  const blob = await encode('image/webp', 0.82);
   // Safari cũ không xuất được WebP (trả về PNG) → dùng JPEG.
-  if (blob.type !== 'image/webp') blob = await encode('image/jpeg', 0.85);
+  return blob.type === 'image/webp' ? blob : encode('image/jpeg', 0.85);
+}
+
+/** Upload 1 ảnh, báo tiến trình 0–100 qua onProgress. Trả key R2. */
+export async function uploadImage(file: File, onProgress?: (pct: number) => void, maxSide = 1600): Promise<string> {
+  if (!file.type.startsWith('image/')) throw new Error('File này không phải ảnh');
+  const blob = await shrink(file, maxSide);
   const form = new FormData();
   form.append('file', new File([blob], blob.type === 'image/webp' ? 'image.webp' : 'image.jpg', { type: blob.type }));
-  return (await api<{ key: string }>('/admin/upload', { form })).key;
+  // XHR thay fetch để có % upload (fetch chưa báo được tiến trình gửi lên).
+  return new Promise((ok, fail) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/admin/upload');
+    xhr.upload.onprogress = (e) => e.lengthComputable && onProgress?.(Math.round((e.loaded / e.total) * 100));
+    xhr.onload = () => {
+      const data = (() => { try { return JSON.parse(xhr.responseText); } catch { return {}; } })();
+      if (xhr.status === 401) window.dispatchEvent(new Event('glory:logout'));
+      xhr.status < 300 && data.key ? ok(data.key) : fail(new Error(data.error ?? `Upload lỗi ${xhr.status}`));
+    };
+    xhr.onerror = () => fail(new Error('Mất mạng khi tải ảnh lên — thử lại'));
+    xhr.send(form);
+  });
 }
+/** Tải nhiều ảnh, 3 ảnh song song; gọi onDone(key, i) khi từng ảnh xong (lỗi thì báo toast, không dừng cả loạt). */
+export async function uploadMany(files: File[], onDone: (key: string, i: number) => void | Promise<void>, onSettled?: () => void) {
+  let next = 0;
+  const worker = async () => {
+    while (next < files.length) {
+      const i = next++;
+      try { await onDone(await uploadImage(files[i]), i); } catch (e: any) { toast(`${files[i].name}: ${e.message}`, 'err'); }
+      onSettled?.();
+    }
+  };
+  await Promise.all([worker(), worker(), worker()]);
+}
+
 export const mediaUrl = (key: string | null | undefined) => (key ? `/media/${key}` : '');
 
 // ───────── Quyền ─────────

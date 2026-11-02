@@ -136,9 +136,11 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
           <a href={href('/thanh-tich', lang)} class="inline-flex min-h-11 items-center gap-2 font-display uppercase tracking-wider hover:text-glory">{t(lang, 'cta_all')}<Icon name="arrow-right" /></a>
         </div>
         <ul class="mt-10 grid gap-px bg-white/10 border border-white/10 sm:grid-cols-2 lg:grid-cols-4">
-          {achievements.slice(0, 4).map((a, i) => (
+          {[...achievements].sort((x, y) => Number(!!y.imageKey) - Number(!!x.imageKey)).slice(0, 4).map((a, i) => (
             <li class="reveal bg-ink p-6" style={`--i:${i}`}>
-              <Icon name="medal" class="size-9 text-glory" />
+              {a.imageKey
+                ? <a href={mediaUrl(a.imageKey)} target="_blank" rel="noopener" class="group -mx-6 -mt-6 mb-5 block aspect-[4/3] overflow-hidden"><img src={mediaUrl(a.imageKey)} alt={tr(a, 'title', lang)} loading="lazy" class="size-full object-cover transition-transform duration-500 group-hover:scale-105" /></a>
+                : <Icon name="medal" class="size-9 text-glory" />}
               <p class="mt-4 font-display text-3xl uppercase leading-tight">{tr(a, 'title', lang)}</p>
               {a.eventName && <p class="mt-2 text-white/75">{a.eventName}</p>}
               {coachName(a.coachId) && <p class="mt-1 text-sm text-ash">{coachName(a.coachId)}</p>}

@@ -193,24 +193,47 @@ export function Chips({ label, options, value, onChange, help }: { label: string
 
 export function ImageInput({ label, value, onChange, help }: { label: string; value: string | null; onChange: (key: string | null) => void; help?: string }) {
   const ref = useRef<HTMLInputElement>(null);
-  const [busy, setBusy] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null); // ảnh xem trước ngay khi chọn (chưa cần đợi upload)
+  const [pct, setPct] = useState<number | null>(null);
+  const [over, setOver] = useState(false);
+
+  async function pick(f: File | undefined) {
+    if (!f) return;
+    const local = URL.createObjectURL(f);
+    setPreview(local);
+    setPct(0);
+    try { onChange(await uploadImage(f, setPct)); toast('Đã tải ảnh lên'); }
+    catch (err: any) { toast(err.message, 'err'); }
+    finally { setPct(null); setPreview(null); URL.revokeObjectURL(local); }
+  }
+  const src = preview ?? (value ? mediaUrl(value) : null);
+
   return (
-    <Field label={label} help={help}>
-      <div className="flex items-center gap-3">
-        <div className="grid size-24 shrink-0 place-items-center overflow-hidden border border-neutral-300 bg-neutral-100">
-          {value ? <img src={mediaUrl(value)} alt="" className="size-full object-cover" /> : <Icon name="image" className="size-8 text-neutral-400" />}
-        </div>
+    <Field label={label} help={help ?? 'Bấm vào ô để chọn ảnh từ máy / chụp ảnh. Trên máy tính có thể kéo thả hoặc dán (Ctrl+V).'}>
+      <div className="flex flex-wrap items-end gap-3">
+        <button type="button" disabled={pct !== null}
+          onClick={() => ref.current?.click()}
+          onPaste={(e) => pick(e.clipboardData.files[0])}
+          onDragOver={(e) => { e.preventDefault(); setOver(true); }}
+          onDragLeave={() => setOver(false)}
+          onDrop={(e) => { e.preventDefault(); setOver(false); pick(e.dataTransfer.files[0]); }}
+          className={`relative grid h-40 w-40 shrink-0 cursor-pointer place-items-center overflow-hidden border-2 border-dashed transition-colors sm:h-44 sm:w-56 ${over ? 'border-glory bg-red-50' : src ? 'border-transparent bg-neutral-100' : 'border-neutral-300 bg-neutral-50 hover:border-ink'}`}
+          aria-label={src ? `Đổi ảnh: ${label}` : `Chọn ảnh: ${label}`}>
+          {src
+            ? <img src={src} alt="" className="absolute inset-0 size-full object-cover" />
+            : <span className="flex flex-col items-center gap-2 px-3 text-center text-sm font-semibold text-neutral-600"><Icon name="image" className="size-9 text-neutral-400" />Chọn ảnh</span>}
+          {pct !== null && (
+            <span className="absolute inset-x-0 bottom-0 bg-black/70 p-2 text-xs font-semibold text-white">
+              {pct < 100 ? `Đang tải ${pct}%` : 'Đang lưu…'}
+              <span className="mt-1 block h-1 bg-white/30"><span className="block h-full bg-glory transition-[width]" style={{ width: `${pct}%` }} /></span>
+            </span>
+          )}
+        </button>
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="ghost" loading={busy} onClick={() => ref.current?.click()}>{value ? 'Đổi ảnh' : 'Chọn ảnh'}</Button>
-          {value && <Button type="button" variant="danger" onClick={() => onChange(null)}>Bỏ ảnh</Button>}
+          {src && pct === null && <Button type="button" variant="ghost" icon="image" onClick={() => ref.current?.click()}>Đổi ảnh</Button>}
+          {value && pct === null && <Button type="button" variant="danger" onClick={() => onChange(null)}>Bỏ ảnh</Button>}
         </div>
-        <input ref={ref} type="file" accept="image/*" className="hidden" onChange={async (e) => {
-          const f = e.target.files?.[0];
-          e.target.value = '';
-          if (!f) return;
-          setBusy(true);
-          try { onChange(await uploadImage(f)); } catch (err: any) { toast(err.message, 'err'); } finally { setBusy(false); }
-        }} />
+        <input ref={ref} type="file" accept="image/*" className="hidden" onChange={(e) => { pick(e.target.files?.[0]); e.target.value = ''; }} />
       </div>
     </Field>
   );

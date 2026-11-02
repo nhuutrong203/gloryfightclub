@@ -78,7 +78,10 @@ src/admin/            React CMS: App.tsx (router tự viết, khung, menu dướ
 - Quyền: `students.view`, `students.edit`, `fees.view`, `fees.edit`, `posts`, `content`, `delete`. Owner luôn đủ quyền; tài khoản chỉ owner quản lý. Kiểm tra quyền ở API bằng `need()`, UI chỉ ẩn/hiện.
 - Tìm học viên bỏ dấu làm trong JS (`matchQuery`) — ổn tới vài nghìn học viên.
 - Học phí: 1 dòng `payments` / học viên / tháng (unique). Dashboard "chưa đóng" = học viên `active` không có payment tháng hiện tại.
-- Upload: client nén ≤1600px WebP (fallback JPEG), server kiểm tra magic bytes, ≤8MB, key `public/YYYY-MM/<uuid>.ext`.
+- Upload: client nén ≤1600px WebP (fallback JPEG; ảnh JPEG/WebP ≤400KB gửi thẳng), XHR có % tiến trình, ảnh xem trước hiện ngay; `uploadMany` tải 3 ảnh song song (tin tức, "Thêm nhiều ảnh" ở Thư viện). Server kiểm tra magic bytes, ≤8MB, key `public/YYYY-MM/<uuid>.ext`.
+- `/media/*` chạy ở CẢ host public lẫn host CMS (middleware `CMS_PATH`), cache vĩnh viễn ở edge bằng Cache API (key không bao giờ ghi đè).
+- Thành tích có ảnh: hiện ở trang chủ (ưu tiên có ảnh), trang HLV (mục "Hình ảnh thành tích" từ bảng `achievements.coach_id`) và /thanh-tich; bấm ảnh mở ảnh gốc.
+- Nhập học viên: CMS đọc .xlsx (`read-excel-file`, tải động) hoặc .csv, gửi `POST /api/admin/students/import` theo cột của file xuất; có Mã trùng → cập nhật CHỈ các cột có trong file, không có → thêm mới; lỗi trả theo số dòng. Khớp cơ sở/gói theo tên không dấu hoặc viết tắt chữ cái đầu.
 - CMS: tab "Học thử" có huy hiệu đỏ đếm đăng ký mới (tải lại mỗi phút + khi chuyển trang).
 - Form học thử: honeypot `website`; trẻ <16 tuổi khi chuyển thành học viên thì SĐT đăng ký thành SĐT phụ huynh.
 

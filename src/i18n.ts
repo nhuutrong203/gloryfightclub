@@ -116,6 +116,7 @@ export const dict = {
     eb_contact: 'Contact',
     eb_achievements: 'Hall of Glory',
     eb_gallery: 'Gallery',
+    achievements_photos: 'Hình ảnh thành tích',
   },
   en: {
     nav_about: 'About',
@@ -232,6 +233,7 @@ export const dict = {
     eb_contact: 'Contact',
     eb_achievements: 'Hall of Glory',
     eb_gallery: 'Gallery',
+    achievements_photos: 'Achievement photos',
   },
 } as const;
 

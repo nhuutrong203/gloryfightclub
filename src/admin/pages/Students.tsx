@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api, can, fmtDate, monthLabel, navigate, todayVN, toast, useApi, vnd, type Me } from '../lib';
 import { A, Badge, Button, Chips, ErrorBox, Icon, Loading, Page, Select, TextArea, TextInput, confirmDanger, Empty, inputCls, LinkButton } from '../ui';
 import { daysLabel } from '../resources';
+import { StudentImport } from './StudentImport';
 
 export type Lookups = {
   locations: { id: number; name: string }[];
@@ -47,6 +48,7 @@ export function StudentList({ me }: { me: Me }) {
         </div>
       </div>
 
+      {can(me, 'students.edit') && <StudentImport onDone={reload} />}
       {error ? <ErrorBox message={error} retry={reload} /> : !data ? <Loading /> : (
         <>
           <div className="mb-2 flex items-center justify-between text-sm text-neutral-600">
