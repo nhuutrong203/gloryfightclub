@@ -35,7 +35,7 @@ export const publicCoaches = () =>
   db.select().from(schema.coaches).where(eq(schema.coaches.isPublic, true)).orderBy(asc(schema.coaches.sort));
 
 export const publicPlans = () =>
-  db.select().from(schema.feePlans).where(eq(schema.feePlans.isPublic, true)).orderBy(asc(schema.feePlans.sort));
+  db.select().from(schema.feePlans).where(eq(schema.feePlans.isPublic, true)).orderBy(asc(schema.feePlans.pricePerMonth), asc(schema.feePlans.sort)); // giá thấp → cao
 
 export const publicClasses = () =>
   db.select().from(schema.classes)
