@@ -9,12 +9,10 @@ const { eyebrow, title, subtitle, number } = Astro.props;
   <Logo class="absolute -z-10 -right-16 -top-10 h-[140%] w-auto text-white/[0.035]" title="" />
   <div class="absolute -z-10 left-0 bottom-0 h-3 w-1/2 sm:w-1/3 bg-glory -skew-x-[30deg] origin-bottom-left"></div>
   <div class="container-x">
-    <div class="flex items-start gap-4">
-      {number && <span class="font-display text-6xl sm:text-8xl text-outline-white leading-none" aria-hidden="true">{number}</span>}
-      <div class="min-w-0">
-        {eyebrow && <p class="eyebrow">{eyebrow}</p>}
-        <h1 class="mt-5 text-5xl sm:text-7xl lg:text-8xl break-words">{title}</h1>
-      </div>
+    {number && <span class="pointer-events-none absolute right-4 top-6 -z-10 font-display text-[7rem] sm:text-[12rem] leading-none text-outline-white sm:right-10" aria-hidden="true">{number}</span>}
+    <div class="min-w-0">
+      {eyebrow && <p class="eyebrow">{eyebrow}</p>}
+      <h1 class="text-5xl sm:text-7xl lg:text-8xl break-words">{title}</h1>
     </div>
     {subtitle && <p class="mt-6 max-w-2xl text-lg text-white/75">{subtitle}</p>}
     <slot />

@@ -87,7 +87,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
         <h2 class="text-5xl sm:text-7xl">{t(lang, 'coaches_title')}</h2>
         <a href={href('/huan-luyen-vien', lang)} class="inline-flex min-h-11 items-center gap-2 font-display uppercase tracking-wider hover:text-glory">{t(lang, 'cta_all')}<Icon name="arrow-right" /></a>
       </div>
-      <div class="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="mt-10 grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-8 lg:grid-cols-3">
         {featured.map((c, i) => <CoachCard coach={c} lang={lang} i={i} />)}
       </div>
     </section>

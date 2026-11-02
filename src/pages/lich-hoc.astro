@@ -99,25 +99,29 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
         </div>
 
         <!-- Mobile/tablet: theo từng ngày -->
-        <div class="lg:hidden">
-          <nav class="sticky top-16 z-20 -mx-4 mt-8 grid grid-cols-7 bg-ink/95 backdrop-blur border-y border-white/10" aria-label={t(lang, 'schedule_title')}>
+        <div class="lg:hidden" data-days>
+          <div class="sticky top-16 z-20 -mx-4 mt-8 grid grid-cols-7 border-y border-white/10 bg-ink/95 backdrop-blur" role="tablist" aria-label={t(lang, 'schedule_title')}>
             {DAYS.map((d) => (
-              <a href={`#d${d}`} class:list={['grid min-h-12 place-items-center font-display tracking-wider', d === today ? 'bg-glory text-white' : 'hover:text-glory']}>{dayShort(d, lang)}</a>
+              <a href={`#d${d}`} role="tab" data-day={d} aria-selected={d === today ? 'true' : 'false'}
+                class="relative grid min-h-12 place-items-center font-display tracking-wider transition-colors duration-200 aria-selected:bg-glory aria-selected:text-white hover:text-glory aria-selected:hover:text-white">
+                {dayShort(d, lang)}
+                {d === today && <span class="absolute bottom-1 size-1 rounded-full bg-current" aria-hidden="true"></span>}
+              </a>
             ))}
-          </nav>
-          <div class="mt-4 space-y-8">
+          </div>
+          <div class="mt-6 space-y-8">
             {byDay.map(({ d, items }) => (
-              <section id={`d${d}`} class="scroll-mt-32">
+              <section id={`d${d}`} data-panel={d} role="tabpanel" class="scroll-mt-32">
                 <h2 class:list={['flex items-center gap-3 text-3xl', d === today && 'text-glory']}>{dayLong(d, lang)}{d === today && <span class="bg-glory px-2 py-0.5 text-sm text-white tracking-widest">{lang === 'en' ? 'TODAY' : 'HÔM NAY'}</span>}</h2>
                 {items.length === 0
-                  ? <p class="mt-2 text-ash">—</p>
+                  ? <p class="mt-3 border border-dashed border-white/15 p-6 text-center text-ash">{lang === 'en' ? 'No classes this day.' : 'Không có ca tập ngày này.'}</p>
                   : (
                     <ul class="mt-3 space-y-2">
-                      {items.map((c) => (
-                        <li class="flex items-stretch border border-white/10 bg-coal">
-                          <span class="flex w-28 shrink-0 flex-col justify-center border-r border-white/10 px-3 py-3 font-display text-xl leading-tight">{c.startTime}<span class="text-ash text-base">{c.endTime}</span></span>
-                          <span class="flex flex-col justify-center px-4 py-3 min-w-0">
-                            <span class="font-display text-xl uppercase tracking-wide">{tr(c, 'name', lang)}</span>
+                      {items.map((c, i) => (
+                        <li class="day-item flex items-stretch border border-white/10 bg-coal" style={`--i:${i}`}>
+                          <span class="flex w-24 shrink-0 flex-col justify-center border-r border-white/10 px-3 py-3 font-display text-xl leading-tight">{c.startTime}<span class="text-ash text-base">{c.endTime}</span></span>
+                          <span class="flex min-w-0 flex-col justify-center border-l-2 border-glory/0 px-4 py-3">
+                            <span class="font-display text-xl uppercase tracking-wide leading-snug">{tr(c, 'name', lang)}</span>
                             {coachName(c.coachId) && <span class="text-sm text-ash">{t(lang, 'coach')} {coachName(c.coachId)}</span>}
                           </span>
                         </li>
@@ -138,3 +142,28 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
   </section>
   <CtaBand lang={lang} />
 </PublicLayout>
+
+<script>
+  // Điện thoại: chỉ hiện ngày đang chọn (mặc định hôm nay). Không có JS thì hiện cả tuần như cũ.
+  const root = document.querySelector<HTMLElement>('[data-days]');
+  if (root) {
+    const tabs = [...root.querySelectorAll<HTMLAnchorElement>('[data-day]')];
+    const panels = [...root.querySelectorAll<HTMLElement>('[data-panel]')];
+    const show = (day: string) => {
+      tabs.forEach((t) => t.setAttribute('aria-selected', String(t.dataset.day === day)));
+      panels.forEach((p) => {
+        const on = p.dataset.panel === day;
+        p.hidden = !on;
+        if (on) p.querySelectorAll('.day-item').forEach((li) => { li.classList.remove('day-in'); void (li as HTMLElement).offsetWidth; li.classList.add('day-in'); });
+      });
+    };
+    tabs.forEach((t) => t.addEventListener('click', (e) => { e.preventDefault(); show(t.dataset.day!); }));
+    const initial = location.hash.match(/^#d([2-8])$/)?.[1] ?? tabs.find((t) => t.getAttribute('aria-selected') === 'true')?.dataset.day ?? '2';
+    show(initial);
+  }
+</script>
+<style>
+  .day-in { animation: day-in .35s cubic-bezier(.2,.7,.2,1) both; animation-delay: calc(var(--i, 0) * 40ms); }
+  @keyframes day-in { from { opacity: 0; transform: translateX(16px); } }
+  @media (prefers-reduced-motion: reduce) { .day-in { animation: none; } }
+</style>

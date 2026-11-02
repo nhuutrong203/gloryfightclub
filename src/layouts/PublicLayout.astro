@@ -43,6 +43,7 @@ const more: [string, DictKey][] = [
 const current = (p: string) => path === p || path.startsWith(p + '/');
 const otherLang: Lang = lang === 'vi' ? 'en' : 'vi';
 const hotline = club.hotlines[0];
+const onTrialPage = path === '/dang-ky-hoc-thu';
 ---
 <!doctype html>
 <html lang={lang}>
@@ -68,9 +69,9 @@ const hotline = club.hotlines[0];
     <meta property="og:locale" content={lang === 'vi' ? 'vi_VN' : 'en_US'} />
     <meta name="twitter:card" content="summary_large_image" />
   </head>
-  <body class="min-h-dvh flex flex-col overflow-x-clip">
+  <body class="min-h-dvh flex flex-col overflow-x-clip pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
     <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] btn-red">Skip</a>
-    <header class="sticky top-0 z-40 bg-ink/90 backdrop-blur-md border-b border-white/10">
+    <header id="site-header" class="sticky top-0 z-40 border-b border-white/10 bg-ink/80 backdrop-blur-md transition-[background-color,box-shadow] duration-300 data-[scrolled]:bg-ink/95 data-[scrolled]:shadow-[0_8px_30px_rgb(0_0_0/0.5)]">
       <div class="container-x flex h-16 items-center justify-between gap-4">
         <a href={href('/', lang)} class="flex items-center gap-3 shrink-0" aria-label={`${club.name} — ${t(lang, 'home')}`}>
           <Logo class="h-10 w-auto text-white" title="" />
@@ -115,7 +116,7 @@ const hotline = club.hotlines[0];
 
     <main id="main" class="flex-1"><slot /></main>
 
-    <footer class="relative overflow-hidden bg-coal mt-24 border-t-4 border-glory">
+    <footer class="relative overflow-hidden bg-coal border-t-4 border-glory">
       <Logo class="absolute -right-20 -bottom-24 h-96 w-auto text-white/[0.03]" title="" />
       <div class="container-x py-14 grid gap-10 md:grid-cols-12">
         <div class="md:col-span-4">
@@ -149,12 +150,27 @@ const hotline = club.hotlines[0];
       <div class="container-x pb-8 text-sm text-ash">© {new Date().getFullYear()} {club.name}. {t(lang, 'footer_rights')}</div>
     </footer>
 
-    <!-- Nút gọi nhanh + Zalo nổi (mobile là chính) -->
-    <div class="fixed right-4 bottom-4 z-30 flex flex-col gap-3">
+    <!-- Điện thoại: thanh hành động cố định dưới đáy (không che nội dung vì body có padding-bottom). -->
+    <nav class:list={['fixed inset-x-0 bottom-0 z-30 grid border-t border-white/10 bg-ink/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden', onTrialPage ? 'grid-cols-2' : 'grid-cols-[1fr_1fr_1.4fr]']} aria-label={t(lang, 'cta_call')}>
+      <a href={telHref(hotline)} class="flex min-h-16 flex-col items-center justify-center gap-1 text-xs font-semibold text-white/90 active:bg-white/10">
+        <Icon name="phone" class="size-5 text-glory" />{t(lang, 'cta_call')}
+      </a>
+      <a href={`https://zalo.me/${club.zalo}`} target="_blank" rel="noopener" class="flex min-h-16 flex-col items-center justify-center gap-1 border-x border-white/10 text-xs font-semibold text-white/90 active:bg-white/10">
+        <span class="grid size-5 place-items-center rounded-full bg-[#0068ff] text-[9px] font-bold leading-none text-white" aria-hidden="true">Z</span>Zalo
+      </a>
+      {!onTrialPage && (
+      <a href={href('/dang-ky-hoc-thu', lang)} class="flex min-h-16 items-center justify-center gap-2 bg-glory px-3 font-display text-lg uppercase tracking-wider text-white active:bg-glory-dark">
+        {t(lang, 'trial_title')}<Icon name="arrow-right" class="size-4" />
+      </a>
+      )}
+    </nav>
+
+    <!-- Máy tính: nút gọi + Zalo nổi -->
+    <div class="fixed right-6 bottom-6 z-30 hidden flex-col gap-3 lg:flex">
       <a href={`https://zalo.me/${club.zalo}`} target="_blank" rel="noopener" aria-label="Zalo"
-        class="size-14 rounded-full bg-[#0068ff] grid place-items-center font-display text-white shadow-lg shadow-black/50 transition-transform hover:scale-105">Zalo</a>
+        class="grid size-14 place-items-center rounded-full bg-[#0068ff] font-display text-white shadow-lg shadow-black/50 transition-transform duration-200 hover:scale-110">Zalo</a>
       <a href={telHref(hotline)} aria-label={`${t(lang, 'cta_call')} ${hotline}`}
-        class="relative size-14 rounded-full bg-glory grid place-items-center text-white shadow-lg shadow-black/50 transition-transform hover:scale-105">
+        class="relative grid size-14 place-items-center rounded-full bg-glory text-white shadow-lg shadow-black/50 transition-transform duration-200 hover:scale-110">
         <span class="absolute inset-0 rounded-full bg-glory animate-ping opacity-30 motion-reduce:hidden"></span>
         <Icon name="phone" class="relative size-6" />
       </a>
@@ -166,6 +182,12 @@ const hotline = club.hotlines[0];
         for (const e of entries) if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); }
       }, { rootMargin: '0px 0px -8% 0px' });
       document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+
+      // Header đậm hơn khi đã cuộn.
+      const header = document.getElementById('site-header');
+      const onScroll = () => header?.toggleAttribute('data-scrolled', scrollY > 8);
+      addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
 
       // Menu mobile: đóng khi bấm link hoặc Esc; khoá cuộn trang khi mở.
       const nav = document.getElementById('mnav') as HTMLDetailsElement | null;

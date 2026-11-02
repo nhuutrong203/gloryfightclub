@@ -34,6 +34,9 @@ Astro 7 SSR + `@astrojs/cloudflare` 14 (Cloudflare Workers) · React (CMS SPA) �
 - Ảnh lưu **key R2**, không lưu URL; phục vụ qua `/media/*`. R2 chỉ chứa ảnh công khai.
 - Dữ liệu học viên không bao giờ được trả về từ route public hay host public.
 - Màu: đen `#0A0A0A`, trắng, đỏ nhấn `#E10600`. Font: Anton (tiêu đề) + Be Vietnam Pro (nội dung).
+- **Tiêu đề Anton chữ in hoa tiếng Việt: line-height ≥ 1.12** (dấu chồng Ổ/Ầ/Ấ cao hơn chữ hoa). KHÔNG dùng `leading-none`/`leading-[0.9x]` cho chữ có dấu; chỉ dùng cho số/giá. Tiêu đề có `text-wrap: balance`.
+- Điện thoại: thanh hành động cố định dưới đáy (Gọi · Zalo · Học thử), `body` có padding-bottom tương ứng; nút nổi tròn chỉ hiện từ `lg`.
+- Chuyển trang: CSS `@view-transition` (không cần JS). Hiệu ứng luôn có nhánh `prefers-reduced-motion`.
 - Mọi nội dung public đọc từ D1, không hard-code.
 - Mọi input từ form/API phải validate bằng zod ở phía server.
 - **Cập nhật file này sau mỗi lần làm xong việc** (trạng thái, lệnh chạy, cấu trúc thay đổi).

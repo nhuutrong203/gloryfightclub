@@ -30,7 +30,12 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
       <div class="relative aspect-[4/5] overflow-hidden bg-coal">
         {photo
           ? <img src={photo} alt={c.fullName} class="size-full object-cover grayscale contrast-125" />
-          : <div class="size-full grid place-items-center bg-[radial-gradient(circle_at_30%_20%,#2a2a2a,#0a0a0a_70%)]"><Logo class="w-1/2 h-auto text-white/10" title="" /></div>}
+          : (
+            <div class="relative size-full overflow-hidden bg-[radial-gradient(circle_at_70%_15%,#2b0d0c,#0a0a0a_65%)]">
+              <Logo class="absolute -right-[18%] -top-[8%] h-[85%] w-auto text-white/[0.06]" title="" />
+              <span class="absolute bottom-4 left-5 font-display text-[clamp(6rem,30vw,12rem)] leading-none text-outline-white" aria-hidden="true">{c.fullName.trim().split(/\s+/).slice(-2).map((w) => w[0]).join('')}</span>
+            </div>
+          )}
         <div class="absolute left-0 bottom-0 h-2 w-2/3 bg-glory"></div>
       </div>
       <div>

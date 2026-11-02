@@ -31,23 +31,23 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
 ---
 <PublicLayout path="/">
   <!-- HERO -->
-  <section class="relative isolate overflow-hidden min-h-[calc(100dvh-4rem)] flex items-end">
+  <section class="relative isolate overflow-hidden min-h-[calc(100dvh-8rem)] lg:min-h-[calc(100dvh-4rem)] flex items-end">
     {heroImage
       ? <img src={heroImage} alt="" class="absolute inset-0 -z-20 size-full object-cover grayscale opacity-60" fetchpriority="high" />
       : <Logo class="absolute -z-20 -right-28 top-1/2 -translate-y-1/2 h-[125%] w-auto text-white/[0.05]" title="" />}
     <div class="absolute inset-0 -z-10 bg-gradient-to-t from-ink via-ink/70 to-ink/10"></div>
     <div class="absolute -z-10 right-0 top-0 h-full w-24 sm:w-40 bg-glory/90 -skew-x-[14deg] translate-x-16 sm:translate-x-24"></div>
     <div class="container-x pb-14 pt-24 sm:pb-20">
-      <p class="eyebrow flex items-center gap-3"><span class="h-0.5 w-10 bg-glory"></span>MMA · Kudo · Muay Thai · BJJ · Boxing</p>
-      <h1 class="mt-5 text-[clamp(3.5rem,15vw,11rem)]">
-        {titleParts.map((part, i) => <span class:list={['block', i === 1 && 'text-glory']}>{part.trim()}</span>)}
+      <p class="eyebrow hero-in flex items-center gap-3 !text-xs sm:!text-sm"><span class="h-0.5 w-10 shrink-0 bg-glory"></span>MMA · Kudo · Muay Thai · BJJ · Boxing</p>
+      <h1 class="text-[clamp(3.5rem,15vw,11rem)]">
+        {titleParts.map((part, i) => <span class:list={['hero-in block', i === 1 && 'text-glory']} style={`--d:${120 + i * 110}ms`}>{part.trim()}</span>)}
       </h1>
-      <p class="mt-6 max-w-xl text-lg sm:text-xl text-white/85">{lang === 'en' ? hero.subtitle_en : hero.subtitle}</p>
-      <div class="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
+      <p class="hero-in mt-6 max-w-xl text-lg sm:text-xl text-white/85" style="--d:380ms">{lang === 'en' ? hero.subtitle_en : hero.subtitle}</p>
+      <div class="hero-in mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4" style="--d:480ms">
         <a href={href('/dang-ky-hoc-thu', lang)} class="btn-red !text-xl !px-8">{t(lang, 'cta_trial')}<Icon name="arrow-right" /></a>
         <a href={href('/lich-hoc', lang)} class="btn-ghost !text-xl !px-8"><Icon name="calendar" />{t(lang, 'nav_schedule')}</a>
       </div>
-      <dl class="mt-12 grid max-w-2xl grid-cols-3 border-t border-white/15 pt-6">
+      <dl class="hero-in mt-12 grid max-w-2xl grid-cols-3 border-t border-white/15 pt-6" style="--d:580ms">
         <div><dt class="text-sm text-ash">{t(lang, 'nav_disciplines')}</dt><dd class="font-display text-4xl sm:text-5xl">{disciplines.length}</dd></div>
         <div><dt class="text-sm text-ash">{t(lang, 'coaches_label')}</dt><dd class="font-display text-4xl sm:text-5xl">{coaches.length}</dd></div>
         <div><dt class="text-sm text-ash">{t(lang, 'locations_title')}</dt><dd class="font-display text-4xl sm:text-5xl">{locations.length}</dd></div>
@@ -108,7 +108,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
         ))}
         <a href={href('/dang-ky-hoc-thu', lang)} class="reveal group bg-bone text-ink p-7 sm:p-9 min-h-72 flex flex-col justify-between hover:bg-white" style={`--i:${disciplines.length}`}>
           <Icon name="arrow-up-right" class="size-10 text-glory" />
-          <span class="font-display text-4xl sm:text-5xl uppercase leading-none">{t(lang, 'cta_trial')}</span>
+          <span class="font-display text-4xl sm:text-5xl uppercase leading-[1.12]">{t(lang, 'cta_trial')}</span>
         </a>
       </div>
     </div>
@@ -122,7 +122,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
       <h2 class="mt-2 text-6xl sm:text-8xl">{t(lang, 'coaches_title')}</h2>
       <p class="mt-3 text-lg text-ink/75">{t(lang, 'coaches_sub')}</p>
       <div class="mt-12 -mx-4 px-4 sm:mx-0 sm:px-0 flex gap-5 overflow-x-auto snap-x snap-mandatory pb-6 lg:grid lg:grid-cols-3 lg:overflow-visible">
-        {coaches.map((c, i) => <CoachCard coach={c} lang={lang} i={i} tone="light" class="snap-start shrink-0 w-[78%] sm:w-80 lg:w-auto" />)}
+        {coaches.map((c, i) => <CoachCard coach={c} lang={lang} i={i} tone="light" class="snap-start shrink-0 w-[64%] sm:w-80 lg:w-auto" />)}
       </div>
     </div>
   </section>
@@ -206,9 +206,9 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
     <div class="mt-10 grid gap-px bg-white/10 border border-white/10 md:grid-cols-2">
       {locations.map((l, i) => (
         <div class="reveal relative overflow-hidden bg-ink p-7 sm:p-10" style={`--i:${i}`}>
-          <span class="absolute -right-4 -top-8 font-display text-[10rem] leading-none text-outline-white" aria-hidden="true">{i + 1}</span>
+          <span class="pointer-events-none absolute -bottom-10 right-2 font-display text-[11rem] leading-none text-white/[0.05]" aria-hidden="true">{i + 1}</span>
           <p class="eyebrow">{tr(l, 'name', lang)}</p>
-          <p class="relative mt-4 max-w-sm text-lg">{l.address}</p>
+          <p class="relative mt-4 max-w-sm text-lg leading-relaxed">{l.address}</p>
           <div class="relative mt-6 flex flex-wrap gap-3">
             {l.mapUrl && <a href={l.mapUrl} target="_blank" rel="noopener" class="btn-ghost !text-base"><Icon name="map-pin" />{t(lang, 'directions')}</a>}
             <a href={`${href('/lich-hoc', lang)}?co-so=${l.id}`} class="btn !text-base border-2 border-white/20 hover:border-glory hover:text-glory"><Icon name="calendar" />{t(lang, 'nav_schedule')}</a>
