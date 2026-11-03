@@ -44,7 +44,7 @@ export const publicClasses = () =>
 
 export const publicAchievements = () =>
   db.select().from(schema.achievements).where(eq(schema.achievements.isPublic, true))
-    .orderBy(desc(schema.achievements.eventDate), asc(schema.achievements.sort));
+    .orderBy(asc(schema.achievements.sort), desc(schema.achievements.eventDate)); // thứ tự ↑↓ trong CMS
 
 export const publicTestimonials = () =>
   db.select().from(schema.testimonials).where(eq(schema.testimonials.isPublic, true)).orderBy(asc(schema.testimonials.sort));
@@ -60,6 +60,10 @@ export async function publishedPosts(limit: number, offset = 0) {
     .orderBy(desc(schema.posts.publishedAt)).limit(limit).offset(offset);
   return withImages(posts);
 }
+
+/** Slug bài đã đăng cho sitemap (không lấy ảnh: danh sách id dài vượt giới hạn 100 tham số của D1). */
+export const publishedSlugs = (limit: number) =>
+  db.select({ slug: schema.posts.slug }).from(schema.posts).where(postVisible()).orderBy(desc(schema.posts.publishedAt)).limit(limit);
 
 export async function postBySlug(slug: string) {
   const [post] = await db.select().from(schema.posts)

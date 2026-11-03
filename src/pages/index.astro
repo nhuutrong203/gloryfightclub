@@ -7,6 +7,7 @@ import PlanCard from '../components/public/PlanCard.astro';
 import CoachCard from '../components/public/CoachCard.astro';
 import PostCard from '../components/public/PostCard.astro';
 import CtaBand from '../components/public/CtaBand.astro';
+import TestimonialAuthor from '../components/public/TestimonialAuthor.astro';
 import { getSite, mediaUrl } from '../lib/site';
 import {
   todayDigit, publicDisciplines, publicCoaches, publicPlans, publicClasses,
@@ -194,7 +195,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
             <figure class="reveal relative border-l-4 border-glory bg-ink p-6 sm:p-8" style={`--i:${i}`}>
               <Icon name="quote" class="size-10 text-glory/40" filled />
               <blockquote class="mt-4 text-lg text-white/90">{tr(x, 'content', lang)}</blockquote>
-              <figcaption class="mt-6"><span class="font-display text-2xl uppercase">{x.authorName}</span>{x.authorRole && <span class="block text-sm text-ash">{tr(x, 'authorRole', lang)}</span>}</figcaption>
+              <TestimonialAuthor item={x} lang={lang} />
             </figure>
           ))}
         </div>

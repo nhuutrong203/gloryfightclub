@@ -1,0 +1,20 @@
+---
+import { mediaUrl } from '../../lib/site';
+import { tr, type Lang } from '../../i18n';
+import type { schema } from '../../db';
+
+// Tên + ảnh người viết cảm nhận (trang chủ và /cam-nhan). Chưa có ảnh → ô chữ cái đầu, để các thẻ đều nhau.
+interface Props { item: typeof schema.testimonials.$inferSelect; lang: Lang }
+const { item: x, lang } = Astro.props;
+const photo = mediaUrl(x.photoKey);
+const initials = x.authorName.replace(/\s*\(.*\)$/, '').trim().split(/\s+/).slice(-2).map((w) => w[0]).join('').toUpperCase();
+---
+<figcaption class="mt-6 flex items-center gap-4">
+  {photo
+    ? <img src={photo} alt="" width="56" height="56" loading="lazy" decoding="async" class="size-14 shrink-0 border-2 border-glory object-cover" />
+    : <span class="grid size-14 shrink-0 place-items-center bg-glory font-display text-xl text-white" aria-hidden="true">{initials}</span>}
+  <span class="min-w-0">
+    <span class="block font-display text-2xl uppercase">{x.authorName}</span>
+    {x.authorRole && <span class="block text-sm text-ash">{tr(x, 'authorRole', lang)}</span>}
+  </span>
+</figcaption>

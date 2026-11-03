@@ -25,7 +25,9 @@ app.onError((err, c) => {
 app.use('*', async (c, next) => {
   if (c.req.method !== 'GET' && c.req.method !== 'HEAD') {
     const origin = c.req.header('origin');
-    if (origin && new URL(origin).host !== new URL(c.req.url).host) return c.json({ error: 'Forbidden' }, 403);
+    // "Origin: null" (iframe sandbox, file://) không phải URL → coi như trang khác.
+    const host = origin ? URL.parse(origin)?.host : undefined;
+    if (origin && host !== new URL(c.req.url).host) return c.json({ error: 'Forbidden' }, 403);
   }
   await next();
 });

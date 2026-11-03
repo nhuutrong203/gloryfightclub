@@ -203,6 +203,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
     listTitle: (r) => r.title,
     listSub: (r) => r.eventName ?? '',
     orderBy: 'sort',
+    newFirst: true,
     fields: [
       { name: 'title', label: 'Thành tích', type: 'text', required: true, en: true, help: 'Vd: HCV Kudo quốc gia' },
       { name: 'eventName', label: 'Giải đấu / sự kiện', type: 'text' },

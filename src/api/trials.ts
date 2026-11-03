@@ -19,6 +19,12 @@ trialRoutes.get('/', need('students.view'), async (c) => {
   return c.json(rows);
 });
 
+/** Số đăng ký mới cho huy hiệu tab "Học thử" (CMS hỏi mỗi phút → chỉ trả con số). */
+trialRoutes.get('/count', need('students.view'), async (c) => {
+  const r = await db.select({ n: sql<number>`count(*)` }).from(t).where(eq(t.status, 'new')).get();
+  return c.json({ n: r?.n ?? 0 });
+});
+
 trialRoutes.put('/:id', need('students.view'), async (c) => {
   const id = idParam(c);
   if (!id) return c.notFound();

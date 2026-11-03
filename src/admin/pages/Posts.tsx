@@ -10,7 +10,9 @@ const fromLocalInput = (s: string) => new Date(s).getTime();
 const fmtDateTime = (ms: number) => new Date(ms).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
 
 export function PostList() {
-  const { data, error, reload } = useApi<Post[]>('/admin/posts');
+  const [page, setPage] = useState(1);
+  const { data: res, error, reload } = useApi<{ page: number; hasMore: boolean; rows: Post[] }>(`/admin/posts?page=${page}`);
+  const data = res?.rows;
   const now = Date.now();
   return (
     <Page title="Tin tức" actions={<LinkButton to="/admin/tin-tuc/moi" icon="plus" variant="primary">Đăng bài</LinkButton>}>
@@ -36,14 +38,21 @@ export function PostList() {
           ))}
         </ul>
       )}
+      {res && (page > 1 || res.hasMore) && (
+        <div className="mt-4 flex items-center justify-center gap-3">
+          <Button variant="ghost" disabled={page <= 1} onClick={() => setPage(page - 1)}>Mới hơn</Button>
+          <span className="text-sm">Trang {page}</span>
+          <Button variant="ghost" disabled={!res.hasMore} onClick={() => setPage(page + 1)}>Cũ hơn</Button>
+        </div>
+      )}
     </Page>
   );
 }
 
 export function PostEdit({ id, me }: { id: string; me: Me }) {
   const isNew = id === 'moi';
-  const list = useApi<Post[]>(isNew ? null : '/admin/posts');
-  const existing = list.data?.find((p) => p.id === Number(id));
+  const list = useApi<Post>(isNew ? null : `/admin/posts/${id}`);
+  const existing = list.data;
   const [form, setForm] = useState({ title: '', titleEn: '', content: '', contentEn: '', publishedAt: Date.now(), isPublic: true, images: [] as string[] });
   const [schedule, setSchedule] = useState(false);
   const [showEn, setShowEn] = useState(false);
@@ -60,8 +69,8 @@ export function PostEdit({ id, me }: { id: string; me: Me }) {
     setShowEn(!!(existing.titleEn || existing.contentEn));
   }, [existing]);
 
-  if (!isNew && list.error) return <Page title="Bài viết" back="/admin/tin-tuc"><ErrorBox message={list.error} /></Page>;
-  if (!isNew && !existing) return list.data ? <Page title="Bài viết" back="/admin/tin-tuc"><Empty>Không tìm thấy bài.</Empty></Page> : <Loading />;
+  if (!isNew && list.error) return <Page title="Bài viết" back="/admin/tin-tuc"><ErrorBox message={list.error === 'Not found' ? 'Không tìm thấy bài.' : list.error} /></Page>;
+  if (!isNew && !existing) return <Loading />;
 
   const set = (k: keyof typeof form) => (v: any) => { setForm((x) => ({ ...x, [k]: v })); markDirty(true); };
 
@@ -89,7 +98,7 @@ export function PostEdit({ id, me }: { id: string; me: Me }) {
       markDirty(false);
       toast(isNew ? (schedule ? 'Đã hẹn giờ đăng' : 'Đã đăng bài') : 'Đã lưu');
       navigate('/admin/tin-tuc', true);
-    } catch (e: any) { setErr(e.message); toast(e.message, 'err'); setBusy(false); }
+    } catch (e: any) { setErr(e.message); setBusy(false); }
   }
 
   return (
@@ -139,8 +148,9 @@ export function PostEdit({ id, me }: { id: string; me: Me }) {
           {schedule && <TextInput label="Thời gian đăng" type="datetime-local" required value={toLocalInput(form.publishedAt)} onChange={(e) => e.target.value && set('publishedAt')(fromLocalInput(e.target.value))} />}
         </section>
 
-        {err && <ErrorBox message={err} />}
-        <div className="sticky bottom-20 z-10 flex gap-3 lg:bottom-4">
+        <div className="sticky bottom-20 z-10 space-y-2 lg:bottom-4">
+          {err && <ErrorBox message={err} />}
+          <div className="flex gap-3">
           <Button type="submit" loading={busy} disabled={uploading > 0} icon="check" className="flex-1 sm:flex-none">{isNew ? (schedule ? 'Hẹn giờ đăng' : 'Đăng bài') : 'Lưu'}</Button>
           {!isNew && can(me, 'delete') && (
             <Button type="button" variant="danger" icon="trash" onClick={async () => {
@@ -148,6 +158,7 @@ export function PostEdit({ id, me }: { id: string; me: Me }) {
               try { await api(`/admin/posts/${id}`, { method: 'DELETE' }); markDirty(false); toast('Đã xoá'); navigate('/admin/tin-tuc', true); } catch (e: any) { toast(e.message, 'err'); }
             }}>Xoá</Button>
           )}
+          </div>
         </div>
       </form>
     </Page>

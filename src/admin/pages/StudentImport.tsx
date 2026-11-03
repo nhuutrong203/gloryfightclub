@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { api, toast } from '../lib';
+import { fold } from '../../lib/import';
 import { Button, Icon } from '../ui';
 
 // Cột giống file "Xuất Excel" → thầy xuất ra, sửa trong Excel, nhập lại được.
@@ -17,7 +18,6 @@ const COLUMNS: [key: string, header: string, aliases: string[]][] = [
   ['status', 'Trạng thái', ['trang thai']],
   ['note', 'Ghi chú', ['ghi chu']],
 ];
-const fold = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase().trim();
 
 /** CSV đơn giản có hỗ trợ dấu nháy (file Excel "Lưu dưới dạng CSV UTF-8"). */
 function parseCsv(text: string) {

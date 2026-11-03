@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { env } from 'cloudflare:workers';
 import { z } from 'zod';
 import { db, schema } from '../db';
 import { normalizePhone } from '../lib/util';
@@ -18,8 +19,10 @@ const trialSchema = z.object({
 });
 
 // Form đăng ký học thử trên website → bảng trial_registrations (hiện trong CMS).
-// shortcut: chống spam chỉ bằng honeypot; khi deploy thêm Cloudflare Turnstile.
+// Chống spam: honeypot + tối đa 5 lần / phút / IP (wrangler.jsonc). shortcut: bot đổi IP liên tục vẫn lọt → thêm Cloudflare Turnstile.
 publicRoutes.post('/trial', async (c) => {
+  const ip = c.req.header('cf-connecting-ip') ?? 'local';
+  if (!(await env.TRIAL_LIMITER.limit({ key: ip })).success) return c.json({ ok: false, code: 'too_many' }, 429);
   const [data, err] = await body(c, trialSchema);
   if (err) return c.json({ ok: false, error: 'Thông tin chưa hợp lệ.' }, 400);
   if (data.website) return c.json({ ok: true }); // bot: giả vờ thành công

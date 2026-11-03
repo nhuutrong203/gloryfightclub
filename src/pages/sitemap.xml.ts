@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { publicCoaches, publicDisciplines, publishedPosts } from '../lib/public';
+import { publicCoaches, publicDisciplines, publishedSlugs } from '../lib/public';
 import { href } from '../i18n';
 
 const STATIC = ['/', '/gioi-thieu', '/mon-hoc', '/lich-hoc', '/huan-luyen-vien', '/hoc-phi', '/tin-tuc', '/thu-vien',
@@ -7,7 +7,7 @@ const STATIC = ['/', '/gioi-thieu', '/mon-hoc', '/lich-hoc', '/huan-luyen-vien',
 
 // shortcut: lấy tối đa 1000 bài mới nhất; đủ cho nhiều năm đăng hằng ngày, tách sitemap index khi vượt.
 export const GET: APIRoute = async ({ site }) => {
-  const [disciplines, coaches, posts] = await Promise.all([publicDisciplines(), publicCoaches(), publishedPosts(1000)]);
+  const [disciplines, coaches, posts] = await Promise.all([publicDisciplines(), publicCoaches(), publishedSlugs(1000)]);
   const paths = [
     ...STATIC,
     ...disciplines.map((d) => `/mon-hoc/${d.slug}`),

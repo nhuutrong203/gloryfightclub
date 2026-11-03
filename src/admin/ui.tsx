@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type ReactNode, type ButtonHTMLAttributes, type InputHTMLAttributes } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode, type ButtonHTMLAttributes, type InputHTMLAttributes } from 'react';
 import { mediaUrl, navigate, toast, uploadImage } from './lib';
 
 // ───────── Icon (đường nét kiểu Lucide) ─────────
@@ -198,13 +198,16 @@ export function ImageInput({ label, value, onChange, help }: { label: string; va
   const [preview, setPreview] = useState<string | null>(null); // ảnh xem trước ngay khi chọn (chưa cần đợi upload)
   const [pct, setPct] = useState<number | null>(null);
   const [over, setOver] = useState(false);
+  // Form đã đóng khi ảnh tải xong → bỏ qua (kẻo bật cờ "chưa lưu" ở trang khác).
+  const alive = useRef(true);
+  useEffect(() => () => { alive.current = false; }, []);
 
   async function pick(f: File | undefined) {
     if (!f) return;
     const local = URL.createObjectURL(f);
     setPreview(local);
     setPct(0);
-    try { onChange(await uploadImage(f, setPct)); toast('Đã tải ảnh lên'); }
+    try { const key = await uploadImage(f, setPct); if (alive.current) { onChange(key); toast('Đã tải ảnh lên'); } }
     catch (err: any) { toast(err.message, 'err'); }
     finally { setPct(null); setPreview(null); URL.revokeObjectURL(local); }
   }

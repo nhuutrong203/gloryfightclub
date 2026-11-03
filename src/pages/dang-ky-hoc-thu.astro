@@ -9,7 +9,7 @@ import { t, tr, type Lang } from '../i18n';
 const lang: Lang = Astro.locals.lang;
 const [{ club, locations }, disciplines] = await Promise.all([getSite(), publicDisciplines()]);
 const preselect = disciplines.find((d) => d.slug === Astro.url.searchParams.get('mon'))?.id;
-const msg = { ok: t(lang, 'f_ok'), err: t(lang, 'f_err'), phone: t(lang, 'f_phone_err'), sending: t(lang, 'f_sending'), submit: t(lang, 'f_submit') };
+const msg = { ok: t(lang, 'f_ok'), err: t(lang, 'f_err'), tooMany: t(lang, 'f_too_many'), phone: t(lang, 'f_phone_err'), sending: t(lang, 'f_sending'), submit: t(lang, 'f_submit') };
 const field = 'block w-full min-h-12 bg-ink border-2 border-white/20 px-4 py-3 text-base text-white placeholder:text-white/40 focus:border-glory focus:outline-none';
 const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
 ---
@@ -123,6 +123,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
       try {
         const res = await fetch('/api/public/trial', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
         const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+        if (res.status === 429) throw new Error(msg.tooMany);
         if (!res.ok || !data.ok) throw new Error(data.error || msg.err);
         form.classList.add('hidden');
         const ok = document.getElementById('trial-ok')!;

@@ -109,7 +109,7 @@ export function ResourceEdit({ res, id, me }: { res: ResourceKey; id: string; me
   };
   const set = (k: string) => (v: any) => { setForm((x) => ({ ...x, [k]: v })); markDirty(true); };
   const shown = (f: Field) => !f.showIf || f.showIf(form);
-  const fail = (msg: string) => { setErr(msg); toast(msg, 'err'); };
+  const fail = (msg: string) => setErr(msg);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -182,9 +182,10 @@ export function ResourceEdit({ res, id, me }: { res: ResourceKey; id: string; me
             )}
           </section>
         )}
-        {err && <ErrorBox message={err} />}
         {editable && (
-          <div className="sticky bottom-20 z-10 flex gap-3 lg:bottom-4">
+          <div className="sticky bottom-20 z-10 space-y-2 lg:bottom-4">
+            {err && <ErrorBox message={err} />}
+            <div className="flex gap-3">
             <Button type="submit" loading={busy} disabled={uploading} icon="check" className="flex-1 sm:flex-none">{uploading ? 'Đang tải ảnh…' : 'Lưu'}</Button>
             {!isNew && can(me, 'delete') && (
               <Button type="button" variant="danger" icon="trash" onClick={async () => {
@@ -192,6 +193,7 @@ export function ResourceEdit({ res, id, me }: { res: ResourceKey; id: string; me
                 try { await api(`/admin/content/${res}/${id}`, { method: 'DELETE' }); markDirty(false); toast('Đã xoá'); navigate(`/admin/noi-dung/${res}`, true); } catch (e: any) { fail(e.message); }
               }}>Xoá</Button>
             )}
+            </div>
           </div>
         )}
       </form>

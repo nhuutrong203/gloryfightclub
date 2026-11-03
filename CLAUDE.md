@@ -15,7 +15,7 @@ Promotional website + student-management CMS for **GLORY FIGHT CLUB** (MMA, Kudo
 - Location 1: 125/9/18 Nguyễn Thị Nhuần, An Phú Đông. Original raster logo: `docs/logo-source.png`.
 - Domain `huutrong203.id.vn` already uses Cloudflare nameservers → deploying only needs 2 Worker Custom Domains; never touch other DNS records.
 - **Live** at https://gloryfightclub.huutrong203.id.vn and https://cms-gloryfightclub.huutrong203.id.vn.
-- **Push to `main` = auto deploy** via GitHub Actions `.github/workflows/deploy.yml` (wrangler types → astro check → npm test → D1 migrations --remote → deploy). It needs the repo secret `CLOUDFLARE_API_TOKEN` — **not added yet as of 2026-11-03**, so every run so far failed at the first step and all deploys were manual: `npm run deploy` (wrangler on the dev machine is logged in to the club's Cloudflare account).
+- **Push to `main` = auto deploy** via GitHub Actions `.github/workflows/deploy.yml` (wrangler types → astro check → npm test → D1 migrations --remote → deploy). It needs the repo secret `CLOUDFLARE_API_TOKEN` — **on hold by decision (2026-11-03) until the site moves to the club owner's own domain**, so CI runs fail at the first step (expected, ignore) and deploys are manual: `npm run deploy` (wrangler on the dev machine is logged in to the club's Cloudflare account).
 - Schema changes: create a migration with `npm run db:generate` and commit it — CI applies it to cloud D1 before deploying. Migrations must be backward compatible (add columns/tables only), because the old code keeps running while migrating.
 
 ## Status
@@ -74,7 +74,7 @@ Commands, deploy and domain details: `README.md`. In the Claude desktop app, `.c
 ## Main structure
 ```
 src/pages/            public pages (.astro) · api/[...path].ts → Hono · admin/[...path].astro → React CMS · media/[...key].ts (public/… keys only)
-src/components/public public building blocks: Icon, PageHero, Marquee, PlanCard, CoachCard, PostCard, ClassList, CtaBand
+src/components/public public building blocks: Icon, PageHero, Marquee, PlanCard, CoachCard, PostCard, ClassList, CtaBand, TestimonialAuthor (name + photo or initials)
 src/lib/              auth.ts (PBKDF2, sessions, PERMISSIONS) · util.ts (vnNow, slugify, normalizePhone) · import.ts (Excel import parsing) · site.ts · public.ts (public queries, richText, youtubeEmbed)
 src/api/              index.ts (CSRF origin check, auth middleware) · guard.ts (need(), body(), csv()) · auth · public (trial form) · content (generic CRUD) · students · fees · trials · posts · admin (me, lookups, dashboard, settings, upload, users)
 src/admin/            React CMS: App.tsx (hand-written router, shell, bottom menu) · lib.ts (api, useApi, toast, uploadImage → WebP, useDirty, useUploading) · ui.tsx · resources.ts · pages/*
@@ -82,7 +82,7 @@ tests/                node --test files (*.test.mjs import the .ts modules direc
 ```
 - `src/admin/resources.ts` is the **single source** for simple content sections: it generates both the CMS form and the API's zod schema + writable columns. New content column → add a field there.
   - Field options: `type: 'url'` (must start with https://), `showIf` (hide a field based on another; hidden fields are saved empty). Resource options: `check` (cross-field validation, runs in both CMS and API), `orderBy`, `newFirst`.
-- Display order (`sort`) has **no input**: new items get `max(sort)+1` (gallery uses `newFirst` → `min-1`, so it goes first); reorder with the ↑↓ buttons in the list → `PUT /api/admin/content/:res/order {ids}` rewrites 1, 2, 3… Only resources with `orderBy: 'sort'` show the buttons; fee plans are ordered by price (same as the public page).
+- Display order (`sort`) has **no input**: new items get `max(sort)+1` (gallery and achievements use `newFirst` → `min-1`, so they go first; the public achievements page follows this order, date only breaks ties); reorder with the ↑↓ buttons in the list → `PUT /api/admin/content/:res/order {ids}` rewrites 1, 2, 3… Only resources with `orderBy: 'sort'` show the buttons; fee plans are ordered by price (same as the public page).
 - Forms with images disable Save while an upload is running (`useUploading()` in `lib.ts`).
 - Unsaved-changes guard: forms call `useDirty()` (lib.ts) → `markDirty(true)` on edit, `markDirty(false)` after a successful save; `navigate()` and the browser Back button ask before leaving. New forms must do the same.
 - API errors: zod messages are Vietnamese (`z.config(z.locales.vi())` in `guard.ts`); `body(c, schema, labels)` turns column names into form labels. Forms show the error right above the Save button.
@@ -95,14 +95,15 @@ tests/                node --test files (*.test.mjs import the .ts modules direc
 - `/media/*` runs on BOTH the public and the CMS host (middleware `CMS_PATH`) and is cached forever at the edge with the Cache API (keys are never overwritten).
 - Achievements with photos: shown on Home (photos first), on the coach page ("Hình ảnh thành tích", from `achievements.coach_id`) and on /thanh-tich; clicking a photo opens the original.
 - Student import: the CMS reads .xlsx (`read-excel-file`, lazy-loaded) or .csv and sends `POST /api/admin/students/import` using the export's columns; an existing code → update ONLY the columns present in the file, no code → insert; errors are returned per row. Location/plan match by accent-insensitive name or initials; an unknown location/plan/class name is a row error (never overwritten with empty). All rows are validated first, then written with `db.batch` in chunks of 200 statements.
-- CMS: the "Học thử" tab shows a red badge with the count of new trial sign-ups (refreshed every minute and on navigation).
-- Trial form: honeypot field `website`; when a child under 16 is converted to a student, the sign-up phone becomes the parent's phone.
+- CMS: the "Học thử" tab shows a red badge with the count of new trial sign-ups (`GET /api/admin/trials/count`, refreshed every minute and on navigation).
+- CMS news list is paged (50 per page, `GET /api/admin/posts?page=`); the edit screen loads one post via `GET /api/admin/posts/:id`. The sitemap reads post slugs only (`publishedSlugs`), never images.
+- Trial form: honeypot field `website` + max 5 submissions/minute/IP (`TRIAL_LIMITER` binding, shows `f_too_many`); when a child under 16 is converted to a student, the sign-up phone becomes the parent's phone.
 
 ## Production
-- CMS login is limited to 10 attempts/minute/IP by the `LOGIN_LIMITER` binding (Workers Rate Limiting, `wrangler.jsonc`).
+- CMS login is limited to 10 attempts/minute/IP by the `LOGIN_LIMITER` binding, the trial form to 5/minute/IP by `TRIAL_LIMITER` (Workers Rate Limiting, `wrangler.jsonc`). After adding a binding run `npx wrangler types`.
 - NEVER load `seed/sample.sql` to the cloud. Schema change → `db:generate` → `db:migrate:remote` BEFORE `npm run deploy` (CI does this automatically once the token secret exists).
 - Local D1 is keyed by `database_id`: after changing the id, run `npm run db:reset` again.
-- Possible next step: Cloudflare Turnstile on the trial form (currently honeypot only).
+- Possible next step: Cloudflare Turnstile on the trial form (currently honeypot + per-IP rate limit; bots rotating IPs still get through).
 
 ## Still waiting on the owner / head coach
 - Schedule image for location 2 (or the head coach enters/uploads it in the CMS).

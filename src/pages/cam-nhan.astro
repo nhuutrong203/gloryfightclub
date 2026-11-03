@@ -4,7 +4,7 @@ import PageHero from '../components/public/PageHero.astro';
 import Icon from '../components/public/Icon.astro';
 import CtaBand from '../components/public/CtaBand.astro';
 import { publicTestimonials } from '../lib/public';
-import { mediaUrl } from '../lib/site';
+import TestimonialAuthor from '../components/public/TestimonialAuthor.astro';
 import { t, tr, type Lang } from '../i18n';
 
 const lang: Lang = Astro.locals.lang;
@@ -20,10 +20,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
         <figure class="reveal mb-6 break-inside-avoid border-l-4 border-glory bg-coal p-6 sm:p-8" style={`--i:${i % 3}`}>
           <Icon name="quote" filled class="size-9 text-glory/40" />
           <blockquote class="mt-4 text-lg text-white/90 whitespace-pre-line">{tr(x, 'content', lang)}</blockquote>
-          <figcaption class="mt-6 flex items-center gap-4">
-            {x.photoKey && <img src={mediaUrl(x.photoKey)} alt="" loading="lazy" class="size-12 object-cover" />}
-            <span><span class="block font-display text-2xl uppercase">{x.authorName}</span>{x.authorRole && <span class="text-sm text-ash">{tr(x, 'authorRole', lang)}</span>}</span>
-          </figcaption>
+          <TestimonialAuthor item={x} lang={lang} />
         </figure>
       ))}
     </div>

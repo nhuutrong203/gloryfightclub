@@ -138,7 +138,7 @@ export function StudentEdit({ id, me }: { id: string; me: Me }) {
         toast('Đã lưu');
         reload();
       }
-    } catch (e: any) { setErr(e.message); toast(e.message, 'err'); } finally { setBusy(false); }
+    } catch (e: any) { setErr(e.message); } finally { setBusy(false); }
   }
 
   return (
@@ -171,9 +171,10 @@ export function StudentEdit({ id, me }: { id: string; me: Me }) {
           <div className="sm:col-span-2"><TextArea label="Ghi chú" value={form.note} onChange={set('note')} rows={3} /></div>
         </fieldset>
 
-        {err && <ErrorBox message={err} />}
         {editable && (
-          <div className="sticky bottom-20 z-10 flex gap-3 lg:bottom-4">
+          <div className="sticky bottom-20 z-10 space-y-2 lg:bottom-4">
+            {err && <ErrorBox message={err} />}
+            <div className="flex gap-3">
             <Button type="submit" loading={busy} icon="check" className="flex-1 sm:flex-none">{isNew ? 'Thêm học viên' : 'Lưu thay đổi'}</Button>
             {!isNew && can(me, 'delete') && (
               <Button type="button" variant="danger" icon="trash" onClick={async () => {
@@ -181,6 +182,7 @@ export function StudentEdit({ id, me }: { id: string; me: Me }) {
                 try { await api(`/admin/students/${id}`, { method: 'DELETE' }); markDirty(false); toast('Đã xoá'); navigate('/admin/hoc-vien', true); } catch (err: any) { toast(err.message, 'err'); }
               }}>Xoá</Button>
             )}
+            </div>
           </div>
         )}
       </form>

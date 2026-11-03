@@ -76,7 +76,7 @@ function Shell({ me, path, children }: { me: Me; path: string; children: ReactNo
   const [newTrials, setNewTrials] = useState(0);
   useEffect(() => {
     if (!can(me, 'students.view')) return;
-    const load = () => api<unknown[]>('/admin/trials?status=new').then((r) => setNewTrials(r.length), () => {});
+    const load = () => api<{ n: number }>('/admin/trials/count').then((r) => setNewTrials(r.n), () => {});
     load();
     const timer = setInterval(load, 60_000);
     return () => clearInterval(timer);
