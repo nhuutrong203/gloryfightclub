@@ -114,4 +114,4 @@ tests/                node --test files (*.test.mjs import the .ts modules direc
 - Schedule image for location 2 (or the head coach enters/uploads it in the CMS).
 - Achievements + photos for coaches Tỉnh, Đức, Vĩnh Tâm, Nhi Thảo; which coach leads each class.
 - What the "Fighter class" is and its schedule. When and where Kudo Kids trains.
-- The Kudo belt system in the seed is a shortened version — needs the head coach's confirmation.
+- Kudo belts (seed + cloud, 2026-11-03): white → purple → blue → yellow → green → brown → black (purple added per the owner). Intermediate grades/stripes still to confirm with the head coach.

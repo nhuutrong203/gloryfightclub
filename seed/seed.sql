@@ -106,11 +106,12 @@ INSERT INTO belts (discipline_id, name, name_en, color, rank) VALUES
 (4, 'Đai nâu', 'Brown belt', '#6B3E1F', 4),
 (4, 'Đai đen', 'Black belt', '#0A0A0A', 5),
 (2, 'Đai trắng', 'White belt', '#F5F5F5', 1),
-(2, 'Đai xanh dương', 'Blue belt', '#1E4FD8', 2),
-(2, 'Đai vàng', 'Yellow belt', '#F2C200', 3),
-(2, 'Đai xanh lá', 'Green belt', '#1E8F3A', 4),
-(2, 'Đai nâu', 'Brown belt', '#6B3E1F', 5),
-(2, 'Đai đen', 'Black belt', '#0A0A0A', 6);
+(2, 'Đai tím', 'Purple belt', '#6B2FB3', 2),
+(2, 'Đai xanh dương', 'Blue belt', '#1E4FD8', 3),
+(2, 'Đai vàng', 'Yellow belt', '#F2C200', 4),
+(2, 'Đai xanh lá', 'Green belt', '#1E8F3A', 5),
+(2, 'Đai nâu', 'Brown belt', '#6B3E1F', 6),
+(2, 'Đai đen', 'Black belt', '#0A0A0A', 7);
 
 DELETE FROM achievements;
 INSERT INTO achievements (title, title_en, event_name, event_date, coach_id, sort) VALUES
