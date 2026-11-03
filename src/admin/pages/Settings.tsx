@@ -14,10 +14,10 @@ export function Settings() {
   const onDirty = (k: string, on: boolean) => setDirtyGroups((x) => (x[k] === on ? x : { ...x, [k]: on }));
   // Mở từ menu "Trang chủ" (#hero) / "Giới thiệu · Liên hệ chung" (#club): cuộn tới đúng nhóm khi tải xong.
   useEffect(() => { if (data && location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView(); }, [data]);
-  if (error) return <Page title="Thông tin CLB" back="/admin/them"><ErrorBox message={error} retry={reload} /></Page>;
+  if (error) return <Page title="Trang chủ · Giới thiệu · Liên hệ" back="/admin/them"><ErrorBox message={error} retry={reload} /></Page>;
   if (!data) return <Loading />;
   return (
-    <Page title="Thông tin CLB" back="/admin/them">
+    <Page title="Trang chủ · Giới thiệu · Liên hệ" back="/admin/them">
       <div className="space-y-6">
         <Group title="Liên hệ & mạng xã hội" k="club" view="/lien-he" onDirty={onDirty} initial={data.club ?? {}} fields={[
           ['name', 'Tên CLB'], ['slogan', 'Slogan'], ['tagline', 'Mô tả ngắn (hiện khi share link)', 'textarea'], ['tagline_en', 'Mô tả ngắn (English)', 'textarea'],

@@ -65,6 +65,11 @@ test('huy chương: đọc vàng/bạc/đồng từ chữ tự do, không nhầm
   assert.deepEqual(m('Huy chương bạc giải vô địch cúp gấu đỏ 2022 (Gi)'), { gold: 0, silver: 1, bronze: 0 });
   assert.deepEqual(m('1 vàng, 1 bạc, 1 đồng giải Đại hội thể thao đồng bằng sông Cửu Long 2023'), { gold: 1, silver: 1, bronze: 1 });
   assert.deepEqual(m('2 HCV Open Jiujitsu'), { gold: 2, silver: 0, bronze: 0 });
+  assert.deepEqual(m('Huy chương bạc và đồng giải C88 Jiujitsu Championship 2024 (No-gi)'), { gold: 0, silver: 1, bronze: 1 });
+  assert.deepEqual(m('Huy chương vàng, bạc giải mở rộng'), { gold: 1, silver: 1, bronze: 0 });
+  assert.deepEqual(m('2 huy chương vàng giải trẻ'), { gold: 2, silver: 0, bronze: 0 });
+  assert.deepEqual(m('Huy chương đồng giải vận động viên xuất sắc Jujitsu quốc gia 2025 (Gi)'), { gold: 0, silver: 0, bronze: 1 });
+  assert.deepEqual(m('2 vàng, 2 đồng giải Street Jiujitsu 2026 (Gi, no-gi)'), { gold: 2, silver: 0, bronze: 2 });
   assert.equal(classify('Đai vàng Kudo').kind, 'belt');
   assert.equal(classify('Đai đen Kudo chính thức do Liên đoàn Kudo thế giới cấp').kind, 'belt');
   assert.equal(classify('Vô địch giải MMA 2025').kind, 'title');

@@ -16,6 +16,8 @@ import { More, Password } from './pages/More';
 
 export default function App() {
   const [me, setMe] = useState<Me | null | undefined>(undefined);
+  // Đường dẫn cũ của Nhật ký (/admin/tin-tuc…) → đường dẫn mới, giữ link đã lưu.
+  if (location.pathname.startsWith('/admin/tin-tuc')) history.replaceState(null, '', location.pathname.replace('/admin/tin-tuc', '/admin/nhat-ky') + location.search);
   const path = usePath().split(/[?#]/)[0].replace(/\/+$/, '') || '/admin';
 
   useEffect(() => {
@@ -46,13 +48,13 @@ function Route({ path, me }: { path: string; me: Me }) {
       return seg[1] ? <StudentEdit id={seg[1]} me={me} /> : <StudentList me={me} />;
     case 'hoc-phi': return can(me, 'fees.view') ? <Fees me={me} /> : deny;
     case 'hoc-thu': return can(me, 'students.view') ? <Trials me={me} /> : deny;
-    case 'tin-tuc':
+    case 'nhat-ky':
       if (!can(me, 'posts')) return deny;
       return seg[1] ? <PostEdit id={seg[1]} me={me} /> : <PostList />;
     case 'noi-dung': {
       const res = seg[1] as ResourceKey;
       if (!RESOURCES[res]) return <p className="p-6">Không tìm thấy trang.</p>;
-      return seg[2] ? <ResourceEdit res={res} id={seg[2]} me={me} /> : <ResourceList res={res} me={me} />;
+      return seg[2] ? <ResourceEdit key={res} res={res} id={seg[2]} me={me} /> : <ResourceList key={res} res={res} me={me} />;
     }
     case 'cai-dat': return can(me, 'content') ? <Settings /> : deny;
     case 'chu-website': return can(me, 'content') ? <Texts /> : deny;
@@ -69,7 +71,7 @@ function Shell({ me, path, children }: { me: Me; path: string; children: ReactNo
     { to: '/admin/hoc-vien', label: 'Học viên', icon: 'users', show: can(me, 'students.view') },
     { to: '/admin/hoc-phi', label: 'Học phí', icon: 'wallet', show: can(me, 'fees.view') },
     { to: '/admin/hoc-thu', label: 'Học thử', icon: 'inbox', show: can(me, 'students.view') },
-    { to: '/admin/tin-tuc', label: 'Nhật ký', icon: 'news', show: can(me, 'posts') && !can(me, 'fees.view') },
+    { to: '/admin/nhat-ky', label: 'Nhật ký', icon: 'news', show: can(me, 'posts') && !can(me, 'fees.view') },
     { to: '/admin/them', label: 'Thêm', icon: 'menu', show: true },
   ].filter((t) => t.show);
   // Số đăng ký học thử mới: hiện huy hiệu đỏ trên tab, cập nhật khi chuyển trang và mỗi phút.
@@ -85,7 +87,7 @@ function Shell({ me, path, children }: { me: Me; path: string; children: ReactNo
     ? <span className="ml-auto grid min-w-5 place-items-center rounded-full bg-glory px-1.5 text-xs font-bold leading-5 text-white ring-2 ring-white" aria-label={`${newTrials} đăng ký mới`}>{newTrials}</span>
     : null;
   const own = (to: string) => (to === '/admin' ? path === '/admin' : path.startsWith(to));
-  const active = (to: string) => own(to) || (to === '/admin/them' && !tabs.some((t) => t.to !== '/admin/them' && own(t.to)) && /\/(noi-dung|cai-dat|chu-website|tai-khoan|doi-mat-khau|tin-tuc)/.test(path));
+  const active = (to: string) => own(to) || (to === '/admin/them' && !tabs.some((t) => t.to !== '/admin/them' && own(t.to)) && /\/(noi-dung|cai-dat|chu-website|tai-khoan|doi-mat-khau|nhat-ky)/.test(path));
 
   return (
     <div className="min-h-dvh bg-neutral-100 text-ink lg:pl-60">
@@ -103,7 +105,7 @@ function Shell({ me, path, children }: { me: Me; path: string; children: ReactNo
           <span className="font-display text-xl uppercase leading-none tracking-wider">Glory<br /><span className="text-glory">CMS</span></span>
         </A>
         <nav className="flex-1 overflow-y-auto px-2" aria-label="Menu chính">
-          {tabs.filter((t) => t.to !== '/admin/them' && t.to !== '/admin/tin-tuc').map((t) => (
+          {tabs.filter((t) => t.to !== '/admin/them' && t.to !== '/admin/nhat-ky').map((t) => (
             <A key={t.to} to={t.to} className={`flex min-h-11 items-center gap-3 px-3 font-semibold ${active(t.to) ? 'bg-glory' : 'hover:bg-white/10'}`}>
               <Icon name={t.icon} />{t.label}{badge(t.to)}
             </A>

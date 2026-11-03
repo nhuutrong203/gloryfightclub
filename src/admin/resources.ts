@@ -59,7 +59,7 @@ export const LEVELS = [
 export const RESOURCES: Record<ResourceKey, Resource> = {
   classes: {
     key: 'classes',
-    title: 'Lớp & lịch tập',
+    title: 'Lịch học',
     publicPath: '/lich-hoc',
     listTitle: (r) => r.name,
     listSub: (r) => `${daysLabel(r.days)} · ${r.startTime}–${r.endTime}`,
@@ -81,7 +81,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
   },
   coaches: {
     key: 'coaches',
-    title: 'Huấn luyện viên',
+    title: 'HLV',
     publicPath: '/huan-luyen-vien',
     listTitle: (r) => r.fullName,
     listSub: (r) => r.title ?? '',
@@ -116,7 +116,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
   },
   locations: {
     key: 'locations',
-    title: 'Cơ sở',
+    title: 'Liên hệ · Cơ sở',
     publicPath: '/lien-he',
     listTitle: (r) => r.name,
     listSub: (r) => r.address,
@@ -131,7 +131,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
   },
   feePlans: {
     key: 'feePlans',
-    title: 'Gói học phí',
+    title: 'Bảng giá học phí',
     publicPath: '/hoc-phi',
     listTitle: (r) => r.name,
     listSub: (r) => `${Number(r.pricePerMonth).toLocaleString('vi-VN')} đ/tháng`,
@@ -165,7 +165,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
   },
   gallery: {
     key: 'gallery',
-    title: 'Thư viện ảnh / video',
+    title: 'Thư viện',
     publicPath: '/thu-vien',
     listTitle: (r) => r.caption || (r.type === 'video' ? 'Video' : 'Ảnh'),
     listSub: (r) => r.album ?? '',
@@ -175,7 +175,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
     fields: [
       { name: 'type', label: 'Loại', type: 'select', required: true, options: [{ value: 'photo', label: 'Ảnh' }, { value: 'video', label: 'Video (link YouTube/Facebook)' }] },
       { name: 'key', label: 'Ảnh', type: 'image', showIf: (r) => r.type === 'photo' },
-      { name: 'videoUrl', label: 'Link video', type: 'url', help: 'Link YouTube (hiện ngay trên web) hoặc Facebook', showIf: (r) => r.type === 'video' },
+      { name: 'videoUrl', label: 'Link video', type: 'url', help: 'Link YouTube (hiện ngay trên web) hoặc Facebook. Muốn tải video từ điện thoại lên: đăng ở Nhật ký lớp.', showIf: (r) => r.type === 'video' },
       { name: 'caption', label: 'Chú thích', type: 'text', en: true },
       { name: 'album', label: 'Album', type: 'text', help: 'Vd: Giải đấu 2025' },
       pub,
@@ -198,7 +198,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
   },
   faqs: {
     key: 'faqs',
-    title: 'Hỏi đáp (FAQ)',
+    title: 'Hỏi đáp',
     publicPath: '/hoi-dap',
     listTitle: (r) => r.question,
     orderBy: 'sort',

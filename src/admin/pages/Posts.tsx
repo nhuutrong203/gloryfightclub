@@ -39,13 +39,13 @@ export function PostList() {
   const now = Date.now();
   const count = (p: Post, t: Media['type'] | 'videos') => p.media.filter((m) => (t === 'videos' ? m.type !== 'image' : m.type === t)).length;
   return (
-    <Page title="Nhật ký lớp" back="/admin/them" actions={<><ViewOnSite href={siteUrl('/nhat-ky')} /><LinkButton to="/admin/tin-tuc/moi" icon="plus" variant="primary">Viết nhật ký</LinkButton></>}>
+    <Page title="Nhật ký lớp" back="/admin/them" actions={<><ViewOnSite href={siteUrl('/nhat-ky')} /><LinkButton to="/admin/nhat-ky/moi" icon="plus" variant="primary">Viết nhật ký</LinkButton></>}>
       <p className="-mt-2 mb-4 text-neutral-600">Mỗi buổi tập một trang nhật ký — ảnh, video và vài dòng kể lại buổi tập cho khách thấy lớp mình vừa tập khỏe vừa vui.</p>
       {error ? <ErrorBox message={error} retry={reload} /> : !data ? <Loading /> : data.length === 0 ? <Empty>Chưa có trang nhật ký nào. Bấm “Viết nhật ký”.</Empty> : (
         <ul className="divide-y divide-neutral-200 border border-neutral-200 bg-white">
           {data.map((p) => (
             <li key={p.id}>
-              <A to={`/admin/tin-tuc/${p.id}`} className="flex gap-3 p-3 hover:bg-neutral-50">
+              <A to={`/admin/nhat-ky/${p.id}`} className="flex gap-3 p-3 hover:bg-neutral-50">
                 <div className="grid size-16 shrink-0 place-items-center overflow-hidden bg-neutral-100">
                   {p.media[0] ? <Thumb m={p.media[0]} /> : <Icon name="news" className="text-neutral-400" />}
                 </div>
@@ -98,7 +98,7 @@ export function PostEdit({ id, me }: { id: string; me: Me }) {
     setShowEn(!!(existing.titleEn || existing.contentEn));
   }, [existing]);
 
-  if (!isNew && list.error) return <Page title="Nhật ký" back="/admin/tin-tuc"><ErrorBox message={list.error === 'Not found' ? 'Không tìm thấy bài.' : list.error} /></Page>;
+  if (!isNew && list.error) return <Page title="Nhật ký" back="/admin/nhat-ky"><ErrorBox message={list.error === 'Not found' ? 'Không tìm thấy bài.' : list.error} /></Page>;
   if (!isNew && !existing) return <Loading />;
 
   const set = (k: keyof typeof form) => (v: any) => { setForm((x) => ({ ...x, [k]: v })); markDirty(true); };
@@ -141,13 +141,13 @@ export function PostEdit({ id, me }: { id: string; me: Me }) {
       else await api(`/admin/posts/${id}`, { method: 'PUT', body: payload });
       markDirty(false);
       toast(isNew ? (payload.publishedAt > Date.now() ? 'Đã hẹn giờ đăng' : 'Đã đăng nhật ký') : 'Đã lưu');
-      navigate('/admin/tin-tuc', true);
+      navigate('/admin/nhat-ky', true);
     } catch (e: any) { setErr(e.message); setBusy(false); }
   }
 
   const future = pickDate && form.publishedAt > Date.now();
   return (
-    <Page title={isNew ? 'Viết nhật ký' : 'Sửa nhật ký'} back="/admin/tin-tuc"
+    <Page title={isNew ? 'Viết nhật ký' : 'Sửa nhật ký'} back="/admin/nhat-ky"
       actions={existing && existing.isPublic && existing.publishedAt <= Date.now() && <a href={siteUrl(`/nhat-ky/${existing.slug}`)} target="_blank" rel="noopener" className="inline-flex min-h-12 items-center gap-1 border border-neutral-300 bg-white px-3 font-semibold"><Icon name="external" /><span className="hidden sm:inline">Xem</span></a>}>
       <form onSubmit={save} className="space-y-5">
         <section className="space-y-4 border border-neutral-200 bg-white p-4">
@@ -225,7 +225,7 @@ export function PostEdit({ id, me }: { id: string; me: Me }) {
             {!isNew && can(me, 'delete') && (
               <Button type="button" variant="danger" icon="trash" onClick={async () => {
                 if (!confirmDanger('Xoá trang nhật ký này?')) return;
-                try { await api(`/admin/posts/${id}`, { method: 'DELETE' }); markDirty(false); toast('Đã xoá'); navigate('/admin/tin-tuc', true); } catch (e: any) { toast(e.message, 'err'); }
+                try { await api(`/admin/posts/${id}`, { method: 'DELETE' }); markDirty(false); toast('Đã xoá'); navigate('/admin/nhat-ky', true); } catch (e: any) { toast(e.message, 'err'); }
               }}>Xoá</Button>
             )}
           </div>

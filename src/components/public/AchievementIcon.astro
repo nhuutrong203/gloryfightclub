@@ -14,5 +14,5 @@ const tiers = (['gold', 'silver', 'bronze'] as Tier[]).filter((t) => medals[t] >
   : kind === 'title'
     ? <Icon name="trophy" class={`${className} shrink-0 text-gold`} />
     : kind === 'belt'
-      ? <span class="shrink-0" style={beltColor(line) ? `color:${beltColor(line)};filter:drop-shadow(0 0 1px rgb(128 128 128))` : undefined}><Icon name="belt" class={className} /></span>
+      ? <span class="shrink-0" style={beltColor(line) ? `color:${beltColor(line)};filter:drop-shadow(0 0 1px #fff) drop-shadow(0 0 1px #777)` : undefined}><Icon name="belt" class={className} /></span>
       : <Icon name="star" class={`${className} shrink-0 opacity-70`} />}

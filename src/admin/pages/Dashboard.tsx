@@ -74,7 +74,7 @@ export function Dashboard({ me }: { me: Me }) {
 
           <div className="flex flex-wrap gap-3">
             {can(me, 'students.edit') && <LinkButton to="/admin/hoc-vien/moi" icon="plus" variant="primary">Thêm học viên</LinkButton>}
-            {can(me, 'posts') && <LinkButton to="/admin/tin-tuc/moi" icon="news">Viết nhật ký</LinkButton>}
+            {can(me, 'posts') && <LinkButton to="/admin/nhat-ky/moi" icon="news">Viết nhật ký</LinkButton>}
             <a href={siteUrl()} target="_blank" rel="noopener" className="inline-flex min-h-12 items-center gap-2 border border-neutral-300 bg-white px-5 font-semibold hover:bg-neutral-100"><Icon name="external" />Xem website</a>
           </div>
         </div>

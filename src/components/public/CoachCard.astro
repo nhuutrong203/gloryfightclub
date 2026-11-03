@@ -6,6 +6,7 @@ import { mediaUrl } from '../../lib/site';
 import { lines } from '../../lib/public';
 import AchievementIcon from './AchievementIcon.astro';
 import MedalTally from './MedalTally.astro';
+import { tally } from '../../lib/medals';
 import type { schema } from '../../db';
 
 interface Props { coach: typeof schema.coaches.$inferSelect & { awards?: { title: string; titleEn: string | null }[] }; lang: Lang; i?: number; tone?: 'light' | 'dark'; class?: string }
@@ -14,6 +15,8 @@ const { coach: c, lang, i = 0, tone = 'dark', class: className } = Astro.props;
 const text = lines(tr(c, 'achievements', lang));
 const achievements = text.length ? text : (c.awards ?? []).map((a) => tr(a, 'title', lang));
 const photo = mediaUrl(c.photoKey);
+const medals = tally(achievements);
+const hasMedals = medals.gold + medals.silver + medals.bronze > 0;
 // Chưa có ảnh: hiện chữ viết tắt (vd. "LT") thay vì khung trống.
 const initials = c.fullName.trim().split(/\s+/).slice(-2).map((w) => w[0]).join('');
 ---
@@ -28,7 +31,7 @@ const initials = c.fullName.trim().split(/\s+/).slice(-2).map((w) => w[0]).join(
         </div>
       )}
     <div class="absolute inset-x-0 bottom-0 h-1.5 bg-glory origin-left scale-x-0 transition-transform duration-300 group-hover:scale-x-100"></div>
-    {achievements.length > 0 && (
+    {achievements.length > 0 && !hasMedals && (
       <span class="absolute top-4 left-4 flex items-center gap-1.5 bg-glory px-2.5 py-1 font-display text-sm tracking-wider text-white">
         <Icon name="trophy" class="size-4" />{achievements.length}
       </span>

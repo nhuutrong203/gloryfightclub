@@ -7,15 +7,22 @@ export type Achievement = { kind: Kind; medals: Record<Tier, number> };
 
 // "vàng/bạc/đồng" đứng một mình dễ nhầm ("đai vàng", "đồng bằng") → chỉ tính khi có số đứng trước.
 const PATTERNS: Record<Tier, RegExp[]> = {
-  gold: [/(\d+)?\s*\bHCV\b/giu, /(\d+)?\s*huy chương vàng/giu, /(\d+)\s*vàng(?![\p{L}])/giu, /(\d+)?\s*\bgold\b/giu],
-  silver: [/(\d+)?\s*\bHCB\b/giu, /(\d+)?\s*huy chương bạc/giu, /(\d+)\s*bạc(?![\p{L}])/giu, /(\d+)?\s*\bsilver\b/giu],
-  bronze: [/(\d+)?\s*HCĐ(?![\p{L}])/giu, /(\d+)?\s*huy chương đồng/giu, /(\d+)\s*đồng(?![\p{L}])/giu, /(\d+)?\s*\bbronze\b/giu],
+  gold: [/(\d+)?\s*\bHCV\b/giu, /(\d+)\s*vàng(?![\p{L}])/giu, /(\d+)?\s*\bgold\b/giu],
+  silver: [/(\d+)?\s*\bHCB\b/giu, /(\d+)\s*bạc(?![\p{L}])/giu, /(\d+)?\s*\bsilver\b/giu],
+  bronze: [/(\d+)?\s*HCĐ(?![\p{L}])/giu, /(\d+)\s*đồng(?![\p{L}])/giu, /(\d+)?\s*\bbronze\b/giu],
 };
+const TIER_WORD: Record<string, Tier> = { 'vàng': 'gold', 'bạc': 'silver', 'đồng': 'bronze' };
+// "huy chương bạc và đồng", "huy chương vàng, bạc", "2 huy chương vàng" (số chỉ áp cho khi có 1 hạng).
+const MEDAL_LIST = /(\d+)?\s*huy chương\s+((?:vàng|bạc|đồng)(?:\s*(?:,|và|&|\/)\s*(?:vàng|bạc|đồng))*)(?![\p{L}])/giu;
 
 export function classify(line: string): Achievement {
   const medals = { gold: 0, silver: 0, bronze: 0 };
   for (const tier of Object.keys(PATTERNS) as Tier[]) {
     for (const re of PATTERNS[tier]) for (const m of line.matchAll(re)) medals[tier] += Number(m[1] ?? 1);
+  }
+  for (const m of line.matchAll(MEDAL_LIST)) {
+    const tiers = m[2].toLowerCase().match(/vàng|bạc|đồng/gu)!.map((w) => TIER_WORD[w]);
+    for (const t of tiers) medals[t] += tiers.length === 1 ? Number(m[1] ?? 1) : 1;
   }
   const kind: Kind = medals.gold + medals.silver + medals.bronze > 0 ? 'medal'
     : /vô địch|champion|danh hiệu|giải nhất|hạng nhất|quán quân|\btop\s*\d/iu.test(line) ? 'title'

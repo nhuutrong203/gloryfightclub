@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { api, can, navigate, siteUrl, toast, type Me } from '../lib';
 import { A, Button, Icon, Page, TextInput } from '../ui';
-import type { ResourceKey } from '../resources';
+import { RESOURCES, type ResourceKey } from '../resources';
 
 type Item = { to: string; label: string; icon: string; sub?: string };
 
 export function menuGroups(me: Me): { title: string; items: Item[] }[] {
   // label = tên mục như khách thấy trên web; sub = phần đó sửa ở đâu / gồm gì.
-  const res = (k: ResourceKey, label: string, icon: string, sub: string): Item => ({ to: `/admin/noi-dung/${k}`, label, icon, sub });
+  // Tên = tiêu đề trang trong resources.ts (cũng là tên trên web) → menu và trang luôn khớp.
+  const res = (k: ResourceKey, icon: string, sub: string): Item => ({ to: `/admin/noi-dung/${k}`, label: RESOURCES[k].title, icon, sub });
   const content = can(me, 'content');
   return [
     {
@@ -22,24 +23,24 @@ export function menuGroups(me: Me): { title: string; items: Item[] }[] {
       items: [
         ...(content ? [
           { to: '/admin/cai-dat#hero', label: 'Trang chủ', icon: 'home', sub: 'Ảnh nền, tiêu đề lớn · HLV "nổi bật" chọn ở mục HLV' },
-          res('disciplines', 'Môn học', 'star', 'Tên, mô tả, ảnh bìa từng môn'),
-          res('classes', 'Lịch học', 'calendar', 'Lớp & giờ tập từng cơ sở'),
-          res('coaches', 'HLV', 'users', 'Ảnh, chức danh, thành tích, nổi bật ở trang chủ'),
-          res('feePlans', 'Bảng giá học phí', 'wallet', 'Các gói & giá trên trang Học phí'),
+          res('disciplines', 'star', 'Tên, mô tả, ảnh bìa từng môn'),
+          res('classes', 'calendar', 'Lớp & giờ tập từng cơ sở'),
+          res('coaches', 'users', 'Ảnh, chức danh, thành tích, nổi bật ở trang chủ'),
+          res('feePlans', 'wallet', 'Các gói & giá trên trang Học phí'),
         ] : []),
-        ...(can(me, 'posts') ? [{ to: '/admin/tin-tuc', label: 'Nhật ký lớp', icon: 'news', sub: 'Viết bài, ảnh, video buổi tập' }] : []),
-        ...(content ? [res('locations', 'Liên hệ · Cơ sở', 'home', 'Địa chỉ, bản đồ, ảnh lịch từng cơ sở')] : []),
+        ...(can(me, 'posts') ? [{ to: '/admin/nhat-ky', label: 'Nhật ký lớp', icon: 'news', sub: 'Viết bài, ảnh, video buổi tập' }] : []),
+        ...(content ? [res('locations', 'home', 'Địa chỉ, bản đồ, ảnh lịch từng cơ sở')] : []),
       ],
     },
     {
       title: 'Trang web — mục phụ',
       items: content ? [
         { to: '/admin/cai-dat#club', label: 'Giới thiệu · Liên hệ chung', icon: 'settings', sub: 'Câu chuyện CLB, hotline, Zalo, Facebook' },
-        res('achievements', 'Thành tích', 'star', 'Huy chương, ảnh lên bục (gắn HLV được)'),
-        res('belts', 'Cấp đai', 'edit', 'Hệ thống đai Kudo, Jiujitsu'),
-        res('gallery', 'Thư viện', 'image', 'Ảnh & video CLB'),
-        res('testimonials', 'Cảm nhận', 'edit', 'Học viên, phụ huynh nói gì'),
-        res('faqs', 'Hỏi đáp', 'edit', 'Câu hỏi thường gặp (hiện cả ở trang Học phí)'),
+        res('achievements', 'star', 'Huy chương, ảnh lên bục (gắn HLV được)'),
+        res('belts', 'edit', 'Hệ thống đai Kudo, Jiujitsu'),
+        res('gallery', 'image', 'Ảnh & video CLB'),
+        res('testimonials', 'edit', 'Học viên, phụ huynh nói gì'),
+        res('faqs', 'edit', 'Câu hỏi thường gặp (hiện cả ở trang Học phí)'),
         { to: '/admin/chu-website', label: 'Chữ trên website', icon: 'edit', sub: 'Nút bấm, tiêu đề, câu cố định' },
       ] : [],
     },

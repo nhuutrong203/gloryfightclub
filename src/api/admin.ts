@@ -17,7 +17,7 @@ adminRoutes.get('/me', (c) => c.json(c.get('user')));
 adminRoutes.get('/lookups', async (c) => {
   const [locations, disciplines, classes, coaches, feePlans] = await Promise.all([
     db.select({ id: schema.locations.id, name: schema.locations.name }).from(schema.locations).orderBy(asc(schema.locations.sort)),
-    db.select({ id: schema.disciplines.id, name: schema.disciplines.name }).from(schema.disciplines).orderBy(asc(schema.disciplines.sort)),
+    db.select({ id: schema.disciplines.id, name: schema.disciplines.name, hasBelts: schema.disciplines.hasBelts, isPublic: schema.disciplines.isPublic }).from(schema.disciplines).orderBy(asc(schema.disciplines.sort)),
     db.select({ id: schema.classes.id, name: schema.classes.name, days: schema.classes.days, startTime: schema.classes.startTime, endTime: schema.classes.endTime, locationId: schema.classes.locationId, isActive: schema.classes.isActive })
       .from(schema.classes).orderBy(asc(schema.classes.locationId), asc(schema.classes.startTime)),
     db.select({ id: schema.coaches.id, name: schema.coaches.fullName }).from(schema.coaches).orderBy(asc(schema.coaches.sort)),

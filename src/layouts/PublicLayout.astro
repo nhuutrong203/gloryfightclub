@@ -33,7 +33,7 @@ const counts = (await db.get<Record<string, number>>(sql`select
   (select count(*) from faqs where is_public = 1) as "/hoi-dap",
   (select count(*) from gallery_items where is_public = 1) as "/thu-vien",
   (select count(*) from achievements where is_public = 1) as "/thanh-tich",
-  (select count(*) from belts) as "/cap-dai"`)) ?? {};
+  (select count(*) from belts b join disciplines d on d.id = b.discipline_id where d.has_belts = 1 and d.is_public = 1) as "/cap-dai"`)) ?? {};
 const hasContent = ([p]: [string, DictKey]) => counts[p] !== 0;
 
 const main = ([

@@ -6,7 +6,7 @@ import { StudentImport } from './StudentImport';
 
 export type Lookups = {
   locations: { id: number; name: string }[];
-  disciplines: { id: number; name: string }[];
+  disciplines: { id: number; name: string; hasBelts?: boolean; isPublic?: boolean }[];
   classes: { id: number; name: string; days: string; startTime: string; endTime: string; locationId: number; isActive: boolean }[];
   coaches: { id: number; name: string }[];
   feePlans: { id: number; name: string; pricePerMonth: number }[];
