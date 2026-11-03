@@ -40,7 +40,7 @@ Astro 7 SSR + `@astrojs/cloudflare` 14 (Cloudflare Workers) · React (CMS SPA) �
 - Colours: black `#0A0A0A`, white, red accent `#E10600`. Fonts: Anton (headings) + Be Vietnam Pro (body).
 - **Uppercase Vietnamese Anton headings: line-height ≥ 1.12** (stacked marks on Ổ/Ầ/Ấ rise above the cap height). Do NOT use `leading-none`/`leading-[0.9x]` on text with diacritics; only on numbers/prices. Headings use `text-wrap: balance`.
 - **Small** red text on dark backgrounds uses `text-glory-bright` (#ff3b30, 5.6:1); `glory` (#E10600) is for buttons/blocks/large headings only; on light backgrounds use `glory-dark`.
-- Menu/footer hide links to sections without content (news, testimonials, FAQ, gallery, achievements, belts) — counted in `PublicLayout`.
+- Menu/footer hide links to sections without content (testimonials, FAQ, gallery, achievements, belts) — counted in `PublicLayout`. The class diary link always shows (owner's choice); the diary block on Home still hides while there are no posts.
 - Phones: fixed bottom action bar (Call · Zalo · Trial class), `body` has matching bottom padding; the round floating button only shows from `lg`.
 - Page transitions: CSS `@view-transition` (no JS). Every animation has a `prefers-reduced-motion` branch.
 - All public content is read from D1, never hard-coded. Fixed UI strings live in `dict` (`src/i18n.ts`) and are **editable in CMS → Chữ trên website** (settings key `texts` = `{vi:{key:text}, en:{…}}`, loaded by the middleware into `setTextOverrides`; `t()` prefers the edited text). New string → add a key to `dict`, NEVER a hard-coded string in a page; display groups are in `src/admin/pages/Texts.tsx` (`GROUPS`).

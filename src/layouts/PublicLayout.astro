@@ -27,8 +27,8 @@ const image = new URL(Astro.props.image ?? '/og-default.png', Astro.site).href;
 const canonical = new URL(href(path, lang), Astro.site).href;
 
 // Ẩn link tới mục chưa có nội dung (trang rỗng chỉ hiện "Chưa có…"); có nội dung là tự hiện lại.
+// Nhật ký lớp luôn hiện trên menu (chủ CLB muốn khách thấy mục này ngay cả khi chưa có bài).
 const counts = (await db.get<Record<string, number>>(sql`select
-  (select count(*) from posts where is_public = 1 and published_at <= ${Date.now()}) as "/nhat-ky",
   (select count(*) from testimonials where is_public = 1) as "/cam-nhan",
   (select count(*) from faqs where is_public = 1) as "/hoi-dap",
   (select count(*) from gallery_items where is_public = 1) as "/thu-vien",
