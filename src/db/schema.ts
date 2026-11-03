@@ -137,6 +137,8 @@ export const posts = sqliteTable('posts', {
   titleEn: text('title_en'),
   content: text('content').notNull(),
   contentEn: text('content_en'),
+  // 'html' = soạn bằng trình soạn thảo (đã lọc ở server); 'text' = bài cũ chữ thường.
+  format: text('format', { enum: ['text', 'html'] }).notNull().default('text'),
   publishedAt: integer('published_at').notNull(), // > now = hẹn giờ đăng
   isPublic: isPublic(),
   createdBy: integer('created_by').references(() => users.id, { onDelete: 'set null' }),
@@ -147,6 +149,8 @@ export const posts = sqliteTable('posts', {
 export const postImages = sqliteTable('post_images', {
   id: id(),
   postId: integer('post_id').notNull().references(() => posts.id, { onDelete: 'cascade' }),
+  // image/video: key R2 · youtube: link YouTube
+  type: text('type', { enum: ['image', 'video', 'youtube'] }).notNull().default('image'),
   key: text('key').notNull(),
   sort: sort(),
 });

@@ -29,6 +29,8 @@ const PATHS: Record<string, string> = {
   clock: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20m0-16v6l4 2',
   star: 'm12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z',
   edit: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z',
+  play: 'M7 4v16l13-8z',
+  video: 'm22 8-6 4 6 4zM4 6h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2',
 };
 export function Icon({ name, className = '' }: { name: keyof typeof PATHS | string; className?: string }) {
   // Giữ cỡ mặc định size-5 khi chỉ truyền màu (vd. "text-glory"), tránh icon phình to.

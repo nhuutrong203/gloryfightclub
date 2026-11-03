@@ -69,7 +69,7 @@ function Shell({ me, path, children }: { me: Me; path: string; children: ReactNo
     { to: '/admin/hoc-vien', label: 'Học viên', icon: 'users', show: can(me, 'students.view') },
     { to: '/admin/hoc-phi', label: 'Học phí', icon: 'wallet', show: can(me, 'fees.view') },
     { to: '/admin/hoc-thu', label: 'Học thử', icon: 'inbox', show: can(me, 'students.view') },
-    { to: '/admin/tin-tuc', label: 'Tin tức', icon: 'news', show: can(me, 'posts') && !can(me, 'fees.view') },
+    { to: '/admin/tin-tuc', label: 'Nhật ký', icon: 'news', show: can(me, 'posts') && !can(me, 'fees.view') },
     { to: '/admin/them', label: 'Thêm', icon: 'menu', show: true },
   ].filter((t) => t.show);
   // Số đăng ký học thử mới: hiện huy hiệu đỏ trên tab, cập nhật khi chuyển trang và mỗi phút.

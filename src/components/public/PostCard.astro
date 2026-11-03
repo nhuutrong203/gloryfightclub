@@ -1,12 +1,14 @@
 ---
-import Logo from '../Logo.astro';
 import Icon from './Icon.astro';
-import { tr, href, t, formatDate, type Lang } from '../../i18n';
-import { richText } from '../../lib/public';
+import { tr, href, t, dayLong, type Lang } from '../../i18n';
+import { richText, postHtml, youtubeEmbed, todayDigit, type PostMedia } from '../../lib/public';
+import { toText } from '../../lib/html';
+import { youtubeId } from '../../lib/util';
 
-// Bài kiểu Facebook: 1 ảnh = full, 2–4 ảnh = lưới, >4 = lưới 4 ô + "+N".
+// Một trang nhật ký lớp: ô ngày (như tờ lịch), chữ, ảnh / video / YouTube.
+// Thẻ (trang chủ, danh sách): đoạn trích + lưới 1–4 ô, ">4" hiện "+N". full (trang chi tiết): nội dung đủ, video phát được.
 interface Props {
-  post: { slug: string; title: string | null; titleEn: string | null; content: string; contentEn: string | null; publishedAt: number; images: string[] };
+  post: { slug: string; title: string | null; titleEn: string | null; content: string; contentEn: string | null; format: 'text' | 'html'; publishedAt: number; media: PostMedia[] };
   lang: Lang;
   full?: boolean;
   i?: number;
@@ -14,37 +16,57 @@ interface Props {
 const { post: p, lang, full = false, i = 0 } = Astro.props;
 const title = tr(p, 'title', lang);
 const body = tr(p, 'content', lang);
-const shown = p.images.slice(0, 4);
-const extra = p.images.length - shown.length;
-const link = href(`/tin-tuc/${p.slug}`, lang);
+const excerpt = p.format === 'html' ? toText(body) : body;
+const link = href(`/nhat-ky/${p.slug}`, lang);
+const date = new Date(p.publishedAt);
+const part = (o: Intl.DateTimeFormatOptions) => date.toLocaleString(lang === 'en' ? 'en-GB' : 'vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', ...o });
+const shown = p.media.slice(0, 4);
+const extra = p.media.length - shown.length;
+const src = (m: PostMedia) => `/media/${m.key}`;
+const ytThumb = (m: PostMedia) => `https://i.ytimg.com/vi/${youtubeId(m.key)}/hqdefault.jpg`;
 ---
 <article class="reveal border border-white/10 bg-coal" style={`--i:${i}`}>
-  <header class="flex items-center gap-3 p-4 sm:p-5">
-    <span class="grid size-11 place-items-center bg-ink border border-white/15"><Logo class="h-7 w-auto text-white" title="" /></span>
+  <header class="flex items-center gap-4 p-4 sm:p-5">
+    <time datetime={date.toISOString()} class="flex w-16 shrink-0 flex-col items-center bg-glory py-2 text-white">
+      <span class="font-display text-3xl leading-none">{part({ day: 'numeric' })}</span>
+      <span class="mt-1 text-xs font-semibold uppercase tracking-wider">{lang === 'en' ? part({ month: 'short' }) : `Th ${part({ month: 'numeric' })}`}</span>
+    </time>
     <div class="min-w-0">
-      <p class="font-semibold leading-tight">Glory Fight Club</p>
-      <p class="text-sm text-ash flex items-center gap-1.5"><Icon name="calendar" class="size-3.5" /><time datetime={new Date(p.publishedAt).toISOString()}>{formatDate(p.publishedAt, lang)}</time></p>
+      <p class="text-sm font-semibold uppercase tracking-wider text-ash">{dayLong(todayDigit(date), lang)} · {part({ year: 'numeric' })}</p>
+      {title && (full
+        ? <h1 class="mt-1 text-4xl sm:text-5xl">{title}</h1>
+        : <h3 class="mt-1 text-2xl sm:text-3xl"><a href={link} class="hover:text-glory transition-colors">{title}</a></h3>)}
     </div>
   </header>
-  <div class="px-4 sm:px-5 pb-4">
-    {title && (full ? <h1 class="text-4xl sm:text-5xl">{title}</h1> : <h2 class="text-3xl"><a href={link} class="hover:text-glory transition-colors">{title}</a></h2>)}
-    <div class:list={['mt-3 text-white/85', !full && 'line-clamp-4']} set:html={richText(body)} />
-    {!full && <a href={link} class="mt-1 inline-flex min-h-11 items-center gap-1 font-display uppercase tracking-wider text-sm text-glory-bright hover:text-white">{t(lang, 'read_more')}<Icon name="arrow-right" class="size-4" /></a>}
-  </div>
-  {shown.length > 0 && (
-    full ? (
-      <div class="grid gap-1 bg-ink">
-        {p.images.map((k) => <img src={`/media/${k}`} alt="" loading="lazy" class="w-full h-auto" />)}
-      </div>
-    ) : (
-      <a href={link} class:list={['grid gap-1 bg-ink', shown.length > 1 && 'grid-cols-2']} aria-label={title || t(lang, 'read_more')}>
-        {shown.map((k, idx) => (
-          <div class:list={['relative overflow-hidden', shown.length === 1 ? 'aspect-[4/3]' : 'aspect-square', shown.length === 3 && idx === 0 && 'row-span-2 !aspect-auto']}>
-            <img src={`/media/${k}`} alt="" loading="lazy" class="absolute inset-0 size-full object-cover" />
-            {idx === 3 && extra > 0 && <span class="absolute inset-0 grid place-items-center bg-ink/70 font-display text-5xl">+{extra}</span>}
-          </div>
-        ))}
-      </a>
-    )
+
+  {(full ? body : excerpt) && (
+    <div class="px-4 pb-4 sm:px-5">
+      {full
+        ? <div class="rich" set:html={postHtml(p, body)} />
+        : <p class="line-clamp-4 whitespace-pre-line text-white/85" set:html={richText(excerpt)} />}
+    </div>
   )}
+  {!full && <a href={link} class="mx-4 mb-3 inline-flex min-h-11 items-center gap-1 font-display text-sm uppercase tracking-wider text-glory-bright hover:text-white sm:mx-5">{t(lang, 'read_more')}<Icon name="arrow-right" class="size-4" /></a>}
+
+  {p.media.length > 0 && (full ? (
+    <div class="grid gap-1 bg-ink">
+      {p.media.map((m) => m.type === 'image'
+        ? <a href={src(m)} target="_blank" rel="noopener"><img src={src(m)} alt="" loading="lazy" decoding="async" class="h-auto w-full" /></a>
+        : m.type === 'video'
+          ? <video src={`${src(m)}#t=0.1`} controls playsinline preload="metadata" class="max-h-[85vh] w-full bg-black"></video>
+          : <div class="aspect-video"><iframe src={youtubeEmbed(m.key)} title={title || t(lang, 'watch_video')} loading="lazy" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen class="size-full"></iframe></div>)}
+    </div>
+  ) : (
+    <a href={link} class:list={['grid gap-1 bg-ink', shown.length > 1 && 'grid-cols-2']} aria-label={title || t(lang, 'read_more')}>
+      {shown.map((m, idx) => (
+        <div class:list={['relative overflow-hidden', shown.length === 1 ? 'aspect-[4/3]' : 'aspect-square', shown.length === 3 && idx === 0 && 'row-span-2 !aspect-auto']}>
+          {m.type === 'video'
+            ? <video src={`${src(m)}#t=0.1`} muted playsinline preload="metadata" class="absolute inset-0 size-full object-cover"></video>
+            : <img src={m.type === 'image' ? src(m) : ytThumb(m)} alt="" loading="lazy" decoding="async" class="absolute inset-0 size-full object-cover" />}
+          {m.type !== 'image' && <span class="absolute inset-0 grid place-items-center" aria-hidden="true"><span class="grid size-14 place-items-center bg-glory/90 text-white"><Icon name="play" class="size-6" /></span></span>}
+          {idx === 3 && extra > 0 && <span class="absolute inset-0 grid place-items-center bg-ink/70 font-display text-5xl">+{extra}</span>}
+        </div>
+      ))}
+    </a>
+  ))}
 </article>

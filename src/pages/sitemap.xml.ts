@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { publicCoaches, publicDisciplines, publishedSlugs } from '../lib/public';
 import { href } from '../i18n';
 
-const STATIC = ['/', '/gioi-thieu', '/mon-hoc', '/lich-hoc', '/huan-luyen-vien', '/hoc-phi', '/tin-tuc', '/thu-vien',
+const STATIC = ['/', '/gioi-thieu', '/mon-hoc', '/lich-hoc', '/huan-luyen-vien', '/hoc-phi', '/nhat-ky', '/thu-vien',
   '/cap-dai', '/thanh-tich', '/cam-nhan', '/hoi-dap', '/lien-he', '/dang-ky-hoc-thu'];
 
 // shortcut: lấy tối đa 1000 bài mới nhất; đủ cho nhiều năm đăng hằng ngày, tách sitemap index khi vượt.
@@ -12,7 +12,7 @@ export const GET: APIRoute = async ({ site }) => {
     ...STATIC,
     ...disciplines.map((d) => `/mon-hoc/${d.slug}`),
     ...coaches.map((c) => `/huan-luyen-vien/${c.slug}`),
-    ...posts.map((p) => `/tin-tuc/${p.slug}`),
+    ...posts.map((p) => `/nhat-ky/${p.slug}`),
   ];
   const abs = (p: string) => new URL(p, site).href;
   const urls = paths.map((p) => `<url><loc>${abs(href(p, 'vi'))}</loc>`

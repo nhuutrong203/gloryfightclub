@@ -8,6 +8,13 @@
       "when": 1793624137519,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1793715496886,
+      "tag": "0001_closed_veda",
+      "breakpoints": true
     }
   ]
 }

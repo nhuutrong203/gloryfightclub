@@ -18,6 +18,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return context.redirect(`https://${env.CMS_HOST}${pathname}`, 302);
   }
 
+  // Mục Tin tức đã thành Nhật ký lớp học: giữ link cũ (đã chia sẻ / Google đã lưu).
+  const old = pathname.match(/^(\/en)?\/tin-tuc(\/.*)?$/);
+  if (old) return context.redirect(`${old[1] ?? ''}/nhat-ky${old[2] ?? ''}${context.url.search}`, 301);
+
   // Chữ giao diện thầy sửa trong CMS: nạp trước khi render trang public (không cần cho API/ảnh).
   if (!CMS_PATH.test(pathname) && !pathname.startsWith('/_')) {
     const row = await db.select({ value: schema.settings.value }).from(schema.settings).where(eq(schema.settings.key, 'texts')).get();

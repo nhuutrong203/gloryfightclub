@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { api, can, navigate, toast, type Me } from '../lib';
+import { api, can, navigate, siteUrl, toast, type Me } from '../lib';
 import { A, Button, Icon, Page, TextInput } from '../ui';
 import { RESOURCES, type ResourceKey } from '../resources';
 
@@ -13,7 +13,7 @@ export function menuGroups(me: Me): { title: string; items: Item[] }[] {
       items: [
         ...(can(me, 'students.view') ? [{ to: '/admin/hoc-vien', label: 'Học viên', icon: 'users' }, { to: '/admin/hoc-thu', label: 'Đăng ký học thử', icon: 'inbox' }] : []),
         ...(can(me, 'fees.view') ? [{ to: '/admin/hoc-phi', label: 'Học phí', icon: 'wallet' }] : []),
-        ...(can(me, 'posts') ? [{ to: '/admin/tin-tuc', label: 'Tin tức / Nhật ký lớp', icon: 'news' }] : []),
+        ...(can(me, 'posts') ? [{ to: '/admin/tin-tuc', label: 'Nhật ký lớp học', icon: 'news' }] : []),
       ],
     },
     {
@@ -78,7 +78,7 @@ export function More({ me, compact, path }: { me: Me; compact?: boolean; path?: 
             </ul>
           </section>
         ))}
-        <a href="/" target="_blank" rel="noopener" className="flex min-h-14 items-center gap-3 border border-neutral-200 bg-white px-4 font-semibold hover:bg-neutral-50"><Icon name="external" className="size-5 text-glory" />Xem website</a>
+        <a href={siteUrl()} target="_blank" rel="noopener" className="flex min-h-14 items-center gap-3 border border-neutral-200 bg-white px-4 font-semibold hover:bg-neutral-50"><Icon name="external" className="size-5 text-glory" />Xem website</a>
         <Button variant="ghost" icon="logout" className="w-full" onClick={logout}>Đăng xuất</Button>
       </div>
     </Page>

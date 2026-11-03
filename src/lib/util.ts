@@ -26,3 +26,7 @@ export function normalizePhone(s: string) {
   else if (d.startsWith('84') && d.length === 11) d = '0' + d.slice(2);
   return /^0\d{9}$/.test(d) ? d : null;
 }
+
+/** Link YouTube (watch, youtu.be, shorts, live, embed) → mã video 11 ký tự; link khác → null. */
+export const youtubeId = (url: string | null | undefined) =>
+  url?.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([\w-]{11})/)?.[1] ?? null;

@@ -1,0 +1,57 @@
+---
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import PageHero from '../../components/public/PageHero.astro';
+import PostCard from '../../components/public/PostCard.astro';
+import Icon from '../../components/public/Icon.astro';
+import CtaBand from '../../components/public/CtaBand.astro';
+import { publishedPosts, countPublishedPosts } from '../../lib/public';
+import { t, href, type Lang } from '../../i18n';
+
+// Nhật ký lớp học: dòng thời gian, mỗi tháng một chặng, mỗi buổi tập một trang.
+const PER_PAGE = 10;
+const lang: Lang = Astro.locals.lang;
+const page = Math.max(1, Number.parseInt(Astro.url.searchParams.get('trang') ?? '1', 10) || 1);
+const [posts, total] = await Promise.all([publishedPosts(PER_PAGE, (page - 1) * PER_PAGE), countPublishedPosts()]);
+const pages = Math.max(1, Math.ceil(total / PER_PAGE));
+const pageLink = (n: number) => (n === 1 ? href('/nhat-ky', lang) : `${href('/nhat-ky', lang)}?trang=${n}`);
+const monthOf = (ms: number) => new Date(ms).toLocaleDateString(lang === 'en' ? 'en-GB' : 'vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', month: 'long', year: 'numeric' });
+const months: { label: string; items: typeof posts }[] = [];
+for (const p of posts) {
+  const label = monthOf(p.publishedAt);
+  if (months.at(-1)?.label === label) months.at(-1)!.items.push(p);
+  else months.push({ label, items: [p] });
+}
+Astro.response.headers.set('cache-control', 'public, max-age=60');
+---
+<PublicLayout path="/nhat-ky" title={t(lang, 'news_title')} description={t(lang, 'news_sub')} noindex={page > pages}>
+  <PageHero eyebrow={t(lang, 'nav_news')} title={t(lang, 'news_title')} subtitle={t(lang, 'news_sub')} />
+  <section class="container-x py-12 sm:py-16">
+    <div class="mx-auto max-w-2xl">
+      {posts.length === 0 && <p class="py-16 text-center text-white/75">{t(lang, 'news_empty')}</p>}
+      {months.map((m) => (
+        <section class="relative mb-12 last:mb-0">
+          <h2 class="sticky top-16 z-10 -mx-4 mb-6 flex items-center gap-3 bg-ink/90 px-4 py-2 text-2xl backdrop-blur sm:text-3xl">
+            <span class="h-0.5 w-8 shrink-0 bg-glory" aria-hidden="true"></span>{m.label}
+          </h2>
+          <!-- Đường dọc của cuốn nhật ký; mỗi trang có một chấm đỏ. -->
+          <ol class="space-y-8 border-l-2 border-white/10 pl-5 sm:pl-8">
+            {m.items.map((p, i) => (
+              <li class="relative">
+                <span class="absolute -left-[27px] top-8 size-3 bg-glory sm:-left-[39px]" aria-hidden="true"></span>
+                <PostCard post={p} lang={lang} i={i % 3} />
+              </li>
+            ))}
+          </ol>
+        </section>
+      ))}
+    </div>
+    {pages > 1 && (
+      <nav class="mx-auto mt-12 flex max-w-2xl items-center justify-between gap-4" aria-label={t(lang, 'page')}>
+        {page > 1 ? <a href={pageLink(page - 1)} class="btn-ghost !text-base"><Icon name="chevron-left" />{t(lang, 'prev')}</a> : <span></span>}
+        <span class="font-display tracking-wider text-ash">{t(lang, 'page')} {page}/{pages}</span>
+        {page < pages ? <a href={pageLink(page + 1)} class="btn-ghost !text-base">{t(lang, 'next')}<Icon name="chevron-right" /></a> : <span></span>}
+      </nav>
+    )}
+  </section>
+  <CtaBand lang={lang} />
+</PublicLayout>

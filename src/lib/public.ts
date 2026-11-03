@@ -1,5 +1,6 @@
 import { and, asc, count, desc, eq, inArray, lte } from 'drizzle-orm';
 import { db, schema } from '../db';
+import { youtubeId } from './util';
 
 /** Chữ số ngày hôm nay theo giờ VN: '2'..'7', '8' = Chủ nhật. */
 export function todayDigit(now = new Date()): string {
@@ -19,9 +20,8 @@ export function richText(text: string | null | undefined): string {
 
 /** Link YouTube → link embed; link khác → null. */
 export function youtubeEmbed(url: string | null | undefined): string | null {
-  if (!url) return null;
-  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([\w-]{11})/);
-  return m ? `https://www.youtube-nocookie.com/embed/${m[1]}` : null;
+  const id = youtubeId(url);
+  return id ? `https://www.youtube-nocookie.com/embed/${id}` : null;
 }
 
 export const lines = (s: string | null | undefined) => (s ?? '').split('\n').map((l) => l.trim()).filter(Boolean);
@@ -58,7 +58,7 @@ const postVisible = () => and(eq(schema.posts.isPublic, true), lte(schema.posts.
 export async function publishedPosts(limit: number, offset = 0) {
   const posts = await db.select().from(schema.posts).where(postVisible())
     .orderBy(desc(schema.posts.publishedAt)).limit(limit).offset(offset);
-  return withImages(posts);
+  return withMedia(posts);
 }
 
 /** Slug bài đã đăng cho sitemap (không lấy ảnh: danh sách id dài vượt giới hạn 100 tham số của D1). */
@@ -68,7 +68,7 @@ export const publishedSlugs = (limit: number) =>
 export async function postBySlug(slug: string) {
   const [post] = await db.select().from(schema.posts)
     .where(and(eq(schema.posts.slug, slug), postVisible())).limit(1);
-  return post ? (await withImages([post]))[0] : null;
+  return post ? (await withMedia([post]))[0] : null;
 }
 
 export async function countPublishedPosts() {
@@ -76,11 +76,16 @@ export async function countPublishedPosts() {
   return row.n;
 }
 
-async function withImages<T extends { id: number }>(posts: T[]) {
+export type PostMedia = { type: 'image' | 'video' | 'youtube'; key: string };
+
+async function withMedia<T extends { id: number }>(posts: T[]) {
   if (!posts.length) return [];
-  const imgs = await db.select().from(schema.postImages)
+  const items = await db.select().from(schema.postImages)
     .where(inArray(schema.postImages.postId, posts.map((p) => p.id))).orderBy(asc(schema.postImages.sort));
-  return posts.map((p) => ({ ...p, images: imgs.filter((i) => i.postId === p.id).map((i) => i.key) }));
+  return posts.map((p) => ({ ...p, media: items.filter((i) => i.postId === p.id).map((i): PostMedia => ({ type: i.type, key: i.key })) }));
 }
+
+/** Nội dung bài để render (đã an toàn): bài mới là HTML đã lọc khi lưu, bài cũ là chữ thường. */
+export const postHtml = (p: { format: 'text' | 'html' }, body: string) => (p.format === 'html' ? body : richText(body));
 
 export type PublicClass = Awaited<ReturnType<typeof publicClasses>>[number];

@@ -28,7 +28,7 @@ const canonical = new URL(href(path, lang), Astro.site).href;
 
 // Ẩn link tới mục chưa có nội dung (trang rỗng chỉ hiện "Chưa có…"); có nội dung là tự hiện lại.
 const counts = (await db.get<Record<string, number>>(sql`select
-  (select count(*) from posts where is_public = 1 and published_at <= ${Date.now()}) as "/tin-tuc",
+  (select count(*) from posts where is_public = 1 and published_at <= ${Date.now()}) as "/nhat-ky",
   (select count(*) from testimonials where is_public = 1) as "/cam-nhan",
   (select count(*) from faqs where is_public = 1) as "/hoi-dap",
   (select count(*) from gallery_items where is_public = 1) as "/thu-vien",
@@ -41,7 +41,7 @@ const main = ([
   ['/lich-hoc', 'nav_schedule'],
   ['/huan-luyen-vien', 'nav_coaches'],
   ['/hoc-phi', 'nav_fees'],
-  ['/tin-tuc', 'nav_news'],
+  ['/nhat-ky', 'nav_news'],
   ['/lien-he', 'nav_contact'],
 ] as [string, DictKey][]).filter(hasContent);
 const more = ([

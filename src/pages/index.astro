@@ -176,7 +176,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
             <h2 class="text-5xl sm:text-7xl">{t(lang, 'news_title')}</h2>
             <p class="mt-2 text-white/75">{t(lang, 'news_sub')}</p>
           </div>
-          <a href={href('/tin-tuc', lang)} class="inline-flex min-h-11 items-center gap-2 font-display uppercase tracking-wider hover:text-glory">{t(lang, 'cta_all')}<Icon name="arrow-right" /></a>
+          <a href={href('/nhat-ky', lang)} class="inline-flex min-h-11 items-center gap-2 font-display uppercase tracking-wider hover:text-glory">{t(lang, 'cta_all')}<Icon name="arrow-right" /></a>
         </div>
         <div class="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3 items-start">
           {posts.map((p, i) => <PostCard post={p} lang={lang} i={i} />)}

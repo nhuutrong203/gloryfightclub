@@ -130,20 +130,35 @@ async function send(file: File, onProgress: ((pct: number) => void) | undefined,
   const blob = await shrink(file, maxSide);
   const form = new FormData();
   form.append('file', new File([blob], blob.type === 'image/webp' ? 'image.webp' : 'image.jpg', { type: blob.type }));
-  // XHR thay fetch để có % upload (fetch chưa báo được tiến trình gửi lên).
+  return xhrUpload('/api/admin/upload', form, onProgress);
+}
+
+/** POST có % tiến trình (fetch chưa báo được tiến trình gửi lên) → trả key R2 server sinh ra. */
+function xhrUpload(url: string, body: Blob | FormData, onProgress?: (pct: number) => void, contentType?: string): Promise<string> {
   return new Promise((ok, fail) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', '/api/admin/upload');
+    xhr.open('POST', url);
+    if (contentType) xhr.setRequestHeader('content-type', contentType);
     xhr.upload.onprogress = (e) => e.lengthComputable && onProgress?.(Math.round((e.loaded / e.total) * 100));
     xhr.onload = () => {
       const data = (() => { try { return JSON.parse(xhr.responseText); } catch { return {}; } })();
       if (xhr.status === 401) window.dispatchEvent(new Event('glory:logout'));
       xhr.status < 300 && data.key ? ok(data.key) : fail(new Error(data.error ?? `Upload lỗi ${xhr.status}`));
     };
-    xhr.onerror = () => fail(new Error('Mất mạng khi tải ảnh lên — thử lại'));
-    xhr.send(form);
+    xhr.onerror = () => fail(new Error('Mất mạng khi tải lên — thử lại'));
+    xhr.send(body);
   });
 }
+
+export const MAX_VIDEO_MB = 95; // giới hạn request của Cloudflare Workers là 100MB
+/** Upload 1 video (gửi thẳng file, không nén) → key R2. */
+export async function uploadVideo(file: File, onProgress?: (pct: number) => void): Promise<string> {
+  if (!/^video\/(mp4|quicktime|webm)$/.test(file.type)) throw new Error('Chỉ nhận video MP4, MOV, WebM');
+  if (file.size > MAX_VIDEO_MB * 1024 * 1024) throw new Error(`Video ${Math.round(file.size / 1048576)}MB quá lớn (tối đa ${MAX_VIDEO_MB}MB) — quay ngắn hơn / 720p, hoặc đăng YouTube rồi dán link`);
+  setUploads(1);
+  try { return await xhrUpload('/api/admin/upload-video', file, onProgress, file.type); } finally { setUploads(-1); }
+}
+
 /** Tải nhiều ảnh, 3 ảnh song song; gọi onDone(key, i) khi từng ảnh xong (lỗi thì báo toast, không dừng cả loạt). */
 export async function uploadMany(files: File[], onDone: (key: string, i: number) => void | Promise<void>, onSettled?: () => void) {
   let next = 0;
@@ -158,6 +173,8 @@ export async function uploadMany(files: File[], onDone: (key: string, i: number)
 }
 
 export const mediaUrl = (key: string | null | undefined) => (key ? `/media/${key}` : '');
+/** Địa chỉ website public: CMS chạy ở cms-<tên miền>, link /… trên host CMS bị chuyển về /admin. */
+export const siteUrl = (path = '/') => `${location.protocol}//${location.host.replace(/^cms-/, '')}${path}`;
 
 // ───────── Quyền ─────────
 export type Me = { id: number; username: string; fullName: string; role: 'owner' | 'coach'; permissions: string[] };

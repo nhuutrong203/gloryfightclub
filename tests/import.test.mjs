@@ -2,7 +2,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { byName, fixPhone, parseDate } from '../src/lib/import.ts';
-import { normalizePhone } from '../src/lib/util.ts';
+import { normalizePhone, youtubeId } from '../src/lib/util.ts';
+import { textToHtml, toText } from '../src/lib/html.ts';
 import { RESOURCES } from '../src/admin/resources.ts';
 
 test('parseDate đọc ngày kiểu Việt Nam và ISO', () => {
@@ -43,4 +44,15 @@ test('kiểm tra giữa các ô: giờ lớp, thư viện ảnh/video', () => {
 
 test('form nội dung không còn ô "Thứ tự hiển thị" (tự đặt + nút ↑↓)', () => {
   for (const r of Object.values(RESOURCES)) assert.ok(!r.fields.some((f) => f.name === 'sort'), r.key);
+});
+
+test('nhật ký: HTML → chữ thường cho đoạn trích, bài cũ → HTML', () => {
+  assert.equal(toText('<h2>Buổi tối</h2><p>Tập <b>đá</b> &amp; vật</p><ul><li>A</li><li>B</li></ul>'), 'Buổi tối\nTập đá & vật\nA\nB');
+  assert.equal(toText('<p><br></p>'), '');
+  assert.equal(textToHtml('Dòng 1\nDòng 2\n\n<b>x</b>'), '<p>Dòng 1<br>Dòng 2</p><p>&lt;b&gt;x&lt;/b&gt;</p>');
+});
+
+test('youtubeId nhận các kiểu link YouTube', () => {
+  for (const u of ['https://youtu.be/dQw4w9WgXcQ', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=10', 'https://youtube.com/shorts/dQw4w9WgXcQ']) assert.equal(youtubeId(u), 'dQw4w9WgXcQ', u);
+  assert.equal(youtubeId('https://facebook.com/video/1'), null);
 });

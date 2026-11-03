@@ -26,6 +26,7 @@ Promotional website + student-management CMS for **GLORY FIGHT CLUB** (MMA, Kudo
 - [x] Phase 3 — Monthly fees, CSV export, accounts + coach permissions
 - [x] Phase 4 — Club settings (contact, hero, about page), gallery, achievements, testimonials, FAQ, belts in the CMS
 - [x] Phase 5 — Deploy (2026-11-02): Worker `gloryfightclub`, D1 `glory-db` (APAC), R2 `glory-media`, 2 custom domains. Cloud holds real data only (`seed.sql`). The cloud owner account was created with `scripts/create-user.mjs`; its credentials are kept by the repo owner, NEVER in the repo.
+- [x] 2026-11-03 — Class diary ("Nhật ký lớp học", `/nhat-ky`): the old news feed became the diary — rich text editor, photos, uploaded videos (≤95MB) and YouTube links, month timeline. `/tin-tuc/*` 301-redirects to `/nhat-ky/*`.
 - [x] 2026-11-03 — CMS hardening after a full audit: auto sort order + ↑↓ reorder, safe Excel import, unsaved-changes guard, Vietnamese field-labelled errors, cross-field checks, race-safe writes, first tests.
 
 ## Stack
@@ -75,7 +76,7 @@ Commands, deploy and domain details: `README.md`. In the Claude desktop app, `.c
 ```
 src/pages/            public pages (.astro) · api/[...path].ts → Hono · admin/[...path].astro → React CMS · media/[...key].ts (public/… keys only)
 src/components/public public building blocks: Icon, PageHero, Marquee, PlanCard, CoachCard, PostCard, ClassList, CtaBand, TestimonialAuthor (name + photo or initials)
-src/lib/              auth.ts (PBKDF2, sessions, PERMISSIONS) · util.ts (vnNow, slugify, normalizePhone) · import.ts (Excel import parsing) · site.ts · public.ts (public queries, richText, youtubeEmbed)
+src/lib/              auth.ts (PBKDF2, sessions, PERMISSIONS) · util.ts (vnNow, slugify, normalizePhone, youtubeId) · import.ts (Excel import parsing) · html.ts (diary rich text: sanitize, toText) · site.ts · public.ts (public queries, richText, youtubeEmbed)
 src/api/              index.ts (CSRF origin check, auth middleware) · guard.ts (need(), body(), csv()) · auth · public (trial form) · content (generic CRUD) · students · fees · trials · posts · admin (me, lookups, dashboard, settings, upload, users)
 src/admin/            React CMS: App.tsx (hand-written router, shell, bottom menu) · lib.ts (api, useApi, toast, uploadImage → WebP, useDirty, useUploading) · ui.tsx · resources.ts · pages/*
 tests/                node --test files (*.test.mjs import the .ts modules directly; Node 24 strips types)
@@ -96,7 +97,11 @@ tests/                node --test files (*.test.mjs import the .ts modules direc
 - Achievements with photos: shown on Home (photos first), on the coach page ("Hình ảnh thành tích", from `achievements.coach_id`) and on /thanh-tich; clicking a photo opens the original.
 - Student import: the CMS reads .xlsx (`read-excel-file`, lazy-loaded) or .csv and sends `POST /api/admin/students/import` using the export's columns; an existing code → update ONLY the columns present in the file, no code → insert; errors are returned per row. Location/plan match by accent-insensitive name or initials; an unknown location/plan/class name is a row error (never overwritten with empty). All rows are validated first, then written with `db.batch` in chunks of 200 statements.
 - CMS: the "Học thử" tab shows a red badge with the count of new trial sign-ups (`GET /api/admin/trials/count`, refreshed every minute and on navigation).
-- CMS news list is paged (50 per page, `GET /api/admin/posts?page=`); the edit screen loads one post via `GET /api/admin/posts/:id`. The sitemap reads post slugs only (`publishedSlugs`), never images.
+- Class diary = the `posts` table (CMS route `/admin/tin-tuc`, public `/nhat-ky`). Paged list (50 per page, `GET /api/admin/posts?page=`), one post via `GET /api/admin/posts/:id`. The sitemap reads post slugs only (`publishedSlugs`).
+  - Text: `src/admin/RichEditor.tsx` (contentEditable + execCommand, pastes as plain text) → HTML is re-sanitized on the server with an allowlist (`sanitizeHtml` in `src/lib/html.ts`, HTMLRewriter) and stored with `posts.format = 'html'`; old posts are `'text'` (rendered via `richText`). Render with `postHtml()`; excerpts/meta use `toText()`.
+  - Media: `post_images` rows with `type` = `image` | `video` (R2 key) | `youtube` (link); max 24 per post (24 × 4 columns stays under D1's 100 bound parameters).
+  - Video upload: `POST /api/admin/upload-video` streams the raw file to R2 (MP4/MOV/WebM, ≤95MB because Workers requests cap at 100MB; .mov is served as video/mp4). `/media/*` answers `Range` requests with 206 so videos play and seek on iPhone.
+  - CMS links to the public site use `siteUrl()` (on the CMS host a plain `/…` link redirects to `/admin`).
 - Trial form: honeypot field `website` + max 5 submissions/minute/IP (`TRIAL_LIMITER` binding, shows `f_too_many`); when a child under 16 is converted to a student, the sign-up phone becomes the parent's phone.
 
 ## Production

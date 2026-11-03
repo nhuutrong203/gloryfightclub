@@ -100,6 +100,21 @@ adminRoutes.post('/upload', need('posts', 'content'), async (c) => {
   return c.json({ key }, 201);
 });
 
+// ── Upload video cho nhật ký lớp: client gửi thẳng file (không multipart), Worker chuyển luồng sang R2. ──
+// Giới hạn request của Workers là 100MB → tối đa 95MB. iPhone .mov (H.264) phát được như MP4.
+const VIDEO: Record<string, [ext: string, serveAs: string]> = { 'video/mp4': ['mp4', 'video/mp4'], 'video/quicktime': ['mov', 'video/mp4'], 'video/webm': ['webm', 'video/webm'] };
+export const MAX_VIDEO = 95 * 1024 * 1024;
+adminRoutes.post('/upload-video', need('posts', 'content'), async (c) => {
+  const v = VIDEO[(c.req.header('content-type') ?? '').split(';')[0].trim().toLowerCase()];
+  if (!v) return c.json({ error: 'Chỉ nhận video MP4, MOV, WebM' }, 400);
+  const size = Number(c.req.header('content-length'));
+  if (!size) return c.json({ error: 'Không đọc được dung lượng video' }, 411);
+  if (size > MAX_VIDEO) return c.json({ error: 'Video quá lớn (tối đa 95MB) — quay ngắn hơn / 720p, hoặc đăng YouTube rồi dán link' }, 413);
+  const key = `public/${vnNow().month}/${crypto.randomUUID()}.${v[0]}`;
+  await env.MEDIA.put(key, c.req.raw.body!, { httpMetadata: { contentType: v[1] } });
+  return c.json({ key }, 201);
+});
+
 /** Kiểm tra chữ ký file (magic bytes) để không nhận file giả đuôi ảnh. */
 function isImage(b: Uint8Array, ext: string) {
   const ascii = (from: number, to: number) => String.fromCharCode(...b.slice(from, to));
