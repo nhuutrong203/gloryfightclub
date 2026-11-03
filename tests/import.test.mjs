@@ -56,3 +56,22 @@ test('youtubeId nhận các kiểu link YouTube', () => {
   for (const u of ['https://youtu.be/dQw4w9WgXcQ', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=10', 'https://youtube.com/shorts/dQw4w9WgXcQ']) assert.equal(youtubeId(u), 'dQw4w9WgXcQ', u);
   assert.equal(youtubeId('https://facebook.com/video/1'), null);
 });
+
+test('huy chương: đọc vàng/bạc/đồng từ chữ tự do, không nhầm "đai vàng", "đồng bằng"', async () => {
+  const { classify, tally } = await import('../src/lib/medals.ts');
+  const m = (s) => classify(s).medals;
+  assert.deepEqual(m('HCV giải Kudo quốc gia 2024'), { gold: 1, silver: 0, bronze: 0 });
+  assert.deepEqual(m('HCB, HCĐ Đại hội TDTT ĐBSCL'), { gold: 0, silver: 1, bronze: 1 });
+  assert.deepEqual(m('Huy chương bạc giải vô địch cúp gấu đỏ 2022 (Gi)'), { gold: 0, silver: 1, bronze: 0 });
+  assert.deepEqual(m('1 vàng, 1 bạc, 1 đồng giải Đại hội thể thao đồng bằng sông Cửu Long 2023'), { gold: 1, silver: 1, bronze: 1 });
+  assert.deepEqual(m('2 HCV Open Jiujitsu'), { gold: 2, silver: 0, bronze: 0 });
+  assert.equal(classify('Đai vàng Kudo').kind, 'belt');
+  assert.equal(classify('Đai đen Kudo chính thức do Liên đoàn Kudo thế giới cấp').kind, 'belt');
+  assert.equal(classify('Vô địch giải MMA 2025').kind, 'title');
+  assert.equal(classify('Võ sĩ MMA đang thi đấu').kind, 'other');
+  assert.deepEqual(tally(['HCV a', 'HCB, HCĐ b', '1 vàng, 1 bạc, 1 đồng c']), { gold: 2, silver: 2, bronze: 2 });
+  const { beltColor } = await import('../src/lib/medals.ts');
+  assert.equal(beltColor('Đai tím BJJ'), '#6b2fb3');
+  assert.equal(beltColor('Đai đen Kudo'), '#0a0a0a');
+  assert.equal(beltColor('Võ sĩ MMA'), null);
+});

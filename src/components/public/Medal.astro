@@ -1,0 +1,14 @@
+---
+import type { Tier } from '../../lib/medals';
+
+// Huy chương tròn có dây đeo, màu theo hạng. Trang trí (aria-hidden) — chữ đi kèm nói rõ hạng.
+interface Props { tier: Tier; class?: string }
+const { tier, class: className = 'size-7' } = Astro.props;
+---
+<svg viewBox="0 0 32 32" class={className} aria-hidden="true">
+  <path d="M9 1h6l3.5 11h-6z" fill="var(--color-glory)" />
+  <path d="M23 1h-6l-3.5 11h6z" fill="var(--color-glory-dark)" />
+  <circle cx="16" cy="20.5" r="10" fill={`var(--color-${tier})`} />
+  <circle cx="16" cy="20.5" r="6.5" fill={`var(--color-${tier}-light)`} opacity=".55" />
+  <path d="m16 15.8 1.4 2.9 3.2.4-2.3 2.2.6 3.1-2.9-1.5-2.9 1.5.6-3.1-2.3-2.2 3.2-.4z" fill={`var(--color-${tier})`} />
+</svg>

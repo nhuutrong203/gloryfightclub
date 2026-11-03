@@ -1,0 +1,18 @@
+---
+import Icon from './Icon.astro';
+import Medal from './Medal.astro';
+import { beltColor, classify, type Tier } from '../../lib/medals';
+
+// Icon cho 1 dòng thành tích: huy chương đúng màu (nhiều hạng thì xếp chồng), danh hiệu = cúp vàng, đai = đai.
+interface Props { line: string; class?: string }
+const { line, class: className = 'size-6' } = Astro.props;
+const { kind, medals } = classify(line);
+const tiers = (['gold', 'silver', 'bronze'] as Tier[]).filter((t) => medals[t] > 0);
+---
+{kind === 'medal'
+  ? <span class="flex shrink-0 -space-x-2">{tiers.map((t) => <Medal tier={t} class={className} />)}</span>
+  : kind === 'title'
+    ? <Icon name="trophy" class={`${className} shrink-0 text-gold`} />
+    : kind === 'belt'
+      ? <span class="shrink-0" style={beltColor(line) ? `color:${beltColor(line)};filter:drop-shadow(0 0 1px rgb(128 128 128))` : undefined}><Icon name="belt" class={className} /></span>
+      : <Icon name="star" class={`${className} shrink-0 opacity-70`} />}

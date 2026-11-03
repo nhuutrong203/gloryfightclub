@@ -1,0 +1,23 @@
+---
+import Medal from './Medal.astro';
+import { tally, type Tier } from '../../lib/medals';
+import { t, type Lang } from '../../i18n';
+
+// Dải tổng huy chương "🥇2 🥈3 🥉1" (icon SVG). Không có huy chương nào thì không hiện.
+interface Props { lines: string[]; lang: Lang; size?: 'sm' | 'lg'; class?: string }
+const { lines, lang, size = 'sm', class: className } = Astro.props;
+const total = tally(lines);
+const tiers = (['gold', 'silver', 'bronze'] as Tier[]).filter((x) => total[x] > 0);
+const label = { gold: t(lang, 'medal_gold'), silver: t(lang, 'medal_silver'), bronze: t(lang, 'medal_bronze') };
+---
+{tiers.length > 0 && (
+  <ul class:list={['flex flex-wrap items-center', size === 'lg' ? 'gap-6' : 'gap-3', className]} aria-label={t(lang, 'medals_label')}>
+    {tiers.map((x) => (
+      <li class="flex items-center gap-1.5" title={`${total[x]} × ${label[x]}`}>
+        <Medal tier={x} class={size === 'lg' ? 'size-12' : 'size-6'} />
+        <span class:list={['font-display leading-none', size === 'lg' ? 'text-5xl' : 'text-xl']}>{total[x]}</span>
+        <span class:list={['font-semibold uppercase tracking-wider', size === 'lg' ? 'text-sm' : 'sr-only']}>{label[x]}</span>
+      </li>
+    ))}
+  </ul>
+)}

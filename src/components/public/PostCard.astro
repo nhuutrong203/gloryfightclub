@@ -51,7 +51,7 @@ const ytThumb = (m: PostMedia) => `https://i.ytimg.com/vi/${youtubeId(m.key)}/hq
   {p.media.length > 0 && (full ? (
     <div class="grid gap-1 bg-ink">
       {p.media.map((m) => m.type === 'image'
-        ? <a href={src(m)} target="_blank" rel="noopener"><img src={src(m)} alt="" loading="lazy" decoding="async" class="h-auto w-full" /></a>
+        ? <a href={src(m)} data-lightbox="diary" data-caption={title}><img src={src(m)} alt="" loading="lazy" decoding="async" class="h-auto w-full" /></a>
         : m.type === 'video'
           ? <video src={`${src(m)}#t=0.1`} controls playsinline preload="metadata" class="max-h-[85vh] w-full bg-black"></video>
           : <div class="aspect-video"><iframe src={youtubeEmbed(m.key)} title={title || t(lang, 'watch_video')} loading="lazy" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen class="size-full"></iframe></div>)}

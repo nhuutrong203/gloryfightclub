@@ -43,6 +43,8 @@ Astro 7 SSR + `@astrojs/cloudflare` 14 (Cloudflare Workers) · React (CMS SPA) �
 - Menu/footer hide links to sections without content (testimonials, FAQ, gallery, achievements, belts) — counted in `PublicLayout`. The class diary link always shows (owner's choice); the diary block on Home still hides while there are no posts.
 - Phones: fixed bottom action bar (Call · Zalo · Trial class), `body` has matching bottom padding; the round floating button only shows from `lg`.
 - Page transitions: CSS `@view-transition` (no JS). Every animation has a `prefers-reduced-motion` branch.
+- Achievements text is free-form; `src/lib/medals.ts` reads it (HCV/HCB/HCĐ, "huy chương vàng", "1 vàng, 1 bạc…", titles like "vô địch", belts) → `AchievementIcon` (gold/silver/bronze `Medal`, trophy, belt in its color) and `MedalTally` (medal counts on coach cards/pages). Medal colors live in `@theme static` (used via `var()`, not classes).
+- Interactions in `PublicLayout`: shared lightbox for any `[data-lightbox="group"]` (gallery, achievement photos, diary images; swipe + arrow keys), "Đang tập" badge on Home's today list (`data-class-time`, checked in VN time on the client because pages are cached), hero numbers count up (`data-count`).
 - All public content is read from D1, never hard-coded. Fixed UI strings live in `dict` (`src/i18n.ts`) and are **editable in CMS → Chữ trên website** (settings key `texts` = `{vi:{key:text}, en:{…}}`, loaded by the middleware into `setTextOverrides`; `t()` prefers the edited text). New string → add a key to `dict`, NEVER a hard-coded string in a page; display groups are in `src/admin/pages/Texts.tsx` (`GROUPS`).
 - The slogan (marquee, footer) comes from `club.slogan`; the discipline line at the top of Home / Disciplines comes from the `disciplines` table.
 - Every form/API input is validated with zod on the server.
@@ -75,7 +77,7 @@ Commands, deploy and domain details: `README.md`. In the Claude desktop app, `.c
 ## Main structure
 ```
 src/pages/            public pages (.astro) · api/[...path].ts → Hono · admin/[...path].astro → React CMS · media/[...key].ts (public/… keys only)
-src/components/public public building blocks: Icon, PageHero, Marquee, PlanCard, CoachCard, PostCard, ClassList, CtaBand, TestimonialAuthor (name + photo or initials)
+src/components/public public building blocks: Icon, PageHero, Marquee, PlanCard, CoachCard, PostCard, ClassList, CtaBand, TestimonialAuthor (name + photo or initials), Medal, AchievementIcon, MedalTally
 src/lib/              auth.ts (PBKDF2, sessions, PERMISSIONS) · util.ts (vnNow, slugify, normalizePhone, youtubeId) · import.ts (Excel import parsing) · html.ts (diary rich text: sanitize, toText) · site.ts · public.ts (public queries, richText, youtubeEmbed)
 src/api/              index.ts (CSRF origin check, auth middleware) · guard.ts (need(), body(), csv()) · auth · public (trial form) · content (generic CRUD) · students · fees · trials · posts · admin (me, lookups, dashboard, settings, upload, users)
 src/admin/            React CMS: App.tsx (hand-written router, shell, bottom menu) · lib.ts (api, useApi, toast, uploadImage → WebP, useDirty, useUploading) · ui.tsx · resources.ts · pages/*

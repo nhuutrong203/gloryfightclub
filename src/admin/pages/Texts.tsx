@@ -10,7 +10,7 @@ const GROUPS: [string, RegExp][] = [
   ['Menu', /^nav_/],
   ['Nút bấm', /^cta_|^read_more$|^view_coach$|^directions$|^menu$|^close$/],
   ['Nhãn nhỏ đầu trang', /^eb_/],
-  ['Trang chủ', /^(today|news|testimonials|achievements|final_cta|disciplines|coaches|locations)_/],
+  ['Trang chủ', /^(today|news|testimonials|achievements|final_cta|disciplines|coaches|locations|medal)_|^medals_/],
   ['Học phí & Open mat', /^(fees_|per_month|open_mat|free$)/],
   ['Lịch học', /^(schedule_|time$|coach$|classes_label|level_)/],
   ['Cấp đai', /^belts_/],

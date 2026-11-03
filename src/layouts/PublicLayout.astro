@@ -162,6 +162,17 @@ const onTrialPage = path === '/dang-ky-hoc-thu';
       <div class="container-x pb-8 text-sm text-ash">© {new Date().getFullYear()} {club.name}. {t(lang, 'footer_rights')}</div>
     </footer>
 
+    <!-- Xem ảnh lớn: mọi phần tử có data-lightbox="nhóm" (ảnh thư viện, thành tích, nhật ký). Vuốt / phím ← → để chuyển. -->
+    <dialog id="lightbox" class="m-0 h-dvh max-h-none w-screen max-w-none bg-ink/95 p-0 text-white backdrop:bg-black/80" aria-label={t(lang, 'gallery_title')}>
+      <div class="relative grid h-full place-items-center p-4 sm:p-12">
+        <img id="lb-img" alt="" class="max-h-[85dvh] max-w-full object-contain transition-opacity duration-200" />
+        <p class="absolute inset-x-4 bottom-4 text-center text-white/85"><span id="lb-cap"></span> <span id="lb-count" class="ml-2 font-display tracking-wider text-ash"></span></p>
+        <button type="button" data-lb="close" class="absolute right-3 top-3 grid size-12 place-items-center bg-white/10 hover:bg-glory" aria-label={t(lang, 'close')}><Icon name="x" /></button>
+        <button type="button" data-lb="prev" class="absolute left-3 top-1/2 grid size-12 -translate-y-1/2 place-items-center bg-white/10 hover:bg-glory" aria-label={t(lang, 'prev')}><Icon name="chevron-left" /></button>
+        <button type="button" data-lb="next" class="absolute right-3 top-1/2 grid size-12 -translate-y-1/2 place-items-center bg-white/10 hover:bg-glory" aria-label={t(lang, 'next')}><Icon name="chevron-right" /></button>
+      </div>
+    </dialog>
+
     <!-- Điện thoại: thanh hành động cố định dưới đáy (không che nội dung vì body có padding-bottom). -->
     <nav class:list={['fixed inset-x-0 bottom-0 z-30 grid border-t border-white/10 bg-ink/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden', onTrialPage ? 'grid-cols-2' : 'grid-cols-[1fr_1fr_1.4fr]']} aria-label={t(lang, 'cta_call')}>
       <a href={telHref(hotline)} class="flex min-h-16 flex-col items-center justify-center gap-1 text-xs font-semibold text-white/90 active:bg-white/10">
@@ -194,6 +205,71 @@ const onTrialPage = path === '/dang-ky-hoc-thu';
         for (const e of entries) if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); }
       }, { rootMargin: '0px 0px -8% 0px' });
       document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+
+      // Xem ảnh lớn (lightbox). Không có JS thì link vẫn mở ảnh gốc.
+      const lb = document.getElementById('lightbox') as HTMLDialogElement;
+      const lbImg = document.getElementById('lb-img') as HTMLImageElement;
+      const lbCap = document.getElementById('lb-cap')!;
+      const lbCount = document.getElementById('lb-count')!;
+      let group: HTMLElement[] = [];
+      let cur = 0;
+      let opener: HTMLElement | null = null;
+      const show = (i: number) => {
+        cur = (i + group.length) % group.length;
+        const el = group[cur];
+        lbImg.src = el.dataset.src ?? (el as HTMLAnchorElement).href;
+        lbImg.alt = lbCap.textContent = el.dataset.caption ?? '';
+        lbCount.textContent = group.length > 1 ? `${cur + 1} / ${group.length}` : '';
+        lb.querySelectorAll<HTMLElement>('[data-lb=prev],[data-lb=next]').forEach((b) => { b.hidden = group.length < 2; });
+      };
+      document.addEventListener('click', (e) => {
+        const el = (e.target as Element).closest<HTMLElement>('[data-lightbox]');
+        if (!el || (e as MouseEvent).ctrlKey || (e as MouseEvent).metaKey) return;
+        e.preventDefault();
+        group = [...document.querySelectorAll<HTMLElement>(`[data-lightbox="${el.dataset.lightbox}"]`)];
+        opener = el;
+        show(group.indexOf(el));
+        lb.showModal();
+      });
+      lb.addEventListener('click', (e) => {
+        const act = (e.target as HTMLElement).closest<HTMLElement>('[data-lb]')?.dataset.lb;
+        if (act === 'close' || e.target === lb || e.target === lbImg.parentElement) lb.close();
+        if (act === 'prev') show(cur - 1);
+        if (act === 'next') show(cur + 1);
+      });
+      lb.addEventListener('keydown', (e) => { if (e.key === 'ArrowLeft') show(cur - 1); if (e.key === 'ArrowRight') show(cur + 1); });
+      let touchX = 0;
+      lb.addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; }, { passive: true });
+      lb.addEventListener('touchend', (e) => { const dx = e.changedTouches[0].clientX - touchX; if (Math.abs(dx) > 50 && group.length > 1) show(cur + (dx < 0 ? 1 : -1)); });
+      lb.addEventListener('close', () => { lbImg.removeAttribute('src'); opener?.focus(); });
+
+      // Ca đang tập (trang chủ): so giờ Việt Nam ngay trên máy khách vì trang được cache.
+      const hhmm = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: false });
+      const markLive = () => {
+        const now = hhmm.format(new Date());
+        document.querySelectorAll<HTMLElement>('[data-class-time]').forEach((el) => {
+          const [start, end] = el.dataset.classTime!.split('-');
+          el.dataset.state = now >= end ? 'done' : now >= start ? 'live' : 'next';
+        });
+      };
+      markLive();
+      setInterval(markLive, 60_000);
+
+      // Số liệu đầu trang chủ đếm từ 0 lên (bỏ qua nếu người dùng tắt hiệu ứng).
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.querySelectorAll<HTMLElement>('[data-count]').forEach((el) => {
+          const to = Number(el.dataset.count);
+          const t0 = performance.now() + 500; // đợi chữ hero trượt lên xong
+          el.textContent = '0';
+          const tick = (t: number) => {
+            const p = Math.min(1, Math.max(0, (t - t0) / 900));
+            el.textContent = String(Math.round(to * (1 - (1 - p) ** 3)));
+            if (p < 1) requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+          setTimeout(() => { el.textContent = String(to); }, 1600); // tab chạy nền (rAF tạm dừng) vẫn ra đúng số
+        });
+      }
 
       // Header đậm hơn khi đã cuộn.
       const header = document.getElementById('site-header');

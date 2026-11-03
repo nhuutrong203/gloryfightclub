@@ -8,6 +8,7 @@ import CoachCard from '../components/public/CoachCard.astro';
 import PostCard from '../components/public/PostCard.astro';
 import CtaBand from '../components/public/CtaBand.astro';
 import TestimonialAuthor from '../components/public/TestimonialAuthor.astro';
+import AchievementIcon from '../components/public/AchievementIcon.astro';
 import { getSite, mediaUrl } from '../lib/site';
 import {
   todayDigit, publicDisciplines, publicCoaches, publicPlans, publicClasses,
@@ -49,9 +50,9 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
         <a href={href('/lich-hoc', lang)} class="btn-ghost !text-xl !px-8"><Icon name="calendar" />{t(lang, 'nav_schedule')}</a>
       </div>
       <dl class="hero-in mt-12 grid max-w-2xl grid-cols-3 border-t border-white/15 pt-6" style="--d:580ms">
-        <div><dt class="text-sm text-ash">{t(lang, 'nav_disciplines')}</dt><dd class="font-display text-4xl sm:text-5xl">{disciplines.length}</dd></div>
-        <div><dt class="text-sm text-ash">{t(lang, 'coaches_label')}</dt><dd class="font-display text-4xl sm:text-5xl">{coaches.length}</dd></div>
-        <div><dt class="text-sm text-ash">{t(lang, 'locations_title')}</dt><dd class="font-display text-4xl sm:text-5xl">{locations.length}</dd></div>
+        <div><dt class="text-sm text-ash">{t(lang, 'nav_disciplines')}</dt><dd class="font-display text-4xl sm:text-5xl" data-count={disciplines.length}>{disciplines.length}</dd></div>
+        <div><dt class="text-sm text-ash">{t(lang, 'coaches_label')}</dt><dd class="font-display text-4xl sm:text-5xl" data-count={coaches.length}>{coaches.length}</dd></div>
+        <div><dt class="text-sm text-ash">{t(lang, 'locations_title')}</dt><dd class="font-display text-4xl sm:text-5xl" data-count={locations.length}>{locations.length}</dd></div>
       </dl>
     </div>
   </section>
@@ -76,10 +77,13 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
               <p class="flex items-center gap-2 font-semibold text-ash"><Icon name="map-pin" class="size-4 text-glory" />{tr(l, 'name', lang)}</p>
               <ul class="mt-4 space-y-2">
                 {items.map((c, i) => (
-                  <li class="reveal flex items-baseline gap-4 border-l-4 border-glory bg-coal px-4 py-3" style={`--i:${i}`}>
+                  <li class="reveal group/c flex items-baseline gap-4 border-l-4 border-white/20 bg-coal px-4 py-3 transition-opacity data-[state=done]:opacity-50 data-[state=live]:border-glory" style={`--i:${i}`} data-class-time={`${c.startTime}-${c.endTime}`}>
                     <span class="font-display text-2xl tracking-wide w-32 shrink-0">{c.startTime}<span class="text-ash">–{c.endTime}</span></span>
                     <span class="min-w-0">
                       <span class="font-display text-2xl uppercase tracking-wide">{tr(c, 'name', lang)}</span>
+                      <span class="ml-2 hidden items-center gap-1.5 bg-glory px-2 py-0.5 align-middle font-display text-xs tracking-widest text-white group-data-[state=live]/c:inline-flex">
+                        <span class="size-2 animate-pulse rounded-full bg-white motion-reduce:animate-none" aria-hidden="true"></span>{t(lang, 'today_live')}
+                      </span>
                       {coachName(c.coachId) && <span class="block text-sm text-ash">{coachName(c.coachId)}</span>}
                     </span>
                   </li>
@@ -140,8 +144,8 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
           {[...achievements].sort((x, y) => Number(!!y.imageKey) - Number(!!x.imageKey)).slice(0, 4).map((a, i) => (
             <li class="reveal bg-ink p-6" style={`--i:${i}`}>
               {a.imageKey
-                ? <a href={mediaUrl(a.imageKey)} target="_blank" rel="noopener" class="group -mx-6 -mt-6 mb-5 block aspect-[4/3] overflow-hidden"><img src={mediaUrl(a.imageKey)} alt={tr(a, 'title', lang)} loading="lazy" class="size-full object-cover transition-transform duration-500 group-hover:scale-105" /></a>
-                : <Icon name="medal" class="size-9 text-glory" />}
+                ? <a href={mediaUrl(a.imageKey)} data-lightbox="home-achievements" data-caption={tr(a, 'title', lang)} class="group -mx-6 -mt-6 mb-5 block aspect-[4/3] overflow-hidden"><img src={mediaUrl(a.imageKey)} alt={tr(a, 'title', lang)} loading="lazy" class="size-full object-cover transition-transform duration-500 group-hover:scale-105" /></a>
+                : <AchievementIcon line={tr(a, 'title', lang)} class="size-10" />}
               <p class="mt-4 font-display text-3xl uppercase leading-tight">{tr(a, 'title', lang)}</p>
               {a.eventName && <p class="mt-2 text-white/75">{a.eventName}</p>}
               {coachName(a.coachId) && <p class="mt-1 text-sm text-ash">{coachName(a.coachId)}</p>}

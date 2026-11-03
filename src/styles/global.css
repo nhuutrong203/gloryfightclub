@@ -16,6 +16,16 @@
   --animate-marquee: marquee 28s linear infinite;
 }
 
+/* Huy chương (Medal.astro dùng qua var(), không qua class) → static để Tailwind luôn xuất biến. */
+@theme static {
+  --color-gold: #e8b923;
+  --color-gold-light: #ffe27a;
+  --color-silver: #a9b2bc;
+  --color-silver-light: #eef1f4;
+  --color-bronze: #c27a3e;
+  --color-bronze-light: #f0b07a;
+}
+
 @keyframes marquee {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
