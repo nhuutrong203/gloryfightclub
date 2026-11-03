@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { api, toast, useApi, useDirty, useUploading } from '../lib';
-import { Button, ErrorBox, ImageInput, Loading, Page, TextArea, TextInput } from '../ui';
+import { api, siteUrl, toast, useApi, useDirty, useUploading } from '../lib';
+import { Button, ErrorBox, ImageInput, Loading, Page, TextArea, TextInput, ViewOnSite } from '../ui';
 
 type S = Record<string, any>;
 
@@ -17,15 +17,15 @@ export function Settings() {
   return (
     <Page title="Thông tin CLB" back="/admin/them">
       <div className="space-y-6">
-        <Group title="Liên hệ & mạng xã hội" k="club" onDirty={onDirty} initial={data.club ?? {}} fields={[
+        <Group title="Liên hệ & mạng xã hội" k="club" view="/lien-he" onDirty={onDirty} initial={data.club ?? {}} fields={[
           ['name', 'Tên CLB'], ['slogan', 'Slogan'], ['tagline', 'Mô tả ngắn (hiện khi share link)', 'textarea'], ['tagline_en', 'Mô tả ngắn (English)', 'textarea'],
           ['hotlines', 'Hotline (cách nhau bằng dấu phẩy)', 'list'], ['zalo', 'Số Zalo'], ['facebook', 'Link Facebook'], ['instagram', 'Link Instagram'],
         ]} />
-        <Group title="Ảnh & chữ lớn trang chủ" k="hero" onDirty={onDirty} initial={data.hero ?? {}} fields={[
+        <Group title="Ảnh & chữ lớn trang chủ" k="hero" view="/" onDirty={onDirty} initial={data.hero ?? {}} fields={[
           ['image_key', 'Ảnh nền trang chủ', 'image'], ['title', 'Tiêu đề lớn (dùng dấu – để xuống dòng đỏ)'], ['title_en', 'Tiêu đề (English)'],
           ['subtitle', 'Dòng giới thiệu', 'textarea'], ['subtitle_en', 'Dòng giới thiệu (English)', 'textarea'],
         ]} />
-        <Group title="Trang Giới thiệu" k="about" onDirty={onDirty} initial={data.about ?? {}} fields={[
+        <Group title="Trang Giới thiệu" k="about" view="/gioi-thieu" onDirty={onDirty} initial={data.about ?? {}} fields={[
           ['history', 'Câu chuyện / lịch sử CLB', 'textarea'], ['history_en', 'Our story (English)', 'textarea'],
           ['philosophy', 'Triết lý', 'textarea'], ['philosophy_en', 'Philosophy (English)', 'textarea'],
           ['values', 'Giá trị (mỗi dòng một ý)', 'lines'], ['values_en', 'Values (English, one per line)', 'lines'],
@@ -37,7 +37,7 @@ export function Settings() {
 
 type FieldDef = [key: string, label: string, kind?: 'textarea' | 'image' | 'list' | 'lines'];
 
-function Group({ title, k, initial, fields, onDirty }: { title: string; k: string; initial: S; fields: FieldDef[]; onDirty: (k: string, on: boolean) => void }) {
+function Group({ title, k, view, initial, fields, onDirty }: { title: string; k: string; view: string; initial: S; fields: FieldDef[]; onDirty: (k: string, on: boolean) => void }) {
   const toForm = (s: S) => Object.fromEntries(fields.map(([key, , kind]) => [key,
     kind === 'list' ? (s[key] ?? []).join(', ') : kind === 'lines' ? (s[key] ?? []).join('\n') : s[key] ?? '']));
   const [form, setForm] = useState<S>(() => toForm(initial));
@@ -61,7 +61,7 @@ function Group({ title, k, initial, fields, onDirty }: { title: string; k: strin
       }
       try { await api(`/admin/settings/${k}`, { method: 'PUT', body: value }); onDirty(k, false); toast('Đã lưu'); } catch (err: any) { toast(err.message, 'err'); } finally { setBusy(false); }
     }}>
-      <h2 className="font-display text-2xl uppercase">{title}</h2>
+      <div className="flex items-center justify-between gap-3"><h2 className="font-display text-2xl uppercase">{title}</h2><ViewOnSite href={siteUrl(view)} label="Xem" /></div>
       {fields.map(([key, label, kind]) => (
         <div key={key}>
           {kind === 'image' ? <ImageInput label={label} value={form[key] || null} onChange={set(key)} />

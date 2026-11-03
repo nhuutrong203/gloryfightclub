@@ -173,8 +173,11 @@ export async function uploadMany(files: File[], onDone: (key: string, i: number)
 }
 
 export const mediaUrl = (key: string | null | undefined) => (key ? `/media/${key}` : '');
-/** Địa chỉ website public: CMS chạy ở cms-<tên miền>, link /… trên host CMS bị chuyển về /admin. */
-export const siteUrl = (path = '/') => `${location.protocol}//${location.host.replace(/^cms-/, '')}${path}`;
+/** Địa chỉ website public. Trên host CMS, link /… bị chuyển về /admin → đổi sang host public (đọc từ thẻ meta do server ghi). Ở localhost dùng chung host. */
+export function siteUrl(path = '/') {
+  const [pub, cms] = (document.querySelector<HTMLMetaElement>('meta[name=glory-hosts]')?.content ?? '').split('|');
+  return `${location.protocol}//${pub && location.host === cms ? pub : location.host}${path}`;
+}
 
 // ───────── Quyền ─────────
 export type Me = { id: number; username: string; fullName: string; role: 'owner' | 'coach'; permissions: string[] };

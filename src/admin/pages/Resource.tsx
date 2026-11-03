@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { api, can, mediaUrl, navigate, toast, uploadMany, useApi, useDirty, useUploading, type Me } from '../lib';
-import { A, Badge, Button, Chips, Empty, ErrorBox, Icon, ImageInput, LinkButton, Loading, Page, Select, TextArea, TextInput, Toggle, confirmDanger, EnHint } from '../ui';
+import { api, can, mediaUrl, navigate, siteUrl, toast, uploadMany, useApi, useDirty, useUploading, type Me } from '../lib';
+import { A, Badge, Button, Chips, Empty, ErrorBox, Icon, ImageInput, LinkButton, Loading, Page, Select, TextArea, TextInput, Toggle, ViewOnSite, confirmDanger, EnHint } from '../ui';
 import { DAY_LABEL, RESOURCES, type Field, type ResourceKey } from '../resources';
 import type { Lookups } from './Students';
 
@@ -31,7 +31,7 @@ export function ResourceList({ res, me }: { res: ResourceKey; me: Me }) {
     : [{ title: '', rows: list ?? [] }];
 
   return (
-    <Page title={r.title} back="/admin/them" actions={can(me, 'content') && <LinkButton to={`/admin/noi-dung/${res}/moi`} icon="plus" variant={res === 'gallery' ? 'ghost' : 'primary'}>Thêm</LinkButton>}>
+    <Page title={r.title} back="/admin/them" actions={<>{r.publicPath && <ViewOnSite href={siteUrl(r.publicPath)} />}{can(me, 'content') && <LinkButton to={`/admin/noi-dung/${res}/moi`} icon="plus" variant={res === 'gallery' ? 'ghost' : 'primary'}>Thêm</LinkButton>}</>}>
       {res === 'gallery' && can(me, 'content') && <GalleryBulk onDone={reload} />}
       {error ? <ErrorBox message={error} retry={reload} /> : !list ? <Loading /> : list.length === 0 ? <Empty>Chưa có mục nào.</Empty> : (
         <div className="space-y-6">
@@ -164,7 +164,8 @@ export function ResourceEdit({ res, id, me }: { res: ResourceKey; id: string; me
 
   const hasEn = r.fields.some((f) => f.en);
   return (
-    <Page title={isNew ? `Thêm: ${r.title}` : r.listTitle(existing)} back={`/admin/noi-dung/${res}`}>
+    <Page title={isNew ? `Thêm: ${r.title}` : r.listTitle(existing)} back={`/admin/noi-dung/${res}`}
+      actions={!isNew && r.publicPath && <ViewOnSite label="Xem" href={siteUrl(existing.slug ? `${r.publicPath}/${existing.slug}` : r.publicPath)} />}>
       <form onSubmit={save} className="space-y-5">
         <fieldset disabled={!editable} className="space-y-4 border border-neutral-200 bg-white p-4">
           {r.fields.filter(shown).map((f) => <div key={f.name}>{input(f)}</div>)}

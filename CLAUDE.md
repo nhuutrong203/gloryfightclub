@@ -83,6 +83,7 @@ src/api/              index.ts (CSRF origin check, auth middleware) · guard.ts 
 src/admin/            React CMS: App.tsx (hand-written router, shell, bottom menu) · lib.ts (api, useApi, toast, uploadImage → WebP, useDirty, useUploading) · ui.tsx · resources.ts · pages/*
 tests/                node --test files (*.test.mjs import the .ts modules directly; Node 24 strips types)
 ```
+- CMS menu (`menuGroups` in `src/admin/pages/More.tsx`) mirrors the public menu order and uses the public names ("Lịch học", "HLV", "Nhật ký lớp"…) with a one-line hint of what each edits. Every list/edit screen has a "Xem trên web" button (`ViewOnSite`, from `publicPath` in `resources.ts`). Keep both in sync when adding a public section.
 - `src/admin/resources.ts` is the **single source** for simple content sections: it generates both the CMS form and the API's zod schema + writable columns. New content column → add a field there.
   - Field options: `type: 'url'` (must start with https://), `showIf` (hide a field based on another; hidden fields are saved empty). Resource options: `check` (cross-field validation, runs in both CMS and API), `orderBy`, `newFirst`.
 - Display order (`sort`) has **no input**: new items get `max(sort)+1` (gallery and achievements use `newFirst` → `min-1`, so they go first; the public achievements page follows this order, date only breaks ties); reorder with the ↑↓ buttons in the list → `PUT /api/admin/content/:res/order {ids}` rewrites 1, 2, 3… Only resources with `orderBy: 'sort'` show the buttons; fee plans are ordered by price (same as the public page).
@@ -103,7 +104,7 @@ tests/                node --test files (*.test.mjs import the .ts modules direc
   - Text: `src/admin/RichEditor.tsx` (contentEditable + execCommand, pastes as plain text) → HTML is re-sanitized on the server with an allowlist (`sanitizeHtml` in `src/lib/html.ts`, HTMLRewriter) and stored with `posts.format = 'html'`; old posts are `'text'` (rendered via `richText`). Render with `postHtml()`; excerpts/meta use `toText()`.
   - Media: `post_images` rows with `type` = `image` | `video` (R2 key) | `youtube` (link); max 24 per post (24 × 4 columns stays under D1's 100 bound parameters).
   - Video upload: `POST /api/admin/upload-video` streams the raw file to R2 (MP4/MOV/WebM, ≤95MB because Workers requests cap at 100MB; .mov is served as video/mp4). `/media/*` answers `Range` requests with 206 so videos play and seek on iPhone.
-  - CMS links to the public site use `siteUrl()` (on the CMS host a plain `/…` link redirects to `/admin`).
+  - CMS links to the public site use `siteUrl()`: the admin page writes `<meta name="glory-hosts" content="PUBLIC_HOST|CMS_HOST">` from wrangler vars (on the CMS host a plain `/…` link redirects to `/admin`).
 - Trial form: honeypot field `website` + max 5 submissions/minute/IP (`TRIAL_LIMITER` binding, shows `f_too_many`); when a child under 16 is converted to a student, the sign-up phone becomes the parent's phone.
 
 ## Production

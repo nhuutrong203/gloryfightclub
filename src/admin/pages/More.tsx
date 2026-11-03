@@ -1,29 +1,47 @@
 import { useState } from 'react';
 import { api, can, navigate, siteUrl, toast, type Me } from '../lib';
 import { A, Button, Icon, Page, TextInput } from '../ui';
-import { RESOURCES, type ResourceKey } from '../resources';
+import type { ResourceKey } from '../resources';
 
-type Item = { to: string; label: string; icon: string };
+type Item = { to: string; label: string; icon: string; sub?: string };
 
 export function menuGroups(me: Me): { title: string; items: Item[] }[] {
-  const res = (k: ResourceKey, icon = 'edit'): Item => ({ to: `/admin/noi-dung/${k}`, label: RESOURCES[k].title, icon });
+  // label = tên mục như khách thấy trên web; sub = phần đó sửa ở đâu / gồm gì.
+  const res = (k: ResourceKey, label: string, icon: string, sub: string): Item => ({ to: `/admin/noi-dung/${k}`, label, icon, sub });
+  const content = can(me, 'content');
   return [
     {
-      title: 'Quản lý',
+      title: 'Quản lý CLB',
       items: [
-        ...(can(me, 'students.view') ? [{ to: '/admin/hoc-vien', label: 'Học viên', icon: 'users' }, { to: '/admin/hoc-thu', label: 'Đăng ký học thử', icon: 'inbox' }] : []),
-        ...(can(me, 'fees.view') ? [{ to: '/admin/hoc-phi', label: 'Học phí', icon: 'wallet' }] : []),
-        ...(can(me, 'posts') ? [{ to: '/admin/tin-tuc', label: 'Nhật ký lớp học', icon: 'news' }] : []),
+        ...(can(me, 'students.view') ? [{ to: '/admin/hoc-vien', label: 'Học viên', icon: 'users' }, { to: '/admin/hoc-thu', label: 'Đăng ký học thử', icon: 'inbox', sub: 'Khách gửi từ form trên web' }] : []),
+        ...(can(me, 'fees.view') ? [{ to: '/admin/hoc-phi', label: 'Thu học phí', icon: 'wallet', sub: 'Ghi nhận đã đóng theo tháng' }] : []),
       ],
     },
     {
-      title: 'Nội dung website',
-      items: can(me, 'content')
-        ? [res('classes', 'calendar'), res('coaches', 'users'), res('disciplines', 'star'), res('feePlans', 'wallet'), res('locations', 'home'),
-           res('gallery', 'image'), res('achievements', 'star'), res('testimonials'), res('faqs'), res('belts'),
-           { to: '/admin/cai-dat', label: 'Thông tin CLB & trang chủ', icon: 'settings' },
-           { to: '/admin/chu-website', label: 'Chữ trên website', icon: 'edit' }]
-        : [],
+      title: 'Trang web — menu chính',
+      items: [
+        ...(content ? [
+          { to: '/admin/cai-dat', label: 'Trang chủ', icon: 'home', sub: 'Ảnh nền, tiêu đề lớn · HLV "nổi bật" chọn ở mục HLV' },
+          res('disciplines', 'Môn học', 'star', 'Tên, mô tả, ảnh bìa từng môn'),
+          res('classes', 'Lịch học', 'calendar', 'Lớp & giờ tập từng cơ sở'),
+          res('coaches', 'HLV', 'users', 'Ảnh, chức danh, thành tích, nổi bật ở trang chủ'),
+          res('feePlans', 'Bảng giá học phí', 'wallet', 'Các gói & giá trên trang Học phí'),
+        ] : []),
+        ...(can(me, 'posts') ? [{ to: '/admin/tin-tuc', label: 'Nhật ký lớp', icon: 'news', sub: 'Viết bài, ảnh, video buổi tập' }] : []),
+        ...(content ? [res('locations', 'Liên hệ · Cơ sở', 'home', 'Địa chỉ, bản đồ, ảnh lịch từng cơ sở')] : []),
+      ],
+    },
+    {
+      title: 'Trang web — mục phụ',
+      items: content ? [
+        { to: '/admin/cai-dat', label: 'Giới thiệu · Liên hệ chung', icon: 'settings', sub: 'Câu chuyện CLB, hotline, Zalo, Facebook' },
+        res('achievements', 'Thành tích', 'star', 'Huy chương, ảnh lên bục (gắn HLV được)'),
+        res('belts', 'Cấp đai', 'edit', 'Hệ thống đai Kudo, Jiujitsu'),
+        res('gallery', 'Thư viện', 'image', 'Ảnh & video CLB'),
+        res('testimonials', 'Cảm nhận', 'edit', 'Học viên, phụ huynh nói gì'),
+        res('faqs', 'Hỏi đáp', 'edit', 'Câu hỏi thường gặp (hiện cả ở trang Học phí)'),
+        { to: '/admin/chu-website', label: 'Chữ trên website', icon: 'edit', sub: 'Nút bấm, tiêu đề, câu cố định' },
+      ] : [],
     },
     {
       title: 'Tài khoản',
@@ -51,7 +69,7 @@ export function More({ me, compact, path }: { me: Me; compact?: boolean; path?: 
           <div key={g.title} className="mt-5">
             <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wider text-neutral-500">{g.title}</p>
             {g.items.map((i) => (
-              <A key={i.to} to={i.to} className={`flex min-h-10 items-center gap-3 px-3 text-sm ${path?.startsWith(i.to) ? 'bg-glory font-semibold' : 'text-neutral-300 hover:bg-white/10'}`}>
+              <A key={i.to + i.label} to={i.to} className={`flex min-h-10 items-center gap-3 px-3 text-sm ${path?.startsWith(i.to) ? 'bg-glory font-semibold' : 'text-neutral-300 hover:bg-white/10'}`}>
                 <Icon name={i.icon} className="size-4" />{i.label}
               </A>
             ))}
@@ -69,9 +87,11 @@ export function More({ me, compact, path }: { me: Me; compact?: boolean; path?: 
             <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-neutral-500">{g.title}</h2>
             <ul className="divide-y divide-neutral-200 border border-neutral-200 bg-white">
               {g.items.map((i) => (
-                <li key={i.to}>
-                  <A to={i.to} className="flex min-h-14 items-center gap-3 px-4 font-semibold hover:bg-neutral-50">
-                    <Icon name={i.icon} className="size-5 text-glory" />{i.label}<Icon name="chevron" className="ml-auto size-5 text-neutral-400" />
+                <li key={i.to + i.label}>
+                  <A to={i.to} className="flex min-h-14 items-center gap-3 px-4 py-2 hover:bg-neutral-50">
+                    <Icon name={i.icon} className="size-5 shrink-0 text-glory" />
+                    <span className="min-w-0"><b className="block">{i.label}</b>{i.sub && <span className="block text-sm text-neutral-500">{i.sub}</span>}</span>
+                    <Icon name="chevron" className="ml-auto size-5 shrink-0 text-neutral-400" />
                   </A>
                 </li>
               ))}

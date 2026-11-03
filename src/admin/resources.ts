@@ -33,6 +33,8 @@ export type Resource = {
   orderBy?: string;
   /** Mục mới lên đầu danh sách thay vì xuống cuối. */
   newFirst?: boolean;
+  /** Trang web hiện mục này (nút "Xem trên web"); mục có slug mở thẳng `${publicPath}/${slug}`. */
+  publicPath?: string;
   /** Kiểm tra giữa các ô (chạy ở cả CMS lẫn API); trả câu lỗi hoặc null. */
   check?: (row: Record<string, any>) => string | null;
 };
@@ -58,6 +60,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
   classes: {
     key: 'classes',
     title: 'Lớp & lịch tập',
+    publicPath: '/lich-hoc',
     listTitle: (r) => r.name,
     listSub: (r) => `${daysLabel(r.days)} · ${r.startTime}–${r.endTime}`,
     orderBy: 'startTime',
@@ -79,6 +82,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
   coaches: {
     key: 'coaches',
     title: 'Huấn luyện viên',
+    publicPath: '/huan-luyen-vien',
     listTitle: (r) => r.fullName,
     listSub: (r) => r.title ?? '',
     slugFrom: 'fullName',
@@ -87,7 +91,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
       { name: 'fullName', label: 'Họ tên', type: 'text', required: true },
       { name: 'photoKey', label: 'Ảnh', type: 'image' },
       { name: 'title', label: 'Chức danh', type: 'text', en: true, help: 'Vd: HLV Jiujitsu' },
-      { name: 'achievements', label: 'Thành tích', type: 'textarea', en: true, help: 'Mỗi dòng một thành tích' },
+      { name: 'achievements', label: 'Thành tích', type: 'textarea', en: true, help: 'Mỗi dòng một thành tích. Ghi HCV / HCB / HCĐ (hoặc "huy chương vàng…", "1 vàng, 1 bạc…") để web tô màu huy chương; "Vô địch…" hiện cúp, "Đai đen…" hiện đai. Thành tích có ẢNH: thêm ở mục Thành tích và chọn HLV này.' },
       { name: 'bio', label: 'Giới thiệu', type: 'textarea', en: true },
       { name: 'disciplineIds', label: 'Môn dạy', type: 'multi', ref: 'disciplines' },
       { name: 'isFeatured', label: 'Nổi bật ở trang chủ', type: 'bool' },
@@ -97,6 +101,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
   disciplines: {
     key: 'disciplines',
     title: 'Môn học',
+    publicPath: '/mon-hoc',
     listTitle: (r) => r.name,
     slugFrom: 'name',
     orderBy: 'sort',
@@ -112,6 +117,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
   locations: {
     key: 'locations',
     title: 'Cơ sở',
+    publicPath: '/lien-he',
     listTitle: (r) => r.name,
     listSub: (r) => r.address,
     orderBy: 'sort',
@@ -126,6 +132,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
   feePlans: {
     key: 'feePlans',
     title: 'Gói học phí',
+    publicPath: '/hoc-phi',
     listTitle: (r) => r.name,
     listSub: (r) => `${Number(r.pricePerMonth).toLocaleString('vi-VN')} đ/tháng`,
     orderBy: 'pricePerMonth',
@@ -143,6 +150,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
   belts: {
     key: 'belts',
     title: 'Cấp đai',
+    publicPath: '/cap-dai',
     listTitle: (r) => r.name,
     listSub: (r) => `Bậc ${r.rank}`,
     orderBy: 'rank',
@@ -158,6 +166,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
   gallery: {
     key: 'gallery',
     title: 'Thư viện ảnh / video',
+    publicPath: '/thu-vien',
     listTitle: (r) => r.caption || (r.type === 'video' ? 'Video' : 'Ảnh'),
     listSub: (r) => r.album ?? '',
     orderBy: 'sort',
@@ -175,6 +184,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
   testimonials: {
     key: 'testimonials',
     title: 'Cảm nhận',
+    publicPath: '/cam-nhan',
     listTitle: (r) => r.authorName,
     listSub: (r) => r.authorRole ?? '',
     orderBy: 'sort',
@@ -189,6 +199,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
   faqs: {
     key: 'faqs',
     title: 'Hỏi đáp (FAQ)',
+    publicPath: '/hoi-dap',
     listTitle: (r) => r.question,
     orderBy: 'sort',
     fields: [
@@ -200,6 +211,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
   achievements: {
     key: 'achievements',
     title: 'Thành tích',
+    publicPath: '/thanh-tich',
     listTitle: (r) => r.title,
     listSub: (r) => r.eventName ?? '',
     orderBy: 'sort',
@@ -208,7 +220,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
       { name: 'title', label: 'Thành tích', type: 'text', required: true, en: true, help: 'Vd: HCV Kudo quốc gia' },
       { name: 'eventName', label: 'Giải đấu / sự kiện', type: 'text' },
       { name: 'eventDate', label: 'Ngày', type: 'date' },
-      { name: 'coachId', label: 'HLV / võ sĩ', type: 'select', ref: 'coaches' },
+      { name: 'coachId', label: 'HLV / võ sĩ', type: 'select', ref: 'coaches', help: 'Chọn HLV thì ảnh thành tích hiện cả ở trang của HLV đó' },
       { name: 'imageKey', label: 'Ảnh huy chương / giấy chứng nhận / lên bục', type: 'image', help: 'Ảnh thật giúp khách tin hơn — hiện ở trang chủ, trang HLV và trang Thành tích.' },
       { name: 'description', label: 'Mô tả', type: 'textarea', en: true },
       pub,

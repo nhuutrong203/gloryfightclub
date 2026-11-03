@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { MAX_VIDEO_MB, api, can, mediaUrl, navigate, siteUrl, toast, uploadMany, uploadVideo, useApi, useDirty, type Me } from '../lib';
-import { A, Badge, Button, Empty, ErrorBox, Icon, LinkButton, Loading, Page, TextInput, Toggle, confirmDanger, inputCls } from '../ui';
+import { A, Badge, Button, Empty, ErrorBox, Icon, LinkButton, Loading, Page, TextInput, Toggle, ViewOnSite, confirmDanger, inputCls } from '../ui';
 import { RichEditor } from '../RichEditor';
 import { textToHtml, toText } from '../../lib/html';
 import { youtubeId } from '../../lib/util';
@@ -39,7 +39,7 @@ export function PostList() {
   const now = Date.now();
   const count = (p: Post, t: Media['type'] | 'videos') => p.media.filter((m) => (t === 'videos' ? m.type !== 'image' : m.type === t)).length;
   return (
-    <Page title="Nhật ký lớp" actions={<LinkButton to="/admin/tin-tuc/moi" icon="plus" variant="primary">Viết nhật ký</LinkButton>}>
+    <Page title="Nhật ký lớp" back="/admin/them" actions={<><ViewOnSite href={siteUrl('/nhat-ky')} /><LinkButton to="/admin/tin-tuc/moi" icon="plus" variant="primary">Viết nhật ký</LinkButton></>}>
       <p className="-mt-2 mb-4 text-neutral-600">Mỗi buổi tập một trang nhật ký — ảnh, video và vài dòng kể lại buổi tập cho khách thấy lớp mình vừa tập khỏe vừa vui.</p>
       {error ? <ErrorBox message={error} retry={reload} /> : !data ? <Loading /> : data.length === 0 ? <Empty>Chưa có trang nhật ký nào. Bấm “Viết nhật ký”.</Empty> : (
         <ul className="divide-y divide-neutral-200 border border-neutral-200 bg-white">

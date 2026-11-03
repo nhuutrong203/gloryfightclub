@@ -71,6 +71,15 @@ export function LinkButton({ to, children, icon, variant = 'ghost', className = 
   );
 }
 
+/** Mở trang tương ứng trên website (tab mới). */
+export function ViewOnSite({ href, label = 'Xem trên web' }: { href: string; label?: string }) {
+  return (
+    <a href={href} target="_blank" rel="noopener" className="inline-flex min-h-12 items-center gap-1.5 border border-neutral-300 bg-white px-3 font-semibold hover:bg-neutral-100" title={label}>
+      <Icon name="external" /><span className="hidden sm:inline">{label}</span>
+    </a>
+  );
+}
+
 export function A({ to, className = '', children, ...rest }: { to: string; className?: string; children: ReactNode; 'aria-label'?: string }) {
   return <a href={to} {...rest} className={className} onClick={(e) => { if (e.metaKey || e.ctrlKey) return; e.preventDefault(); navigate(to); }}>{children}</a>;
 }

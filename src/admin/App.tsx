@@ -84,7 +84,8 @@ function Shell({ me, path, children }: { me: Me; path: string; children: ReactNo
   const badge = (to: string) => to === '/admin/hoc-thu' && newTrials > 0
     ? <span className="ml-auto grid min-w-5 place-items-center rounded-full bg-glory px-1.5 text-xs font-bold leading-5 text-white ring-2 ring-white" aria-label={`${newTrials} đăng ký mới`}>{newTrials}</span>
     : null;
-  const active = (to: string) => (to === '/admin' ? path === '/admin' : path.startsWith(to)) || (to === '/admin/them' && /\/(noi-dung|cai-dat|chu-website|tai-khoan|doi-mat-khau)/.test(path));
+  const own = (to: string) => (to === '/admin' ? path === '/admin' : path.startsWith(to));
+  const active = (to: string) => own(to) || (to === '/admin/them' && !tabs.some((t) => t.to !== '/admin/them' && own(t.to)) && /\/(noi-dung|cai-dat|chu-website|tai-khoan|doi-mat-khau|tin-tuc)/.test(path));
 
   return (
     <div className="min-h-dvh bg-neutral-100 text-ink lg:pl-60">
@@ -102,7 +103,7 @@ function Shell({ me, path, children }: { me: Me; path: string; children: ReactNo
           <span className="font-display text-xl uppercase leading-none tracking-wider">Glory<br /><span className="text-glory">CMS</span></span>
         </A>
         <nav className="flex-1 overflow-y-auto px-2" aria-label="Menu chính">
-          {tabs.filter((t) => t.to !== '/admin/them').map((t) => (
+          {tabs.filter((t) => t.to !== '/admin/them' && t.to !== '/admin/tin-tuc').map((t) => (
             <A key={t.to} to={t.to} className={`flex min-h-11 items-center gap-3 px-3 font-semibold ${active(t.to) ? 'bg-glory' : 'hover:bg-white/10'}`}>
               <Icon name={t.icon} />{t.label}{badge(t.to)}
             </A>
