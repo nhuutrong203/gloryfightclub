@@ -21,7 +21,7 @@ export function menuGroups(me: Me): { title: string; items: Item[] }[] {
       title: 'Trang web — menu chính',
       items: [
         ...(content ? [
-          { to: '/admin/cai-dat', label: 'Trang chủ', icon: 'home', sub: 'Ảnh nền, tiêu đề lớn · HLV "nổi bật" chọn ở mục HLV' },
+          { to: '/admin/cai-dat#hero', label: 'Trang chủ', icon: 'home', sub: 'Ảnh nền, tiêu đề lớn · HLV "nổi bật" chọn ở mục HLV' },
           res('disciplines', 'Môn học', 'star', 'Tên, mô tả, ảnh bìa từng môn'),
           res('classes', 'Lịch học', 'calendar', 'Lớp & giờ tập từng cơ sở'),
           res('coaches', 'HLV', 'users', 'Ảnh, chức danh, thành tích, nổi bật ở trang chủ'),
@@ -34,7 +34,7 @@ export function menuGroups(me: Me): { title: string; items: Item[] }[] {
     {
       title: 'Trang web — mục phụ',
       items: content ? [
-        { to: '/admin/cai-dat', label: 'Giới thiệu · Liên hệ chung', icon: 'settings', sub: 'Câu chuyện CLB, hotline, Zalo, Facebook' },
+        { to: '/admin/cai-dat#club', label: 'Giới thiệu · Liên hệ chung', icon: 'settings', sub: 'Câu chuyện CLB, hotline, Zalo, Facebook' },
         res('achievements', 'Thành tích', 'star', 'Huy chương, ảnh lên bục (gắn HLV được)'),
         res('belts', 'Cấp đai', 'edit', 'Hệ thống đai Kudo, Jiujitsu'),
         res('gallery', 'Thư viện', 'image', 'Ảnh & video CLB'),
@@ -62,6 +62,8 @@ async function logout() {
 /** Trang "Thêm" trên điện thoại; `compact` = phần dưới menu trái trên máy tính. */
 export function More({ me, compact, path }: { me: Me; compact?: boolean; path?: string }) {
   const groups = menuGroups(me);
+  // Hai mục cùng trang Cài đặt (#hero, #club) → chỉ sáng mục đang xem.
+  const isActive = (to: string) => { const [base, hash] = to.split('#'); return !!path?.startsWith(base) && (!hash || location.hash === `#${hash}`); };
   if (compact) {
     return (
       <>
@@ -69,7 +71,7 @@ export function More({ me, compact, path }: { me: Me; compact?: boolean; path?: 
           <div key={g.title} className="mt-5">
             <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wider text-neutral-500">{g.title}</p>
             {g.items.map((i) => (
-              <A key={i.to + i.label} to={i.to} className={`flex min-h-10 items-center gap-3 px-3 text-sm ${path?.startsWith(i.to) ? 'bg-glory font-semibold' : 'text-neutral-300 hover:bg-white/10'}`}>
+              <A key={i.to + i.label} to={i.to} className={`flex min-h-10 items-center gap-3 px-3 text-sm ${isActive(i.to) ? 'bg-glory font-semibold' : 'text-neutral-300 hover:bg-white/10'}`}>
                 <Icon name={i.icon} className="size-4" />{i.label}
               </A>
             ))}

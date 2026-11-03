@@ -6,6 +6,7 @@ import { db, schema } from '../db';
 import { RESOURCES, fieldLabels, writableColumns, type Field, type ResourceKey } from '../admin/resources';
 import { slugify } from '../lib/util';
 import { body, idParam, need } from './guard';
+import { deleteMedia } from './media';
 import type { Env } from '.';
 
 // CRUD chung cho các mục nội dung khai báo trong src/admin/resources.ts.
@@ -58,6 +59,9 @@ const schemas = Object.fromEntries(
 export const contentRoutes = new Hono<Env>();
 
 const resolve = (key: string) => (key in RESOURCES ? (key as ResourceKey) : null);
+/** Giá trị các ô ảnh của 1 dòng (để dọn file R2 khi đổi ảnh / xoá mục). */
+const imagesOf = (key: ResourceKey, row: Record<string, any> | undefined) =>
+  row ? RESOURCES[key].fields.filter((f) => f.type === 'image').map((f) => row[f.name] as string | null) : [];
 
 contentRoutes.get('/:res', async (c) => {
   const key = resolve(c.req.param('res') ?? '');
@@ -112,7 +116,9 @@ contentRoutes.put('/:res/:id', need('content'), async (c) => {
   if (bad) return c.json({ error: bad }, 400);
   const values = pick(data, writableColumns(RESOURCES[key]));
   if (!Object.keys(values).length) return c.json({ error: 'Không có gì để lưu' }, 400);
+  const old = await db.select().from(TABLES[key]).where(eq(TABLES[key].id, id)).get();
   const [row] = await db.update(TABLES[key]).set(values as any).where(eq(TABLES[key].id, id)).returning();
+  if (row) await deleteMedia(imagesOf(key, old).filter((k) => k && !imagesOf(key, row).includes(k)));
   return row ? c.json(row) : c.notFound();
 });
 
@@ -130,11 +136,13 @@ contentRoutes.delete('/:res/:id', need('content'), need('delete'), async (c) => 
       return c.json({ error: `Môn này đang có ${what}. Tắt "Hiện trên website" để ẩn môn, hoặc xoá/đổi các mục đó trước.` }, 409);
     }
   }
+  const old = await db.select().from(TABLES[key]).where(eq(TABLES[key].id, id)).get();
   try {
     await db.delete(TABLES[key]).where(eq(TABLES[key].id, id));
   } catch {
     return c.json({ error: 'Không xoá được vì mục này đang được dùng ở nơi khác (vd. cơ sở đang có lớp).' }, 409);
   }
+  await deleteMedia(imagesOf(key, old));
   return c.json({ ok: true });
 });
 

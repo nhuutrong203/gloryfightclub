@@ -31,8 +31,15 @@ export const lines = (s: string | null | undefined) => (s ?? '').split('\n').map
 export const publicDisciplines = () =>
   db.select().from(schema.disciplines).where(eq(schema.disciplines.isPublic, true)).orderBy(asc(schema.disciplines.sort));
 
-export const publicCoaches = () =>
-  db.select().from(schema.coaches).where(eq(schema.coaches.isPublic, true)).orderBy(asc(schema.coaches.sort));
+/** HLV đang hiện + thành tích (bảng Thành tích) gắn với từng người: thẻ HLV dùng khi ô chữ "Thành tích" để trống. */
+export async function publicCoaches() {
+  const [coaches, awards] = await Promise.all([
+    db.select().from(schema.coaches).where(eq(schema.coaches.isPublic, true)).orderBy(asc(schema.coaches.sort)),
+    db.select({ coachId: schema.achievements.coachId, title: schema.achievements.title, titleEn: schema.achievements.titleEn })
+      .from(schema.achievements).where(eq(schema.achievements.isPublic, true)).orderBy(asc(schema.achievements.sort)),
+  ]);
+  return coaches.map((c) => ({ ...c, awards: awards.filter((a) => a.coachId === c.id) }));
+}
 
 export const publicPlans = () =>
   db.select().from(schema.feePlans).where(eq(schema.feePlans.isPublic, true)).orderBy(asc(schema.feePlans.pricePerMonth), asc(schema.feePlans.sort)); // giá thấp → cao

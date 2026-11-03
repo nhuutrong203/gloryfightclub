@@ -6,6 +6,7 @@ import { db, schema } from '../db';
 import { DEFAULT_COACH_PERMISSIONS, PERMISSIONS, can, hashPassword } from '../lib/auth';
 import { vnNow } from '../lib/util';
 import { body, idParam, need, ownerOnly } from './guard';
+import { deleteMedia } from './media';
 import type { Env } from '.';
 
 export const adminRoutes = new Hono<Env>();
@@ -80,7 +81,9 @@ adminRoutes.put('/settings/:key', need('content'), async (c) => {
     { name: 'Tên CLB', slogan: 'Slogan', hotlines: 'Hotline', zalo: 'Số Zalo', facebook: 'Link Facebook', instagram: 'Link Instagram' });
   if (err) return err;
   if (JSON.stringify(value).length > 50_000) return c.json({ error: 'Nội dung quá dài' }, 400);
+  const old = key === 'hero' ? await db.select({ value: schema.settings.value }).from(schema.settings).where(eq(schema.settings.key, 'hero')).get() : undefined;
   await db.insert(schema.settings).values({ key, value }).onConflictDoUpdate({ target: schema.settings.key, set: { value } });
+  if (old) await deleteMedia([(old.value as { image_key?: string })?.image_key]); // ảnh nền trang chủ cũ (còn dùng thì giữ)
   return c.json({ ok: true });
 });
 

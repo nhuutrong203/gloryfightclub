@@ -75,3 +75,12 @@ test('huy chương: đọc vàng/bạc/đồng từ chữ tự do, không nhầm
   assert.equal(beltColor('Đai đen Kudo'), '#0a0a0a');
   assert.equal(beltColor('Võ sĩ MMA'), null);
 });
+
+test('lọc HTML nhật ký: chỉ giữ thẻ an toàn, bỏ mã chạy được, link chỉ http(s)', async () => {
+  const { tagAction, safeHref } = await import('../src/lib/html.ts');
+  for (const t of ['script', 'SCRIPT', 'iframe', 'style', 'svg', 'img', 'object', 'form', 'video']) assert.equal(tagAction(t), 'drop', t);
+  for (const t of ['p', 'b', 'strong', 'h2', 'h3', 'ul', 'li', 'blockquote', 'a', 'br']) assert.equal(tagAction(t), 'keep', t);
+  for (const t of ['font', 'table', 'section', 'h1']) assert.equal(tagAction(t), 'unwrap', t);
+  assert.equal(safeHref('https://glory.vn/a?b=1'), 'https://glory.vn/a?b=1');
+  for (const h of ['javascript:alert(1)', ' JavaScript:alert(1)', 'data:text/html,x', '//evil.com', 'https://x"onmouseover=1', "https://x'y", 'https://a b', '', null]) assert.equal(safeHref(h), null, String(h));
+});

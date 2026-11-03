@@ -16,7 +16,7 @@ import { More, Password } from './pages/More';
 
 export default function App() {
   const [me, setMe] = useState<Me | null | undefined>(undefined);
-  const path = usePath().split('?')[0].replace(/\/+$/, '') || '/admin';
+  const path = usePath().split(/[?#]/)[0].replace(/\/+$/, '') || '/admin';
 
   useEffect(() => {
     api<Me>('/admin/me').then(setMe, () => setMe(null));

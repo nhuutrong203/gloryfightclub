@@ -8,9 +8,11 @@ import AchievementIcon from './AchievementIcon.astro';
 import MedalTally from './MedalTally.astro';
 import type { schema } from '../../db';
 
-interface Props { coach: typeof schema.coaches.$inferSelect; lang: Lang; i?: number; tone?: 'light' | 'dark'; class?: string }
+interface Props { coach: typeof schema.coaches.$inferSelect & { awards?: { title: string; titleEn: string | null }[] }; lang: Lang; i?: number; tone?: 'light' | 'dark'; class?: string }
 const { coach: c, lang, i = 0, tone = 'dark', class: className } = Astro.props;
-const achievements = lines(tr(c, 'achievements', lang));
+// Giống trang HLV: ô chữ "Thành tích" trống thì lấy từ bảng Thành tích (mục có ảnh) gắn với HLV này.
+const text = lines(tr(c, 'achievements', lang));
+const achievements = text.length ? text : (c.awards ?? []).map((a) => tr(a, 'title', lang));
 const photo = mediaUrl(c.photoKey);
 // Chưa có ảnh: hiện chữ viết tắt (vd. "LT") thay vì khung trống.
 const initials = c.fullName.trim().split(/\s+/).slice(-2).map((w) => w[0]).join('');

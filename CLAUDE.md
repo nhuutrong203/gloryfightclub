@@ -43,6 +43,7 @@ Astro 7 SSR + `@astrojs/cloudflare` 14 (Cloudflare Workers) · React (CMS SPA) �
 - Menu/footer hide links to sections without content (testimonials, FAQ, gallery, achievements, belts) — counted in `PublicLayout`. The class diary link always shows (owner's choice); the diary block on Home still hides while there are no posts.
 - Phones: fixed bottom action bar (Call · Zalo · Trial class), `body` has matching bottom padding; the round floating button only shows from `lg`.
 - Page transitions: CSS `@view-transition` (no JS). Every animation has a `prefers-reduced-motion` branch.
+- Coach cards: medal lines = the coach's "Thành tích" text, or (when empty) titles from the achievements table (`publicCoaches()` attaches `awards`), same rule as the coach page.
 - Achievements text is free-form; `src/lib/medals.ts` reads it (HCV/HCB/HCĐ, "huy chương vàng", "1 vàng, 1 bạc…", titles like "vô địch", belts) → `AchievementIcon` (gold/silver/bronze `Medal`, trophy, belt in its color) and `MedalTally` (medal counts on coach cards/pages). Medal colors live in `@theme static` (used via `var()`, not classes).
 - Interactions in `PublicLayout`: shared lightbox for any `[data-lightbox="group"]` (gallery, achievement photos, diary images; swipe + arrow keys), "Đang tập" badge on Home's today list (`data-class-time`, checked in VN time on the client because pages are cached), hero numbers count up (`data-count`).
 - All public content is read from D1, never hard-coded. Fixed UI strings live in `dict` (`src/i18n.ts`) and are **editable in CMS → Chữ trên website** (settings key `texts` = `{vi:{key:text}, en:{…}}`, loaded by the middleware into `setTextOverrides`; `t()` prefers the edited text). New string → add a key to `dict`, NEVER a hard-coded string in a page; display groups are in `src/admin/pages/Texts.tsx` (`GROUPS`).
@@ -72,7 +73,7 @@ Commands, deploy and domain details: `README.md`. In the Claude desktop app, `.c
 - Schema change: edit `src/db/schema.ts` → `npm run db:generate` → `npm run db:migrate`.
 - `db:reset` needs the dev server stopped first (Windows locks the SQLite file) — `scripts/clear-local-db.mjs` prints a clear error.
 - `seed/seed.sql` holds real data only (it is loaded to the cloud); fake data goes in `seed/sample.sql`, marked "(mẫu)".
-- D1 limits: max 100 bound parameters per statement (never `inArray` over a long id list — use a subquery) and 50 calls per request on the Free plan (1000 on Paid) → batch multi-row writes with `db.batch`.
+- D1 limits: max 100 bound parameters per statement (never `inArray` over a long id list — use a subquery or one `json_each(?)` JSON param), only a few `UNION` terms per query (use `EXISTS … OR EXISTS …`), and 50 calls per request on the Free plan (1000 on Paid) → batch multi-row writes with `db.batch`.
 
 ## Main structure
 ```
@@ -95,6 +96,7 @@ tests/                node --test files (*.test.mjs import the .ts modules direc
 - Permissions: `students.view`, `students.edit`, `fees.view`, `fees.edit`, `posts`, `content`, `delete`. The owner always has all of them; only the owner manages accounts. Permissions are enforced in the API with `need()`; the UI only shows/hides.
 - Accent-insensitive student search runs in JS (`matchQuery`) — fine up to a few thousand students.
 - Fees: one `payments` row per student per month (unique). Dashboard "unpaid" = `active` students without a payment for the current month.
+- R2 cleanup: after a write, `deleteMedia(keys)` (`src/api/media.ts`) deletes files no longer referenced by any image column (posts, content images, hero). Errors only log — never fail the save. New image column → add it to that query. Files uploaded and then abandoned in an unsaved form still stay (known limit).
 - Upload: the client shrinks to ≤1600px WebP (JPEG fallback; JPEG/WebP ≤400KB is sent as is), XHR with % progress, instant preview; `uploadMany` uploads 3 images in parallel (news, "Thêm nhiều ảnh" in the gallery). The server checks magic bytes, ≤8MB, key `public/YYYY-MM/<uuid>.ext`.
 - `/media/*` runs on BOTH the public and the CMS host (middleware `CMS_PATH`) and is cached forever at the edge with the Cache API (keys are never overwritten).
 - Achievements with photos: shown on Home (photos first), on the coach page ("Hình ảnh thành tích", from `achievements.coach_id`) and on /thanh-tich; clicking a photo opens the original.

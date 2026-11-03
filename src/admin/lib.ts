@@ -37,7 +37,8 @@ const subscribe = (fn: () => void) => {
   window.addEventListener('popstate', fn);
   return () => { listeners.delete(fn); window.removeEventListener('popstate', fn); };
 };
-export const usePath = () => useSyncExternalStore(subscribe, () => location.pathname + location.search);
+// Có cả #… để menu biết đang ở nhóm nào của trang Cài đặt (#hero, #club).
+export const usePath = () => useSyncExternalStore(subscribe, () => location.pathname + location.search + location.hash);
 
 // ───────── Chống mất dữ liệu đang gõ ─────────
 // URL của form đang có thay đổi chưa lưu (null = không có).
@@ -64,7 +65,9 @@ export function navigate(to: string, replace = false) {
   dirtyAt = null;
   history[replace ? 'replaceState' : 'pushState'](null, '', to);
   listeners.forEach((fn) => fn());
-  window.scrollTo(0, 0);
+  // Link có #nhóm (vd. /admin/cai-dat#hero): cuộn tới nhóm đó nếu trang đang mở sẵn, không thì lên đầu trang.
+  const target = to.includes('#') && document.getElementById(to.split('#')[1]);
+  if (target) target.scrollIntoView(); else window.scrollTo(0, 0);
 }
 export const query = () => new URLSearchParams(location.search);
 

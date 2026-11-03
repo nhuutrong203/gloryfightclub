@@ -5,6 +5,7 @@ import { db, schema } from '../db';
 import { slugify, youtubeId } from '../lib/util';
 import { sanitizeHtml, toText } from '../lib/html';
 import { body, idParam, need } from './guard';
+import { deleteMedia } from './media';
 import type { Env } from '.';
 
 const p = schema.posts;
@@ -37,6 +38,10 @@ async function clean(data: z.infer<typeof postSchema>) {
   const htmlEn = contentEn ? await sanitizeHtml(contentEn) : '';
   return { media, values: { ...rest, content: html, contentEn: toText(htmlEn) ? htmlEn : null, format: 'html' as const } };
 }
+
+/** Key R2 (ảnh, video) đang gắn với bài — để dọn file khi bài đổi hoặc bị xoá. */
+const fileKeys = async (postId: number) =>
+  (await db.select({ key: img.key, type: img.type }).from(img).where(eq(img.postId, postId))).filter((m) => m.type !== 'youtube').map((m) => m.key);
 
 const mediaRows = (postId: number, media: z.infer<typeof mediaItem>[]) => media.map((m, sort) => ({ postId, type: m.type, key: m.key, sort }));
 
@@ -77,17 +82,21 @@ postRoutes.put('/:id', need('posts'), async (c) => {
   if (err) return err;
   const { media, values } = await clean(data);
   if (!toText(values.content) && !media.length) return c.json({ error: 'Viết vài dòng hoặc thêm ảnh / video' }, 400);
+  const before = await fileKeys(id);
   await db.batch([
     db.update(p).set({ ...values, updatedAt: Date.now() }).where(eq(p.id, id)),
     db.delete(img).where(eq(img.postId, id)),
     ...(media.length ? [db.insert(img).values(mediaRows(id, media))] : []),
   ]);
+  await deleteMedia(before); // ảnh/video vừa bỏ khỏi bài (key còn dùng thì giữ)
   return c.json({ ok: true });
 });
 
 postRoutes.delete('/:id', need('posts'), need('delete'), async (c) => {
   const id = idParam(c);
   if (!id) return c.notFound();
+  const files = await fileKeys(id);
   await db.delete(p).where(eq(p.id, id));
+  await deleteMedia(files);
   return c.json({ ok: true });
 });

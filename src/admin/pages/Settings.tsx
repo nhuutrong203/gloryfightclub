@@ -12,6 +12,8 @@ export function Settings() {
   const markDirty = useDirty();
   useEffect(() => markDirty(Object.values(dirty).some(Boolean)), [dirty]);
   const onDirty = (k: string, on: boolean) => setDirtyGroups((x) => (x[k] === on ? x : { ...x, [k]: on }));
+  // Mở từ menu "Trang chủ" (#hero) / "Giới thiệu · Liên hệ chung" (#club): cuộn tới đúng nhóm khi tải xong.
+  useEffect(() => { if (data && location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView(); }, [data]);
   if (error) return <Page title="Thông tin CLB" back="/admin/them"><ErrorBox message={error} retry={reload} /></Page>;
   if (!data) return <Loading />;
   return (
@@ -47,7 +49,7 @@ function Group({ title, k, view, initial, fields, onDirty }: { title: string; k:
   const set = (key: string) => (v: any) => { setForm((x) => ({ ...x, [key]: v })); onDirty(k, true); };
 
   return (
-    <form className="space-y-4 border border-neutral-200 bg-white p-4" onSubmit={async (e) => {
+    <form id={k} className="scroll-mt-20 space-y-4 border border-neutral-200 bg-white p-4" onSubmit={async (e) => {
       e.preventDefault();
       if (uploading) return toast('Đợi ảnh tải lên xong đã', 'err');
       setBusy(true);
