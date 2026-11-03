@@ -1,108 +1,111 @@
 # CLAUDE.md — Glory Club
 
-## Dự án
-Website quảng bá + CMS quản lý võ sinh cho **GLORY FIGHT CLUB** (MMA, Kudo, Muay Thai/Kickboxing, BJJ/Grappling, Boxing), 2 cơ sở ở TP.HCM.
-- **Dự án cá nhân, độc lập hoàn toàn với công ty NEAX.** Chỉ làm trong thư mục này, chỉ commit/push lên `https://github.com/nhuutrong203/gloryfightclub`.
-- Public (`gloryfightclub.huutrong203.id.vn`): chỉ quảng bá/tuyển sinh, không đăng nhập cho khách, không like/comment.
-- CMS (`cms-gloryfightclub.huutrong203.id.vn`): cho chủ CLB và các HLV (không có vai trò "trợ giảng"); ưu tiên dễ dùng trên điện thoại.
-- Không lưu ảnh học viên. Lớp gọi theo nhóm ngày: `246` = T2·T4·T6, `357` = T3·T5·T7, `8` = CN.
-- Học phí đóng theo tháng, 4 gói: Premium 1.500.000 (mọi môn, trừ lớp trẻ em + lớp Fighter), Standard 1.000.000 (2 môn), Trẻ em 700.000 (6–15 tuổi), HSSV 800.000 (1 môn). Open mat – Sparring CN 18:00–21:00 miễn phí.
-- **Không** có thanh toán online / mã QR trên web: học viên quét mã chuyển khoản tại CLB; CMS chỉ ghi nhận đã thu (tiền mặt / chuyển khoản).
-- **Không** có điểm danh, **không** có thi lên đai (CMS chỉ quản lý học viên + học phí + nội dung web).
-- Web public **song ngữ**: VI ở `/`, EN ở `/en/...`; cột chữ public có cặp `_en`, trống thì fallback VI. CMS chỉ tiếng Việt.
-- Vai trò: `owner` (chủ CLB Lê Thành Trung, toàn quyền) và `coach` (quyền do owner tick; mặc định: học viên + đăng tin, không học phí, không xóa).
-- Mỗi cơ sở: lịch nhập trong CMS hoặc ảnh lịch (`locations.schedule_image_key`).
-- Cơ sở 1: 125/9/18 Nguyễn Thị Nhuần, An Phú Đông. Logo gốc (raster): `docs/logo-source.png`.
-- Tên miền `huutrong203.id.vn` đã ở nameserver Cloudflare → deploy chỉ cần thêm 2 Custom Domain cho Worker, không đụng bản ghi DNS khác.
-- **Đang chạy thật** tại https://gloryfightclub.huutrong203.id.vn và https://cms-gloryfightclub.huutrong203.id.vn. **Push lên `main` = tự deploy** (GitHub Actions `.github/workflows/deploy.yml`: wrangler types → astro check → npm test → D1 migrations --remote → deploy; cần secret `CLOUDFLARE_API_TOKEN`). Deploy tay: `npm run deploy`.
-- Sửa schema: tạo migration bằng `npm run db:generate` và commit — CI tự áp lên D1 cloud trước khi deploy. Migration phải tương thích ngược (thêm cột/bảng), vì code cũ vẫn chạy trong lúc migrate.
+## Project
+Promotional website + student-management CMS for **GLORY FIGHT CLUB** (MMA, Kudo, Muay Thai/Kickboxing, BJJ/Grappling, Boxing), 2 locations in Ho Chi Minh City.
+- **Personal project, fully independent of the NEAX company.** Work only in this folder; commit/push only to `https://github.com/nhuutrong203/gloryfightclub` (public repo — never commit secrets, passwords or account emails).
+- Public site (`gloryfightclub.huutrong203.id.vn`): promotion/enrolment only — no visitor login, no likes/comments.
+- CMS (`cms-gloryfightclub.huutrong203.id.vn`): for the club owner and coaches (there is no "assistant" role); phone-first UX.
+- No student photos are stored. Classes are named by day group: `246` = Mon·Wed·Fri, `357` = Tue·Thu·Sat, `8` = Sun.
+- Monthly fees, 4 plans: Premium 1,500,000 (all disciplines except kids + Fighter classes), Standard 1,000,000 (2 disciplines), Kids 700,000 (age 6–15), Student 800,000 (1 discipline). Open mat – Sparring Sun 18:00–21:00 is free.
+- **No** online payment / QR code on the site: students scan the bank QR at the club; the CMS only records that a fee was received (cash / transfer).
+- **No** attendance and **no** belt exams (the CMS manages students + fees + site content only).
+- Public site is **bilingual**: VI at `/`, EN at `/en/...`; every public text column has an `_en` twin that falls back to VI when empty. The CMS is Vietnamese only.
+- Roles: `owner` (club owner, full access) and `coach` (permissions ticked by the owner; default: students + posts, no fees, no delete).
+- Each location: schedule entered in the CMS or uploaded as an image (`locations.schedule_image_key`).
+- Location 1: 125/9/18 Nguyễn Thị Nhuần, An Phú Đông. Original raster logo: `docs/logo-source.png`.
+- Domain `huutrong203.id.vn` already uses Cloudflare nameservers → deploying only needs 2 Worker Custom Domains; never touch other DNS records.
+- **Live** at https://gloryfightclub.huutrong203.id.vn and https://cms-gloryfightclub.huutrong203.id.vn.
+- **Push to `main` = auto deploy** via GitHub Actions `.github/workflows/deploy.yml` (wrangler types → astro check → npm test → D1 migrations --remote → deploy). It needs the repo secret `CLOUDFLARE_API_TOKEN` — **not added yet as of 2026-11-03**, so every run so far failed at the first step and all deploys were manual: `npm run deploy` (wrangler on the dev machine is logged in to the club's Cloudflare account).
+- Schema changes: create a migration with `npm run db:generate` and commit it — CI applies it to cloud D1 before deploying. Migrations must be backward compatible (add columns/tables only), because the old code keeps running while migrating.
 
-## Trạng thái
-- [x] Lập kế hoạch v3 → `docs/PLAN.md` (đã duyệt)
-- [x] GĐ 0 — Nền móng: Astro 7 + Cloudflare adapter 14, schema + migration `0000_init`, seed thật/demo, logo SVG, layout public, trang chủ khung (VI/EN)
-- [x] GĐ 1 — Website public: 19 trang VI/EN (trang chủ, môn, lịch, HLV, tin tức, thư viện, cấp đai, học phí, thành tích, cảm nhận, hỏi đáp, giới thiệu, liên hệ, học thử, 404, sitemap, robots)
-- [x] GĐ 2 — CMS lõi: đăng nhập, tổng quan, học viên, học thử → học viên, tin tức + upload R2, nội dung website
-- [x] GĐ 3 — Học phí theo tháng, xuất CSV, tài khoản + phân quyền HLV
-- [x] GĐ 4 — Cài đặt CLB (liên hệ, hero, trang giới thiệu), thư viện, thành tích, cảm nhận, FAQ, cấp đai trong CMS
-- [x] GĐ 5 — Deploy (2026-11-02): Worker `gloryfightclub` trên tài khoản Cloudflare coftivenist@gmail.com, D1 `glory-db` (APAC), R2 `glory-media`, 2 custom domain. Cloud chỉ có dữ liệu thật (seed.sql). Tài khoản chủ CLB trên cloud: `lethanhtrung1996` (owner, tạo 2026-11-02; mật khẩu do anh Trọng giữ, KHÔNG ghi vào repo).
+## Status
+- [x] Plan v3 → `docs/PLAN.md` (approved)
+- [x] Phase 0 — Foundation: Astro 7 + Cloudflare adapter 14, schema + migration `0000_init`, real/demo seed, SVG logo, public layout, home page skeleton (VI/EN)
+- [x] Phase 1 — Public site: 19 VI/EN pages (home, disciplines, schedule, coaches, news, gallery, belts, fees, achievements, testimonials, FAQ, about, contact, trial class, 404, sitemap, robots)
+- [x] Phase 2 — Core CMS: login, dashboard, students, trial → student, news + R2 upload, site content
+- [x] Phase 3 — Monthly fees, CSV export, accounts + coach permissions
+- [x] Phase 4 — Club settings (contact, hero, about page), gallery, achievements, testimonials, FAQ, belts in the CMS
+- [x] Phase 5 — Deploy (2026-11-02): Worker `gloryfightclub`, D1 `glory-db` (APAC), R2 `glory-media`, 2 custom domains. Cloud holds real data only (`seed.sql`). The cloud owner account was created with `scripts/create-user.mjs`; its credentials are kept by the repo owner, NEVER in the repo.
+- [x] 2026-11-03 — CMS hardening after a full audit: auto sort order + ↑↓ reorder, safe Excel import, unsaved-changes guard, Vietnamese field-labelled errors, cross-field checks, race-safe writes, first tests.
 
 ## Stack
-Astro 7 SSR + `@astrojs/cloudflare` 14 (Cloudflare Workers) · React (CMS SPA) · Hono (API trong `/api/*`) · Cloudflare D1 + Drizzle ORM · Cloudflare R2 (ảnh) · Tailwind CSS v4.
+Astro 7 SSR + `@astrojs/cloudflare` 14 (Cloudflare Workers) · React (CMS SPA) · Hono (API under `/api/*`) · Cloudflare D1 + Drizzle ORM · Cloudflare R2 (images) · Tailwind CSS v4.
 
-## Quy ước
-- Giao diện, nội dung, seed: **tiếng Việt**. Code, tên bảng/cột: tiếng Anh, snake_case cho DB.
-- Ngày: text `YYYY-MM-DD`; thời điểm: integer unix ms; múi giờ nghiệp vụ `Asia/Ho_Chi_Minh`.
-- Ảnh lưu **key R2**, không lưu URL; phục vụ qua `/media/*`. R2 chỉ chứa ảnh công khai.
-- Dữ liệu học viên không bao giờ được trả về từ route public hay host public.
-- Màu: đen `#0A0A0A`, trắng, đỏ nhấn `#E10600`. Font: Anton (tiêu đề) + Be Vietnam Pro (nội dung).
-- **Tiêu đề Anton chữ in hoa tiếng Việt: line-height ≥ 1.12** (dấu chồng Ổ/Ầ/Ấ cao hơn chữ hoa). KHÔNG dùng `leading-none`/`leading-[0.9x]` cho chữ có dấu; chỉ dùng cho số/giá. Tiêu đề có `text-wrap: balance`.
-- Chữ đỏ **cỡ nhỏ** trên nền tối dùng `text-glory-bright` (#ff3b30, 5.6:1); `glory` (#E10600) chỉ cho nút/khối/tiêu đề lớn; trên nền sáng dùng `glory-dark`.
-- Menu/footer tự ẩn link tới mục chưa có nội dung (tin tức, cảm nhận, FAQ, thư viện, thành tích, cấp đai) — đếm trong `PublicLayout`.
-- Điện thoại: thanh hành động cố định dưới đáy (Gọi · Zalo · Học thử), `body` có padding-bottom tương ứng; nút nổi tròn chỉ hiện từ `lg`.
-- Chuyển trang: CSS `@view-transition` (không cần JS). Hiệu ứng luôn có nhánh `prefers-reduced-motion`.
-- Mọi nội dung public đọc từ D1, không hard-code. Chữ giao diện cố định nằm trong `dict` (`src/i18n.ts`) và **sửa được trong CMS → Chữ trên website** (settings key `texts` = `{vi:{key:chữ}, en:{…}}`, middleware nạp vào `setTextOverrides`, `t()` ưu tiên bản đã sửa). Thêm chữ mới → thêm khoá vào `dict`, KHÔNG viết chuỗi cứng trong trang; nhóm hiển thị ở `src/admin/pages/Texts.tsx` (`GROUPS`).
-- Slogan (dải chữ chạy, footer) lấy từ `club.slogan`; dòng tên môn ở đầu trang chủ / Môn học lấy từ bảng `disciplines`.
-- Mọi input từ form/API phải validate bằng zod ở phía server.
-- **Cập nhật file này sau mỗi lần làm xong việc** (trạng thái, lệnh chạy, cấu trúc thay đổi).
+## Conventions
+- UI, content, seed data: **Vietnamese**. Code, table/column names: English, snake_case in the DB. Markdown docs (`*.md`): **English**.
+- Dates: text `YYYY-MM-DD`; timestamps: integer unix ms; business time zone `Asia/Ho_Chi_Minh`.
+- Images are stored as **R2 keys**, never URLs; served through `/media/*`. R2 holds public images only.
+- Student data is never returned from a public route or on the public host.
+- Colours: black `#0A0A0A`, white, red accent `#E10600`. Fonts: Anton (headings) + Be Vietnam Pro (body).
+- **Uppercase Vietnamese Anton headings: line-height ≥ 1.12** (stacked marks on Ổ/Ầ/Ấ rise above the cap height). Do NOT use `leading-none`/`leading-[0.9x]` on text with diacritics; only on numbers/prices. Headings use `text-wrap: balance`.
+- **Small** red text on dark backgrounds uses `text-glory-bright` (#ff3b30, 5.6:1); `glory` (#E10600) is for buttons/blocks/large headings only; on light backgrounds use `glory-dark`.
+- Menu/footer hide links to sections without content (news, testimonials, FAQ, gallery, achievements, belts) — counted in `PublicLayout`.
+- Phones: fixed bottom action bar (Call · Zalo · Trial class), `body` has matching bottom padding; the round floating button only shows from `lg`.
+- Page transitions: CSS `@view-transition` (no JS). Every animation has a `prefers-reduced-motion` branch.
+- All public content is read from D1, never hard-coded. Fixed UI strings live in `dict` (`src/i18n.ts`) and are **editable in CMS → Chữ trên website** (settings key `texts` = `{vi:{key:text}, en:{…}}`, loaded by the middleware into `setTextOverrides`; `t()` prefers the edited text). New string → add a key to `dict`, NEVER a hard-coded string in a page; display groups are in `src/admin/pages/Texts.tsx` (`GROUPS`).
+- The slogan (marquee, footer) comes from `club.slogan`; the discipline line at the top of Home / Disciplines comes from the `disciplines` table.
+- Every form/API input is validated with zod on the server.
+- **Update this file after every finished task** (status, commands, structure changes).
 
-## Cách chạy
+## Running
 ```bash
 npm install
-npm run db:reset   # D1 local: tạo bảng + seed/seed.sql (thật) + seed/sample.sql (demo)
-npm run dev        # web http://localhost:4321 (EN /en) · CMS http://localhost:4321/admin
-npm test           # test nhanh (node --test, tests/*.test.mjs; CI chạy trước khi deploy)
+npm run db:reset   # local D1: create tables + seed/seed.sql (real) + seed/sample.sql (demo)
+npm run dev        # site http://localhost:4321 (EN /en) · CMS http://localhost:4321/admin
+npm test           # quick tests (node --test, tests/*.test.mjs; CI runs them before deploying)
 ```
-Tài khoản demo LOCAL (trong `seed/sample.sql`): `admin` (chủ CLB) và `hlv` (HLV), mật khẩu `glory2026`.
-Tạo tài khoản thật: `node scripts/create-user.mjs <username> <mật-khẩu> "<Họ tên>" owner [--remote]`.
-**Astro 7 chỉ cho 1 dev server / dự án** — muốn chạy lệnh khác cần DB thì dùng chung server đang chạy, hoặc `npx astro dev stop`.
-Chi tiết lệnh, deploy, gắn domain: `README.md`. Trong Claude desktop: `.claude/launch.json` có cấu hình `glory-dev`.
+LOCAL demo accounts (in `seed/sample.sql`): `admin` (owner) and `hlv` (coach), password `glory2026`. They exist only locally.
+Create a real account: `node scripts/create-user.mjs <username> <password> "<Full name>" owner [--remote]`.
+**Astro 7 allows one dev server per project** — to run another command that needs the DB, share the running server or `npx astro dev stop`.
+Commands, deploy and domain details: `README.md`. In the Claude desktop app, `.claude/launch.json` has the `glory-dev` config.
 
-## Ghi chú kỹ thuật (Astro 7 / adapter 14)
-- Bindings lấy bằng `import { env } from 'cloudflare:workers'` (KHÔNG còn `Astro.locals.runtime`). DB: `import { db, schema } from '../db'`.
-- `astro dev` chạy trong workerd thật; D1/R2 local lưu ở `.wrangler/state`.
-- `npm run dev:remote` = `CLOUDFLARE_ENV=remote` → dùng `env.remote` trong `wrangler.jsonc` (bindings `remote: true`).
-- Tailwind v4: class dùng chung khai báo bằng `@utility` trong `src/styles/global.css` (không dùng `@layer components` + `@apply`).
-- `session: false` (tự quản lý session trong D1), `imageService: 'passthrough'` (ảnh nén sẵn ở trình duyệt).
-- Bản EN: middleware rewrite `/en/*` → cùng trang, `Astro.locals.lang = 'en'`. Dùng `t()`, `tr(row, 'field', lang)`, `href(path, lang)` trong `src/i18n.ts`.
-- Sửa schema: sửa `src/db/schema.ts` → `npm run db:generate` → `npm run db:migrate`. Chưa deploy lần nào nên GĐ 0–1 có thể gộp lại migration `0000`.
-- `db:reset` cần tắt dev server trước (Windows khoá file SQLite) — script `scripts/clear-local-db.mjs` báo lỗi rõ.
-- `seed/seed.sql` chỉ chứa dữ liệu thật (được nạp lên cloud); dữ liệu giả để ở `seed/sample.sql`, đánh dấu "(mẫu)".
+## Technical notes (Astro 7 / adapter 14)
+- Bindings come from `import { env } from 'cloudflare:workers'` (NOT `Astro.locals.runtime` any more). DB: `import { db, schema } from '../db'`.
+- `astro dev` runs inside real workerd; local D1/R2 live in `.wrangler/state`.
+- `npm run dev:remote` = `CLOUDFLARE_ENV=remote` → uses `env.remote` in `wrangler.jsonc` (bindings with `remote: true`).
+- Tailwind v4: shared classes are declared with `@utility` in `src/styles/global.css` (not `@layer components` + `@apply`).
+- `session: false` (sessions are managed in D1), `imageService: 'passthrough'` (images are compressed in the browser).
+- EN version: the middleware rewrites `/en/*` to the same page (query string kept) with `Astro.locals.lang = 'en'`. Use `t()`, `tr(row, 'field', lang)`, `href(path, lang)` from `src/i18n.ts`.
+- Schema change: edit `src/db/schema.ts` → `npm run db:generate` → `npm run db:migrate`.
+- `db:reset` needs the dev server stopped first (Windows locks the SQLite file) — `scripts/clear-local-db.mjs` prints a clear error.
+- `seed/seed.sql` holds real data only (it is loaded to the cloud); fake data goes in `seed/sample.sql`, marked "(mẫu)".
+- D1 limits: max 100 bound parameters per statement (never `inArray` over a long id list — use a subquery) and 50 calls per request on the Free plan (1000 on Paid) → batch multi-row writes with `db.batch`.
 
-## Cấu trúc chính
+## Main structure
 ```
-src/pages/            trang public (.astro) · api/[...path].ts → Hono · admin/[...path].astro → React CMS · media/[...key].ts (chỉ key public/…)
-src/components/public trang trí public: Icon, PageHero, Marquee, PlanCard, CoachCard, PostCard, ClassList, CtaBand
-src/lib/              auth.ts (PBKDF2, session, PERMISSIONS) · util.ts (vnNow, slugify, normalizePhone) · site.ts · public.ts (truy vấn public, richText, youtubeEmbed)
-src/api/              index.ts (CSRF origin check, auth middleware) · guard.ts (need(), body(), csv()) · auth · public (form học thử) · content (CRUD chung) · students · fees · trials · posts · admin (me, lookups, dashboard, settings, upload, users)
-src/admin/            React CMS: App.tsx (router tự viết, khung, menu dưới) · lib.ts (api, useApi, toast, uploadImage nén WebP) · ui.tsx · resources.ts · pages/*
+src/pages/            public pages (.astro) · api/[...path].ts → Hono · admin/[...path].astro → React CMS · media/[...key].ts (public/… keys only)
+src/components/public public building blocks: Icon, PageHero, Marquee, PlanCard, CoachCard, PostCard, ClassList, CtaBand
+src/lib/              auth.ts (PBKDF2, sessions, PERMISSIONS) · util.ts (vnNow, slugify, normalizePhone) · import.ts (Excel import parsing) · site.ts · public.ts (public queries, richText, youtubeEmbed)
+src/api/              index.ts (CSRF origin check, auth middleware) · guard.ts (need(), body(), csv()) · auth · public (trial form) · content (generic CRUD) · students · fees · trials · posts · admin (me, lookups, dashboard, settings, upload, users)
+src/admin/            React CMS: App.tsx (hand-written router, shell, bottom menu) · lib.ts (api, useApi, toast, uploadImage → WebP, useDirty, useUploading) · ui.tsx · resources.ts · pages/*
+tests/                node --test files (*.test.mjs import the .ts modules directly; Node 24 strips types)
 ```
-- `src/admin/resources.ts` là **nguồn duy nhất** cho các mục nội dung đơn giản: vừa sinh form CMS vừa sinh zod + cột được ghi ở API. Thêm cột nội dung → thêm field ở đây.
-- Thứ tự hiển thị (`sort`) **không có ô nhập**: mục mới tự nhận `max(sort)+1` (Thư viện `newFirst` → `min-1`, lên đầu); đổi thứ tự bằng nút ↑↓ trong danh sách → `PUT /api/admin/content/:res/order {ids}` ghi lại 1, 2, 3… Chỉ mục có `orderBy: 'sort'` mới có nút; Gói học phí sắp theo giá (giống trang public).
-- Form có ảnh khoá nút Lưu khi đang tải ảnh (`useUploading()` trong `lib.ts`).
-- Chống mất chữ đang gõ: form gọi `useDirty()` (lib.ts) → `markDirty(true)` khi sửa, `markDirty(false)` khi lưu xong; `navigate()` và nút Back hỏi trước khi rời. Form mới phải làm theo.
-- Field trong `resources.ts`: `type: 'url'` (bắt buộc https://), `showIf` (ẩn ô theo ô khác, ô ẩn lưu trống), `check` ở resource (kiểm tra giữa các ô, chạy cả CMS lẫn API).
-- Lỗi API: zod báo tiếng Việt (`z.config(z.locales.vi())` trong `guard.ts`), `body(c, schema, labels)` đổi tên cột thành nhãn form. Form hiện lỗi ngay trên nút Lưu.
-- Xoá môn học bị chặn khi còn cấp đai/lớp dùng môn đó (gợi ý tắt "Hiện trên website").
-- Tạo học viên dùng `createStudent()` (students.ts): ghi học viên + lớp trong 1 batch, trùng mã thì thử lại. Ghi học phí dùng unique (học viên, tháng) của DB.
-- D1: tối đa 100 tham số / câu lệnh (đừng `inArray` với danh sách id dài, dùng subquery) và 50 lần gọi / request ở gói Free → ghi nhiều dòng thì gom `db.batch`.
-- Quyền: `students.view`, `students.edit`, `fees.view`, `fees.edit`, `posts`, `content`, `delete`. Owner luôn đủ quyền; tài khoản chỉ owner quản lý. Kiểm tra quyền ở API bằng `need()`, UI chỉ ẩn/hiện.
-- Tìm học viên bỏ dấu làm trong JS (`matchQuery`) — ổn tới vài nghìn học viên.
-- Học phí: 1 dòng `payments` / học viên / tháng (unique). Dashboard "chưa đóng" = học viên `active` không có payment tháng hiện tại.
-- Upload: client nén ≤1600px WebP (fallback JPEG; ảnh JPEG/WebP ≤400KB gửi thẳng), XHR có % tiến trình, ảnh xem trước hiện ngay; `uploadMany` tải 3 ảnh song song (tin tức, "Thêm nhiều ảnh" ở Thư viện). Server kiểm tra magic bytes, ≤8MB, key `public/YYYY-MM/<uuid>.ext`.
-- `/media/*` chạy ở CẢ host public lẫn host CMS (middleware `CMS_PATH`), cache vĩnh viễn ở edge bằng Cache API (key không bao giờ ghi đè).
-- Thành tích có ảnh: hiện ở trang chủ (ưu tiên có ảnh), trang HLV (mục "Hình ảnh thành tích" từ bảng `achievements.coach_id`) và /thanh-tich; bấm ảnh mở ảnh gốc.
-- Nhập học viên: CMS đọc .xlsx (`read-excel-file`, tải động) hoặc .csv, gửi `POST /api/admin/students/import` theo cột của file xuất; có Mã trùng → cập nhật CHỈ các cột có trong file, không có → thêm mới; lỗi trả theo số dòng. Khớp cơ sở/gói theo tên không dấu hoặc viết tắt chữ cái đầu; tên cơ sở/gói/lớp không khớp → báo lỗi dòng đó (không ghi đè thành trống). Kiểm tra hết rồi ghi bằng `db.batch` theo đợt 200 câu lệnh.
-- CMS: tab "Học thử" có huy hiệu đỏ đếm đăng ký mới (tải lại mỗi phút + khi chuyển trang).
-- Form học thử: honeypot `website`; trẻ <16 tuổi khi chuyển thành học viên thì SĐT đăng ký thành SĐT phụ huynh.
+- `src/admin/resources.ts` is the **single source** for simple content sections: it generates both the CMS form and the API's zod schema + writable columns. New content column → add a field there.
+  - Field options: `type: 'url'` (must start with https://), `showIf` (hide a field based on another; hidden fields are saved empty). Resource options: `check` (cross-field validation, runs in both CMS and API), `orderBy`, `newFirst`.
+- Display order (`sort`) has **no input**: new items get `max(sort)+1` (gallery uses `newFirst` → `min-1`, so it goes first); reorder with the ↑↓ buttons in the list → `PUT /api/admin/content/:res/order {ids}` rewrites 1, 2, 3… Only resources with `orderBy: 'sort'` show the buttons; fee plans are ordered by price (same as the public page).
+- Forms with images disable Save while an upload is running (`useUploading()` in `lib.ts`).
+- Unsaved-changes guard: forms call `useDirty()` (lib.ts) → `markDirty(true)` on edit, `markDirty(false)` after a successful save; `navigate()` and the browser Back button ask before leaving. New forms must do the same.
+- API errors: zod messages are Vietnamese (`z.config(z.locales.vi())` in `guard.ts`); `body(c, schema, labels)` turns column names into form labels. Forms show the error right above the Save button.
+- Deleting a discipline is blocked while belts/classes still use it (the message suggests turning off "Hiện trên website").
+- Creating a student goes through `createStudent()` (students.ts): student + classes in one batch, retried on a duplicate code. Recording a fee relies on the DB's unique (student, month) index.
+- Permissions: `students.view`, `students.edit`, `fees.view`, `fees.edit`, `posts`, `content`, `delete`. The owner always has all of them; only the owner manages accounts. Permissions are enforced in the API with `need()`; the UI only shows/hides.
+- Accent-insensitive student search runs in JS (`matchQuery`) — fine up to a few thousand students.
+- Fees: one `payments` row per student per month (unique). Dashboard "unpaid" = `active` students without a payment for the current month.
+- Upload: the client shrinks to ≤1600px WebP (JPEG fallback; JPEG/WebP ≤400KB is sent as is), XHR with % progress, instant preview; `uploadMany` uploads 3 images in parallel (news, "Thêm nhiều ảnh" in the gallery). The server checks magic bytes, ≤8MB, key `public/YYYY-MM/<uuid>.ext`.
+- `/media/*` runs on BOTH the public and the CMS host (middleware `CMS_PATH`) and is cached forever at the edge with the Cache API (keys are never overwritten).
+- Achievements with photos: shown on Home (photos first), on the coach page ("Hình ảnh thành tích", from `achievements.coach_id`) and on /thanh-tich; clicking a photo opens the original.
+- Student import: the CMS reads .xlsx (`read-excel-file`, lazy-loaded) or .csv and sends `POST /api/admin/students/import` using the export's columns; an existing code → update ONLY the columns present in the file, no code → insert; errors are returned per row. Location/plan match by accent-insensitive name or initials; an unknown location/plan/class name is a row error (never overwritten with empty). All rows are validated first, then written with `db.batch` in chunks of 200 statements.
+- CMS: the "Học thử" tab shows a red badge with the count of new trial sign-ups (refreshed every minute and on navigation).
+- Trial form: honeypot field `website`; when a child under 16 is converted to a student, the sign-up phone becomes the parent's phone.
 
 ## Production
-- Đăng nhập CMS giới hạn 10 lần/phút/IP bằng binding `LOGIN_LIMITER` (Workers Rate Limiting, `wrangler.jsonc`).
-- KHÔNG nạp `seed/sample.sql` lên cloud. Sửa schema → `db:generate` → `db:migrate:remote` TRƯỚC `npm run deploy`.
-- D1 local lưu theo `database_id`: đổi id thì phải `npm run db:reset` lại.
-- Còn có thể thêm: Cloudflare Turnstile cho form học thử (hiện chỉ có honeypot).
+- CMS login is limited to 10 attempts/minute/IP by the `LOGIN_LIMITER` binding (Workers Rate Limiting, `wrangler.jsonc`).
+- NEVER load `seed/sample.sql` to the cloud. Schema change → `db:generate` → `db:migrate:remote` BEFORE `npm run deploy` (CI does this automatically once the token secret exists).
+- Local D1 is keyed by `database_id`: after changing the id, run `npm run db:reset` again.
+- Possible next step: Cloudflare Turnstile on the trial form (currently honeypot only).
 
-## Còn chờ từ anh Trọng / thầy
-- Ảnh lịch cơ sở 2 (hoặc thầy tự nhập/up trong CMS).
-- Thành tích + ảnh của HLV Tỉnh, Đức, Vĩnh Tâm, Nhi Thảo; HLV phụ trách từng ca.
-- "Lớp Fighter" là lớp nào, lịch ra sao. Lớp Kudo Kids học giờ nào, cơ sở nào.
-- Hệ thống đai Kudo trong seed là bản rút gọn — cần thầy xác nhận.
+## Still waiting on the owner / head coach
+- Schedule image for location 2 (or the head coach enters/uploads it in the CMS).
+- Achievements + photos for coaches Tỉnh, Đức, Vĩnh Tâm, Nhi Thảo; which coach leads each class.
+- What the "Fighter class" is and its schedule. When and where Kudo Kids trains.
+- The Kudo belt system in the seed is a shortened version — needs the head coach's confirmation.

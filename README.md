@@ -1,121 +1,125 @@
 # GLORY FIGHT CLUB — Website + CMS
 
-**Đang chạy:** website https://gloryfightclub.huutrong203.id.vn · CMS https://cms-gloryfightclub.huutrong203.id.vn
+**Live:** website https://gloryfightclub.huutrong203.id.vn · CMS https://cms-gloryfightclub.huutrong203.id.vn
 
-Website quảng bá (song ngữ Việt–Anh) và hệ thống quản lý học viên cho Glory Fight Club.
-Chạy trên **Cloudflare Workers** · **D1** (database) · **R2** (ảnh). Framework: Astro 7 + React + Tailwind v4 + Drizzle.
+A bilingual (Vietnamese–English) promotional website and a student-management system for Glory Fight Club.
+Runs on **Cloudflare Workers** · **D1** (database) · **R2** (images). Framework: Astro 7 + React + Tailwind v4 + Drizzle.
 
-Kế hoạch chi tiết: [`docs/PLAN.md`](docs/PLAN.md) · Bối cảnh cho AI/dev: [`CLAUDE.md`](CLAUDE.md)
+Detailed plan: [`docs/PLAN.md`](docs/PLAN.md) · Context for AI/devs: [`CLAUDE.md`](CLAUDE.md)
 
 ---
 
-## 1. Chạy ở máy (local)
+## 1. Run locally
 
-Yêu cầu: **Node.js 22+** (đang dùng 24). Không cần cài database — D1 local là một file SQLite do Wrangler tự tạo trong `.wrangler/`.
+Requirements: **Node.js 22+** (24 recommended — the tests rely on Node's built-in TypeScript support). No database to install — local D1 is a SQLite file Wrangler creates in `.wrangler/`.
 
 ```bash
 npm install
-npm run db:reset     # tạo bảng + nạp dữ liệu (thật + demo) vào D1 local
-npm run dev          # mở http://localhost:4321  (bản EN: http://localhost:4321/en)
+npm run db:reset     # create tables + load data (real + demo) into local D1
+npm run dev          # open http://localhost:4321  (EN version: http://localhost:4321/en)
 ```
 
-**CMS:** http://localhost:4321/admin — tài khoản demo (chỉ ở máy): `admin` / `glory2026` (chủ CLB), `hlv` / `glory2026` (HLV, quyền hạn chế).
-Trên tên miền thật, CMS chạy ở `cms-gloryfightclub.huutrong203.id.vn`.
+**CMS:** http://localhost:4321/admin — demo accounts (local only): `admin` / `glory2026` (owner), `hlv` / `glory2026` (coach, limited permissions).
+On the real domain the CMS runs at `cms-gloryfightclub.huutrong203.id.vn`.
 
-> Astro 7 chỉ cho chạy **một** `npm run dev` mỗi dự án. Gặp lỗi "Another astro dev server is already running" → chạy `npx astro dev stop`.
+> Astro 7 allows only **one** `npm run dev` per project. If you see "Another astro dev server is already running", run `npx astro dev stop`.
 
-| Lệnh | Việc |
+| Command | What it does |
 |---|---|
-| `npm run dev` | Dev server, D1/R2 **giả lập ở máy** (chạy bằng runtime thật của Cloudflare – workerd) |
-| `npm run dev:remote` | Dev server nhưng đọc/ghi **D1 + R2 thật trên cloud** (cẩn thận: sửa là sửa dữ liệu thật) |
-| `npm run db:reset` | Xoá D1 local, tạo lại bảng, nạp `seed/seed.sql` + `seed/sample.sql`. **Tắt `npm run dev` trước** (Windows không xoá được file DB đang mở) |
-| `npm run db:generate` | Sau khi sửa `src/db/schema.ts`: sinh file migration mới vào `migrations/` |
-| `npm run db:migrate` | Áp migration vào D1 local |
-| `npm run build` / `npm run preview` | Build production / chạy thử bản build |
-| `npm run check` | Kiểm tra TypeScript |
+| `npm run dev` | Dev server with D1/R2 **emulated locally** (runs on Cloudflare's real runtime, workerd) |
+| `npm run dev:remote` | Dev server that reads/writes the **real cloud D1 + R2** (careful: edits change real data) |
+| `npm run db:reset` | Wipe local D1, recreate tables, load `seed/seed.sql` + `seed/sample.sql`. **Stop `npm run dev` first** (Windows cannot delete an open DB file) |
+| `npm run db:generate` | After editing `src/db/schema.ts`: generate a new migration in `migrations/` |
+| `npm run db:migrate` | Apply migrations to local D1 |
+| `npm run build` / `npm run preview` | Production build / run the build locally |
+| `npm run check` | TypeScript check |
+| `npm test` | Quick tests (`tests/*.test.mjs`, Node's built-in test runner) |
 
-Dữ liệu seed:
-- `seed/seed.sql` — **dữ liệu thật** (2 cơ sở, môn, HLV, lịch cơ sở 1, gói học phí, thành tích). Nạp lên cloud được.
-- `seed/sample.sql` — **dữ liệu demo** (tin tức, cảm nhận, FAQ, học viên…, có chữ "mẫu"). **Chỉ dùng ở local.**
+Seed data:
+- `seed/seed.sql` — **real data** (2 locations, disciplines, coaches, location 1 schedule, fee plans, achievements). Safe to load to the cloud.
+- `seed/sample.sql` — **demo data** (news, testimonials, FAQ, students…, marked "mẫu"). **Local only.**
 
-## 2. Đưa lên Cloudflare (lần đầu — ĐÃ LÀM ngày 2026-11-02, giữ lại để tham khảo)
+## 2. First deploy to Cloudflare (DONE on 2026-11-02, kept for reference)
 
 ```bash
-npx wrangler login                       # đăng nhập tài khoản Cloudflare (mở trình duyệt)
-npx wrangler d1 create glory-db          # in ra database_id
+npx wrangler login                       # log in to the Cloudflare account (opens a browser)
+npx wrangler d1 create glory-db          # prints the database_id
 npx wrangler r2 bucket create glory-media
 ```
 
-1. Chép `database_id` vừa in ra vào **cả 2 chỗ** trong `wrangler.jsonc` (mục gốc và mục `env.remote`).
-2. Tạo bảng + nạp dữ liệu thật lên cloud:
+1. Copy the printed `database_id` into **both places** in `wrangler.jsonc` (top level and `env.remote`).
+2. Create the tables + load the real data in the cloud:
    ```bash
    npm run db:migrate:remote
    npm run db:seed:remote
    ```
-3. Tạo tài khoản chủ CLB **thật** trên cloud (đừng dùng tài khoản demo):
+3. Create the **real** owner account in the cloud (never use the demo accounts):
    ```bash
-   node scripts/create-user.mjs trung "MatKhauManh2026!" "Lê Thành Trung" owner --remote
+   node scripts/create-user.mjs <username> "<StrongPassword>" "Lê Thành Trung" owner --remote
    ```
-   Các HLV: chủ CLB tự tạo trong CMS → Thêm → Tài khoản & phân quyền.
-   (Đã tạo ngày 2026-11-02: tài khoản chủ CLB `lethanhtrung1996`. Quên mật khẩu → chạy lại lệnh trên với mật khẩu mới để đặt lại.)
+   Coaches: the owner creates them in the CMS → Thêm → Tài khoản & phân quyền.
+   Forgot the password → run the same command again with a new password to reset it.
 4. Deploy:
    ```bash
    npm run deploy
    ```
-   Wrangler in ra địa chỉ `https://gloryfightclub.<tài-khoản>.workers.dev` để xem thử.
+   Wrangler prints `https://gloryfightclub.<account>.workers.dev` for a quick look.
 
-## 3. Gắn tên miền
+## 3. Attach the domains
 
-`huutrong203.id.vn` đã dùng nameserver Cloudflare nên chỉ cần:
+`huutrong203.id.vn` already uses Cloudflare nameservers, so:
 
-Cloudflare Dashboard → **Workers & Pages** → `gloryfightclub` → **Settings → Domains & Routes → Add → Custom domain**, thêm lần lượt:
+Cloudflare Dashboard → **Workers & Pages** → `gloryfightclub` → **Settings → Domains & Routes → Add → Custom domain**, and add:
 - `gloryfightclub.huutrong203.id.vn` (website)
 - `cms-gloryfightclub.huutrong203.id.vn` (CMS)
 
-Cloudflare tự tạo bản ghi DNS + chứng chỉ HTTPS cho đúng 2 tên miền con này; các bản ghi khác của tên miền không bị ảnh hưởng.
-Muốn đổi sang tên miền khác (vd. `gloryfightclub.vn`): thêm Custom domain mới và sửa `PUBLIC_HOST` / `CMS_HOST` trong `wrangler.jsonc`, rồi deploy lại.
+Cloudflare creates the DNS records + HTTPS certificates for exactly these 2 subdomains; other records on the domain are not affected.
+To move to another domain (e.g. `gloryfightclub.vn`): add the new Custom domain, change `PUBLIC_HOST` / `CMS_HOST` in `wrangler.jsonc`, and deploy again.
 
-Nên bật thêm sau khi deploy (Cloudflare Dashboard, miễn phí):
-- **Turnstile** cho form học thử (chống spam) — hiện đang chống bằng ô ẩn (honeypot).
+Worth enabling later (Cloudflare Dashboard, free):
+- **Turnstile** on the trial form (anti-spam) — currently protected by a hidden honeypot field only.
 
-Cập nhật web sau khi sửa code: `npm run deploy`. Nếu có sửa database (schema): `npm run db:generate` → `npm run db:migrate:remote` rồi mới `npm run deploy`.
+Updating the site after code changes: `npm run deploy`. If the database schema changed: `npm run db:generate` → `npm run db:migrate:remote`, then `npm run deploy`.
 
-## Tự động deploy (GitHub Actions)
+## Auto deploy (GitHub Actions)
 
-Mỗi lần **push lên nhánh `main`**, GitHub tự chạy `.github/workflows/deploy.yml`:
-kiểm tra TypeScript → áp migration D1 mới (nếu có) → build + deploy lên Cloudflare. Xem tiến trình ở tab **Actions** của repo.
-Code lỗi TypeScript thì dừng lại, **không** deploy — web đang chạy không bị ảnh hưởng.
+Every **push to `main`** runs `.github/workflows/deploy.yml`:
+TypeScript check → tests → apply new D1 migrations (if any) → build + deploy to Cloudflare. Follow progress in the repo's **Actions** tab.
+If the TypeScript check or a test fails, it stops and does **not** deploy — the running site is unaffected.
 
-**Cài đặt 1 lần:**
-1. Cloudflare Dashboard → góc phải trên (biểu tượng người) → **My Profile → API Tokens → Create Token**.
-2. Chọn mẫu **"Edit Cloudflare Workers"** → **Add more** quyền: `Account` · `D1` · `Edit` → Account Resources: chọn tài khoản `Coftivenist@gmail.com's Account`; Zone Resources: `huutrong203.id.vn` → **Create Token** → copy token (chỉ hiện 1 lần).
-3. GitHub repo → **Settings → Secrets and variables → Actions → New repository secret** → Name: `CLOUDFLARE_API_TOKEN`, Secret: dán token → **Add secret**.
-4. Vào tab **Actions** → workflow **Deploy** → **Run workflow** để thử (hoặc push một commit bất kỳ).
+> **Not active yet:** the `CLOUDFLARE_API_TOKEN` secret has not been added, so runs fail at the first step. Until then, deploy manually with `npm run deploy`.
 
-Vẫn deploy tay được bằng `npm run deploy` như cũ.
+**One-time setup:**
+1. Cloudflare Dashboard → top-right profile icon → **My Profile → API Tokens → Create Token**.
+2. Pick the **"Edit Cloudflare Workers"** template → **Add more** permission: `Account` · `D1` · `Edit` → Account Resources: the club's Cloudflare account; Zone Resources: `huutrong203.id.vn` → **Create Token** → copy the token (shown only once).
+3. GitHub repo → **Settings → Secrets and variables → Actions → New repository secret** → Name: `CLOUDFLARE_API_TOKEN`, Secret: paste the token → **Add secret**.
+4. Open the **Actions** tab → workflow **Deploy** → **Run workflow** to test it (or push any commit).
 
-## 4. Sao lưu / khôi phục
+Manual `npm run deploy` keeps working as before.
 
-D1 có **Time Travel**: khôi phục database về bất kỳ thời điểm nào trong 30 ngày qua.
+## 4. Backup / restore
+
+D1 has **Time Travel**: restore the database to any point in the last 30 days.
 ```bash
 npx wrangler d1 time-travel info glory-db
 npx wrangler d1 time-travel restore glory-db --timestamp=2026-11-02T10:00:00+07:00
 ```
-Xuất bản sao ra file: `npx wrangler d1 export glory-db --remote --output=backup.sql`
+Export a copy to a file: `npx wrangler d1 export glory-db --remote --output=backup.sql`
 
-## 5. Cấu trúc thư mục
+## 5. Folder structure
 
 ```
-src/db/schema.ts        schema database (nguồn duy nhất) → migrations/ do drizzle-kit sinh
-src/middleware.ts       phân luồng host public/CMS + bản tiếng Anh /en/*
-src/i18n.ts             từ điển giao diện VI/EN + helper chọn cột *_en
-src/lib/site.ts         thông tin CLB dùng chung (settings, cơ sở)
-src/layouts/            layout trang public (header, footer, SEO, nút Gọi/Zalo)
-src/components/         Logo (SVG) và các khối giao diện
-src/pages/              trang public; admin/ (CMS); api/ (→ src/api, Hono); media/ (ảnh R2)
-src/api/                API: đăng nhập, học viên, học phí, học thử, tin tức, nội dung, upload, tài khoản
-src/admin/              giao diện CMS (React) — resources.ts khai báo các mục nội dung
-scripts/                create-user.mjs (tạo/đặt lại mật khẩu), clear-local-db.mjs
-seed/                   dữ liệu thật + demo
-docs/                   kế hoạch, logo gốc
+src/db/schema.ts        database schema (single source) → migrations/ generated by drizzle-kit
+src/middleware.ts       routes the public/CMS hosts + the English version /en/*
+src/i18n.ts             VI/EN UI dictionary + helpers to pick *_en columns
+src/lib/site.ts         shared club info (settings, locations)
+src/layouts/            public page layout (header, footer, SEO, Call/Zalo buttons)
+src/components/         Logo (SVG) and UI blocks
+src/pages/              public pages; admin/ (CMS); api/ (→ src/api, Hono); media/ (R2 images)
+src/api/                API: login, students, fees, trial classes, news, content, upload, accounts
+src/admin/              CMS UI (React) — resources.ts declares the content sections
+scripts/                create-user.mjs (create user / reset password), clear-local-db.mjs
+seed/                   real + demo data
+tests/                  node --test files
+docs/                   plan, original logo
 ```

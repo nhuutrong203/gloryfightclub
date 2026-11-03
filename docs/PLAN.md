@@ -1,246 +1,244 @@
-# GLORY FIGHT CLUB — Kế hoạch triển khai (v3, chờ duyệt)
+# GLORY FIGHT CLUB — Implementation plan (v3)
 
-> Trạng thái: **ĐÃ DUYỆT** · GĐ 0–5 đã xong (2026-11-02), web đang chạy thật. Tiến độ chi tiết: CLAUDE.md.
-> v2: 2 cơ sở, lịch thật, bỏ ảnh học viên, bỏ "trợ giảng", 2 tên miền con, repo GitHub.
-> v3: **song ngữ Việt–Anh**; lịch cơ sở 2 nhập qua CMS hoặc up ảnh; chủ CLB tự phân quyền cho HLV; **bỏ điểm danh và thi lên đai**; thêm thông tin phụ huynh cho học viên nhỏ; dữ liệu HLV + thành tích thật từ gloryfightclub.vn.
+> Status: **APPROVED** · Phases 0–5 done (2026-11-02), the site is live. Detailed progress: CLAUDE.md.
+> v2: 2 locations, real schedule, no student photos, no "assistant" role, 2 subdomains, GitHub repo.
+> v3: **bilingual Vietnamese–English**; location 2 schedule entered in the CMS or uploaded as an image; the owner sets coach permissions; **no attendance and no belt exams**; parent details for young students; real coach + achievement data from gloryfightclub.vn.
 
-## Thay đổi v3 (tóm tắt)
+## v3 changes (summary)
 
-| Hạng mục | Quyết định |
+| Topic | Decision |
 |---|---|
-| Ngôn ngữ | Tiếng Việt mặc định ở `/`, tiếng Anh ở `/en/...`, nút chuyển VI/EN trên header. Các ô nội dung trong CMS có thêm ô "English" (bỏ trống thì trang EN hiện bản tiếng Việt). CMS giữ tiếng Việt. |
-| Lịch cơ sở 2 | Mỗi cơ sở có 2 cách: nhập lớp trong CMS (ra bảng lịch tự động) **hoặc** up 1 ảnh lịch tập. Có ảnh thì trang Lịch học hiện ảnh của cơ sở đó. |
-| Phân quyền | Chủ CLB có toàn quyền và tự bật/tắt quyền cho từng HLV bằng các ô tick: *Xem học viên · Sửa học viên · Xem học phí · Ghi học phí · Đăng tin · Sửa nội dung web · Xóa dữ liệu*. Mặc định cho HLV mới = phương án B (học viên + đăng tin, không học phí, không xóa). |
-| Điểm danh, thi lên đai | **Bỏ.** Chỉ còn danh sách học viên + học phí. Trang public "Hệ thống đai" (giới thiệu đai Kudo/BJJ) vẫn giữ. |
-| Học viên nhỏ tuổi | Thêm năm sinh, tên + SĐT phụ huynh. |
-| HLV | Lấy từ gloryfightclub.vn (xem mục 0). Thành tích hiện rõ ở trang chủ, trang HLV, trang Thành tích để tăng uy tín. |
+| Language | Vietnamese by default at `/`, English at `/en/...`, VI/EN switch in the header. Content fields in the CMS get an extra "English" field (empty → the EN page shows the Vietnamese text). The CMS stays Vietnamese. |
+| Location 2 schedule | Each location has 2 options: enter classes in the CMS (the schedule table is generated) **or** upload one schedule image. If an image exists, the Schedule page shows it for that location. |
+| Permissions | The owner has full access and toggles permissions per coach with checkboxes: *View students · Edit students · View fees · Record fees · Post news · Edit site content · Delete data*. Default for a new coach = option B (students + posts, no fees, no delete). |
+| Attendance, belt exams | **Dropped.** Only the student list + fees remain. The public "Belt system" page (Kudo/BJJ belts) stays. |
+| Young students | Birth year, parent name + phone added. |
+| Coaches | Taken from gloryfightclub.vn (see section 0). Achievements are prominent on Home, the coach pages and the Achievements page to build trust. |
 
 ---
 
-## 0. Thông tin CLB đã có
+## 0. Club information
 
 | | |
 |---|---|
-| Tên | **GLORY FIGHT CLUB** — slogan **NO PAIN – NO GLORY** |
-| Môn | MMA · Kudo · Muay Thai / Kickboxing · BJJ (Jiujitsu) / Grappling · Boxing · Open mat – Sparring (CN) |
-| Cơ sở 1 | 125/9/18 Nguyễn Thị Nhuần, P. An Phú Đông, TP.HCM |
-| Cơ sở 2 | Trung tâm thể thao Sport House — A1.06 Chung cư Dream Home Residence, 148/21 Đường số 59, P. An Hội Tây (Gò Vấp), TP.HCM |
+| Name | **GLORY FIGHT CLUB** — slogan **NO PAIN – NO GLORY** |
+| Disciplines | MMA · Kudo · Muay Thai / Kickboxing · BJJ (Jiujitsu) / Grappling · Boxing · Open mat – Sparring (Sun) |
+| Location 1 | 125/9/18 Nguyễn Thị Nhuần, An Phú Đông Ward, Ho Chi Minh City |
+| Location 2 | Sport House sports centre — A1.06 Dream Home Residence, 148/21 Street 59, An Hội Tây Ward (Gò Vấp), Ho Chi Minh City |
 | Hotline | 0793 182 218 · 0382 998 538 (Zalo) |
-| Mạng xã hội | facebook.com/gloryfightclubvn · Instagram @glory.fight.club |
-| Logo | Lục giác + chữ "GL", trắng trên nền đen |
-| Repo | github.com/nhuutrong203/gloryfightclub (repo đang trống) |
-| Web public | `gloryfightclub.huutrong203.id.vn` |
+| Social | facebook.com/gloryfightclubvn · Instagram @glory.fight.club |
+| Logo | Hexagon + "GL" letters, white on black |
+| Repo | github.com/nhuutrong203/gloryfightclub |
+| Public site | `gloryfightclub.huutrong203.id.vn` |
 | CMS | `cms-gloryfightclub.huutrong203.id.vn` |
 
-### Đội ngũ HLV (nguồn: gloryfightclub.vn)
+### Coaching team (source: gloryfightclub.vn)
 
-| HLV | Vai trò / môn | Thành tích |
+| Coach | Role / disciplines | Achievements |
 |---|---|---|
-| **Lê Thành Trung** | Chủ CLB · Head Coach · MMA – Kudo – BJJ | Đai đen Kudo do Liên đoàn Kudo thế giới cấp · Võ sĩ MMA đang thi đấu · HCV giải Kudo quốc gia 2024 · Hơn 5 năm kinh nghiệm huấn luyện |
-| **Nguyễn Tiến Đăng Phong** | HLV Jiujitsu | HCB giải các CLB Jujitsu quốc gia · HCB, HCĐ Đại hội TDTT ĐBSCL · HCV Open Jiujitsu Cần Thơ |
-| **Ninh Văn Tỉnh** | HLV Striking – Kudo – Boxing – Kickboxing | *(chưa có — câu 4)* |
-| **Huỳnh Minh Đức** | HLV Striking – Kudo – Boxing – Kickboxing | *(chưa có)* |
-| **Nguyễn Huy Vĩnh Tâm** | HLV Striking – Kudo – Boxing – Kickboxing | *(chưa có)* |
-| **Nguyễn Trương Nhi Thảo** | HLV Kudo Kids | *(chưa có)* |
+| **Lê Thành Trung** | Owner · Head Coach · MMA – Kudo – BJJ | Kudo black belt from the World Kudo Federation · Active MMA fighter · Gold, National Kudo Championship 2024 · 5+ years of coaching |
+| **Nguyễn Tiến Đăng Phong** | Jiujitsu coach | Silver, National Jujitsu Clubs Championship · Silver & Bronze, Mekong Delta Sports Games · Gold, Cần Thơ Open Jiujitsu |
+| **Ninh Văn Tỉnh** | Striking – Kudo – Boxing – Kickboxing coach | *(not provided yet)* |
+| **Huỳnh Minh Đức** | Striking – Kudo – Boxing – Kickboxing coach | *(not provided yet)* |
+| **Nguyễn Huy Vĩnh Tâm** | Striking – Kudo – Boxing – Kickboxing coach | *(not provided yet)* |
+| **Nguyễn Trương Nhi Thảo** | Kudo Kids coach | *(not provided yet)* |
 
-Mô tả môn (Kudo, MMA, Muay Thái – Kickboxing, Judo – Wrestling – Jiujitsu) và sự kiện "Giải vô địch Kudo Cúp Quốc gia 2025" cũng lấy từ website cũ làm nội dung ban đầu.
+Discipline descriptions (Kudo, MMA, Muay Thai – Kickboxing, Judo – Wrestling – Jiujitsu) and the "Kudo National Cup Championship 2025" event were also taken from the old site as starting content.
 
-Lịch tuần **cơ sở 1** trong ảnh sẽ được nạp làm dữ liệu thật (không phải dữ liệu mẫu):
+The **location 1** weekly schedule from the image is loaded as real data (not sample data):
 
-| Giờ | T2 · T4 · T6 (lớp **246**) | T3 · T5 · T7 (lớp **357**) |
+| Time | Mon · Wed · Fri (class **246**) | Tue · Thu · Sat (class **357**) |
 |---|---|---|
 | 08:30–09:30, 09:30–10:30, 10:30–11:30 | MMA | Boxing |
 | 17:00–18:30 | Muay Thai / Kickboxing | — |
 | 18:30–20:00 | MMA | MMA / Muay Thai |
 | 20:00–21:30 | Jiujitsu / Grappling | Kudo |
-| **CN 18:00–21:00** | Open mat – Sparring | |
+| **Sun 18:00–21:00** | Open mat – Sparring | |
 
 ---
 
-## 1. Stack (giữ như v1)
+## 1. Stack (unchanged from v1)
 
-Astro 5 SSR trên **Cloudflare Workers** · React cho CMS · Hono cho API · **D1** + Drizzle · **R2** cho ảnh · Tailwind v4 · Turnstile chống spam form.
+Astro SSR on **Cloudflare Workers** (planned on Astro 5, built on Astro 7) · React for the CMS · Hono for the API · **D1** + Drizzle · **R2** for images · Tailwind v4 · Turnstile against form spam (planned).
 
-D1 phù hợp (dữ liệu nhỏ, free tier dư dùng, có Time Travel khôi phục 30 ngày). "D1 local" chỉ là file SQLite Wrangler tự tạo, không phải cài database.
+D1 fits well (small data, the free tier is plenty, Time Travel restores up to 30 days back). "Local D1" is just a SQLite file Wrangler creates — no database to install.
 
 ```bash
-npm run dev                                          # chạy local, D1/R2 giả lập trong .wrangler/
-npm run dev:remote                                   # chạy local nhưng đọc/ghi D1 + R2 thật trên cloud
-npx wrangler d1 migrations apply glory-db --local    # tạo bảng ở local
-npx wrangler d1 migrations apply glory-db --remote   # tạo bảng trên cloud
-npm run deploy                                       # build + deploy lên Cloudflare
+npm run dev                                          # run locally, D1/R2 emulated in .wrangler/
+npm run dev:remote                                   # run locally but read/write the real cloud D1 + R2
+npx wrangler d1 migrations apply glory-db --local    # create tables locally
+npx wrangler d1 migrations apply glory-db --remote   # create tables in the cloud
+npm run deploy                                       # build + deploy to Cloudflare
 ```
 
-### Hai tên miền con, một ứng dụng
-Một Worker duy nhất phục vụ cả hai host; middleware phân luồng theo hostname:
-- `gloryfightclub.…` → website public. Truy cập `/admin` ở đây sẽ bị chuyển sang CMS.
-- `cms-gloryfightclub.…` → chỉ có CMS + API admin. Cookie đăng nhập chỉ gắn cho host này.
-- Ở local: public là `http://localhost:4321`, CMS là `http://localhost:4321/admin` (không cần giả lập 2 tên miền).
+### Two subdomains, one app
+A single Worker serves both hosts; the middleware routes by hostname:
+- `gloryfightclub.…` → public site. Visiting `/admin` here redirects to the CMS.
+- `cms-gloryfightclub.…` → CMS + admin API only. The login cookie belongs to this host only.
+- Locally: public is `http://localhost:4321`, CMS is `http://localhost:4321/admin` (no need to emulate 2 domains).
 
-**Tên miền khi deploy (GĐ 5):** `huutrong203.id.vn` **đã dùng nameserver Cloudflare** (đã kiểm tra 2026-11-02) → chỉ cần thêm 2 Custom Domain cho Worker trong Cloudflare dashboard (hoặc khai báo trong `wrangler.jsonc`). Cloudflare tự tạo bản ghi DNS cho đúng 2 tên miền con này; các bản ghi/CNAME của project khác không bị đụng tới.
+**Domains at deploy time (phase 5):** `huutrong203.id.vn` **already uses Cloudflare nameservers** (checked 2026-11-02) → only 2 Worker Custom Domains are needed in the Cloudflare dashboard (or in `wrangler.jsonc`). Cloudflare creates DNS records for exactly these 2 subdomains; other projects' records/CNAMEs are untouched.
 
 ---
 
-## 2. Kiến trúc
+## 2. Architecture
 
 ```
- Khách (điện thoại)                       Thầy / HLV (điện thoại)
+ Visitors (phone)                         Head coach / coaches (phone)
  gloryfightclub.huutrong203.id.vn         cms-gloryfightclub.huutrong203.id.vn
         │                                          │
         ▼                                          ▼
- ┌───────────────── Cloudflare Worker (1 app Astro) ─────────────────┐
- │ middleware.ts: phân luồng theo host + kiểm tra đăng nhập cho CMS   │
- │ Trang public (Astro SSR)     /admin/* (React SPA)    /api/* (Hono) │
- │ /media/*  ảnh public từ R2 (cache dài)                             │
+ ┌──────────────── Cloudflare Worker (one Astro app) ────────────────┐
+ │ middleware.ts: route by host + require login for the CMS          │
+ │ Public pages (Astro SSR)    /admin/* (React SPA)    /api/* (Hono)  │
+ │ /media/*  public images from R2 (long cache)                       │
  └──────────────┬──────────────────────────────────┬─────────────────┘
                 ▼                                  ▼
           D1 (glory-db)                      R2 (glory-media)
-                                    ảnh HLV, tin tức, thư viện, thành tích
+                                    coach, news, gallery, achievement images
 ```
 
-- **Không lưu ảnh học viên** → R2 chỉ chứa ảnh công khai, đơn giản hơn v1 (bỏ phần ảnh riêng tư).
-- Đăng nhập: tên đăng nhập + mật khẩu (PBKDF2 qua WebCrypto), session trong D1, cookie `HttpOnly; Secure`.
-- Ảnh nén trên điện thoại trước khi upload (≤1600px, WebP). Video dùng link YouTube/Facebook.
-- Lên lịch đăng bài bằng `published_at`, không cần cron. Múi giờ `Asia/Ho_Chi_Minh`.
-- Xuất Excel = CSV có BOM UTF-8.
+- **No student photos** → R2 holds public images only, simpler than v1 (no private images).
+- Login: username + password (PBKDF2 via WebCrypto), sessions in D1, `HttpOnly; Secure` cookie.
+- Images are compressed on the phone before upload (≤1600px, WebP). Videos are YouTube/Facebook links.
+- Scheduled posts use `published_at`, no cron needed. Time zone `Asia/Ho_Chi_Minh`.
+- Excel export = CSV with a UTF-8 BOM.
 
 ---
 
-## 3. Cấu trúc thư mục
+## 3. Folder structure
 
 ```
 gloryfightclub/
 ├─ CLAUDE.md · README.md · docs/PLAN.md
 ├─ wrangler.jsonc · astro.config.mjs · drizzle.config.ts · package.json
-├─ migrations/               # SQL do drizzle-kit sinh
-├─ seed/seed.sql             # dữ liệu thật (cơ sở, lịch, môn) + dữ liệu mẫu (tin, cảm nhận…)
-├─ public/                   # logo.svg, favicon, ảnh OG mặc định
+├─ migrations/               # SQL generated by drizzle-kit
+├─ seed/seed.sql             # real data (locations, schedule, disciplines); demo data lives in seed/sample.sql
+├─ public/                   # logo.svg, favicon, default OG image
 └─ src/
    ├─ db/schema.ts
-   ├─ lib/                   # auth, media, csv, dates, slug, fees
+   ├─ lib/                   # auth, utils, public queries, import parsing
    ├─ middleware.ts
-   ├─ api/                   # Hono: index.ts + routes/*
+   ├─ api/                   # Hono: index.ts + one file per area
    ├─ layouts/PublicLayout.astro
    ├─ components/
    ├─ styles/global.css
    ├─ admin/                 # React SPA
-   └─ pages/                 # trang public (mục 5) + api/[...path].ts + admin/[...path].astro + media/[...key].ts
+   └─ pages/                 # public pages (section 5) + api/[...path].ts + admin/[...path].astro + media/[...key].ts
 ```
 
 ---
 
-## 4. Schema database (D1)
+## 4. Database schema (D1)
 
-Quy ước: `id` tự tăng; ngày `YYYY-MM-DD`; thời điểm unix ms; `is_public` ẩn/hiện; `sort` thứ tự; ảnh lưu key R2.
-**Ngày trong tuần lưu dạng chuỗi số kiểu Việt Nam**: `"246"` = T2·T4·T6, `"357"` = T3·T5·T7, `"8"` = Chủ nhật — đúng cách CLB đang gọi lớp.
+Conventions: auto-increment `id`; dates `YYYY-MM-DD`; timestamps unix ms; `is_public` show/hide; `sort` order; images stored as R2 keys.
+**Weekdays are stored as a Vietnamese-style digit string**: `"246"` = Mon·Wed·Fri, `"357"` = Tue·Thu·Sat, `"8"` = Sunday — exactly how the club names its classes.
 
-### Hệ thống
-| Bảng | Cột chính |
+### System
+| Table | Main columns |
 |---|---|
-| `users` | id, username, password_hash, full_name, role (`owner` \| `coach`), permissions (JSON, danh sách quyền chủ CLB tick cho HLV), coach_id, is_active |
+| `users` | id, username, password_hash, full_name, role (`owner` \| `coach`), permissions (JSON list ticked by the owner), coach_id, is_active |
 | `sessions` | id, user_id, expires_at |
-| `settings` | key, value (JSON) — hotline, Zalo, Facebook, Instagram, nội dung hero, trang Giới thiệu |
+| `settings` | key, value (JSON) — hotline, Zalo, Facebook, Instagram, hero content, About page |
 
-### Nội dung public
-| Bảng | Cột chính |
+### Public content
+| Table | Main columns |
 |---|---|
-| `locations` (cơ sở) | id, name, address, map_url, phone, schedule_image_key (ảnh lịch, tùy chọn), sort |
-| `disciplines` (môn) | id, slug, name (MMA, Kudo…), summary, description, cover_key, has_belts, is_public, sort |
-| `classes` (lớp / ca tập) | id, name (vd. "MMA tối"), discipline_ids (môn, có thể 2 môn như "MMA / Muay Thai"), location_id, days (`"246"`), start_time, end_time, coach_id, level, note, is_public, is_active |
-| `coaches` (HLV) | id, slug, full_name, photo_key, title, bio, achievements, discipline_ids, is_featured, is_public, sort |
-| `belts` (chỉ cho môn có đai: Kudo, BJJ) | id, discipline_id, name, color, rank, requirements, min_months |
-| `fee_plans` (học phí tháng) | id, name, discipline_id / class_id, price_per_month, description, is_public, sort — *chờ ảnh học phí của anh để chốt cấu trúc* |
-| `posts`, `post_images` | tin tức dạng feed: content, published_at, is_public · ảnh nhiều tấm |
+| `locations` | id, name, address, map_url, phone, schedule_image_key (optional schedule image), sort |
+| `disciplines` | id, slug, name (MMA, Kudo…), summary, description, cover_key, has_belts, is_public, sort |
+| `classes` | id, name (e.g. "Evening MMA"), discipline_ids (may be 2, e.g. "MMA / Muay Thai"), location_id, days (`"246"`), start_time, end_time, coach_id, level, note, is_public, is_active |
+| `coaches` | id, slug, full_name, photo_key, title, bio, achievements, discipline_ids, is_featured, is_public, sort |
+| `belts` (only for belt disciplines: Kudo, BJJ) | id, discipline_id, name, color, rank, requirements, min_months |
+| `fee_plans` (monthly fees) | id, name, headline, condition, price_per_month, features, badge, is_featured, is_public, sort |
+| `posts`, `post_images` | feed-style news: content, published_at, is_public · multiple images |
 | `gallery_items` | type (photo \| video), key / video_url, caption, album, is_public, sort |
-| `testimonials` · `faqs` · `achievements` | như v1 |
+| `testimonials` · `faqs` · `achievements` | as in v1 |
 
-**Song ngữ:** mỗi cột chữ hiển thị public có thêm cột `_en` (vd. `name` + `name_en`, `description` + `description_en`); trang EN dùng `_en`, trống thì lấy bản tiếng Việt. Chữ cố định của giao diện (menu, nút) nằm trong 1 file từ điển `src/i18n.ts`.
+**Bilingual:** every publicly displayed text column has an `_en` column (e.g. `name` + `name_en`, `description` + `description_en`); EN pages use `_en`, falling back to Vietnamese when empty. Fixed UI strings (menu, buttons) live in one dictionary file, `src/i18n.ts`.
 
-Trang **Lịch học** public được dựng tự động từ bảng `classes` (mỗi lớp `"246"` hiện ở cột T2, T4, T6) → sửa lớp trong CMS là lịch đổi theo, không phải nhập 2 nơi.
+The public **Schedule** page is generated from the `classes` table (a `"246"` class shows under Mon, Wed, Fri) → editing a class in the CMS updates the schedule; nothing is entered twice.
 
-### Học viên (riêng tư — không có ảnh)
-| Bảng | Cột chính |
+### Students (private — no photos)
+| Table | Main columns |
 |---|---|
-| `students` | id, code (GF0001), full_name, phone, birth_year, parent_name, parent_phone, location_id, joined_at, status (`active` \| `paused` \| `quit`), note |
-| `student_classes` | student_id, class_id (một người có thể học MMA 246 + Kudo 357) |
-| `payments` | id, student_id, month (`2026-11`), amount, paid_at, method (tiền mặt / chuyển khoản), note, created_by |
+| `students` | id, code (GF0001), full_name, phone, birth_year, parent_name, parent_phone, location_id, fee_plan_id, joined_at, status (`active` \| `paused` \| `quit`), note |
+| `student_classes` | student_id, class_id (one person can take MMA 246 + Kudo 357) |
+| `payments` | id, student_id, month (`2026-11`), amount, paid_at, method (cash / transfer), note, created_by |
 | `trial_registrations` | full_name, phone, discipline_id, location_id, preferred_time, note, status (`new` \| `contacted` \| `enrolled` \| `rejected`), student_id |
 
-**Học phí theo tháng:** mỗi lần thu = 1 dòng `payments` cho 1 tháng. Màn hình "Học phí tháng 11" liệt kê học viên đang học: ai **đã đóng** / **chưa đóng**, bấm 1 nút để ghi nhận. Dashboard đếm số người chưa đóng tháng này.
+**Monthly fees:** each payment = 1 `payments` row for 1 month. The "Fees for November" screen lists active students as **paid** / **unpaid**, with one button to record a payment. The dashboard counts who has not paid this month.
 
 ---
 
-## 5. Danh sách trang
+## 5. Pages
 
-### Website public
-| URL | Nội dung |
+### Public site
+| URL | Content |
 |---|---|
-| `/` | Hero ảnh lớn + "NO PAIN – NO GLORY" + nút **Đăng ký học thử**; các môn; dải **"Fighters of Glory"** (HLV / võ sinh tiêu biểu); lịch hôm nay; tin mới; cảm nhận; 2 cơ sở; CTA |
-| `/gioi-thieu` | Lịch sử, triết lý, giá trị, thành tích nổi bật |
-| `/mon-hoc`, `/mon-hoc/[slug]` | MMA, Kudo, Muay Thai, BJJ, Boxing: mô tả, đối tượng, HLV, lịch của môn đó, học phí |
-| `/lich-hoc` | Lịch tuần, **chọn cơ sở**, lọc theo môn; mobile hiện theo từng ngày (tab T2…CN), desktop dạng bảng như ảnh |
-| `/huan-luyen-vien`, `/huan-luyen-vien/[slug]` | Danh sách + chi tiết HLV |
-| `/tin-tuc`, `/tin-tuc/[slug]` | Feed kiểu Facebook |
-| `/thu-vien` | Ảnh + video |
-| `/cap-dai` | Hệ thống đai Kudo / BJJ |
-| `/hoc-phi` | Bảng học phí tháng |
-| `/thanh-tich` · `/cam-nhan` · `/hoi-dap` | |
-| `/lien-he` | 2 cơ sở, mỗi cơ sở có Google Maps, nút gọi, Zalo, Facebook, Instagram |
-| `/dang-ky-hoc-thu` | Tên, SĐT, môn quan tâm, cơ sở, giờ mong muốn → vào CMS |
-| Mọi trang | Nút **Gọi** + **Zalo** nổi; SEO, Open Graph, sitemap |
+| `/` | Large hero image + "NO PAIN – NO GLORY" + **Book a trial class** button; disciplines; **"Fighters of Glory"** strip (coaches / featured fighters); today's classes; latest news; testimonials; 2 locations; CTA |
+| `/gioi-thieu` | History, philosophy, values, key achievements |
+| `/mon-hoc`, `/mon-hoc/[slug]` | MMA, Kudo, Muay Thai, BJJ, Boxing: description, audience, coaches, that discipline's schedule, fees |
+| `/lich-hoc` | Weekly schedule, **choose a location**, filter by discipline; per-day tabs (Mon…Sun) on mobile, a table like the image on desktop |
+| `/huan-luyen-vien`, `/huan-luyen-vien/[slug]` | Coach list + detail |
+| `/tin-tuc`, `/tin-tuc/[slug]` | Facebook-style feed |
+| `/thu-vien` | Photos + videos |
+| `/cap-dai` | Kudo / BJJ belt system |
+| `/hoc-phi` | Monthly fee table |
+| `/thanh-tich` · `/cam-nhan` · `/hoi-dap` | Achievements · testimonials · FAQ |
+| `/lien-he` | 2 locations, each with Google Maps, call button, Zalo, Facebook, Instagram |
+| `/dang-ky-hoc-thu` | Name, phone, discipline of interest, location, preferred time → goes to the CMS |
+| Every page | Floating **Call** + **Zalo** buttons; SEO, Open Graph, sitemap |
 
 ### CMS (`cms-gloryfightclub…`)
-Mobile-first, thanh điều hướng dưới đáy: **Tổng quan · Học viên · Học phí · Học thử · Thêm**.
+Mobile-first, bottom navigation bar: **Dashboard · Students · Fees · Trial classes · More**.
 
-- **Tổng quan**: số học viên đang học (theo cơ sở), học viên mới tháng này, số người chưa đóng học phí tháng này, đăng ký học thử mới, các ca tập hôm nay.
-- **Học viên**: tên, SĐT, năm sinh, phụ huynh (tên + SĐT), cơ sở, lớp; danh sách, tìm theo tên/SĐT, lọc theo cơ sở / lớp / trạng thái, thêm–sửa–xóa; trang chi tiết có lịch sử đóng tiền.
-- **Học phí**: chọn tháng → danh sách đã đóng / chưa đóng → bấm "Đã thu".
-- **Học thử**: danh sách, đổi trạng thái, **"Chuyển thành học viên"** 1 click.
-- **Thêm**: Lớp & lịch, Môn, HLV, Cơ sở, Tin tức, Thư viện, Học phí, Cảm nhận, FAQ, Thành tích, Cài đặt, Tài khoản, Xuất CSV.
+- **Dashboard**: active students (per location), new students this month, students who have not paid this month, new trial sign-ups, today's classes.
+- **Students**: name, phone, birth year, parent (name + phone), location, classes; list, search by name/phone, filter by location / class / status, add–edit–delete; the detail page shows payment history.
+- **Fees**: choose a month → paid / unpaid list → tap "Received".
+- **Trial classes**: list, change status, one-tap **"Convert to student"**.
+- **More**: Classes & schedule, Disciplines, Coaches, Locations, News, Gallery, Fee plans, Testimonials, FAQ, Achievements, Settings, Accounts, CSV export.
 
-Phân quyền: **Chủ CLB** (toàn quyền, có màn hình "Tài khoản" để tạo tài khoản HLV và tick quyền) và **HLV** (theo quyền chủ CLB cấp; mặc định: học viên + đăng tin).
-
----
-
-## 6. Thiết kế
-
-- **Màu theo đúng nhận diện hiện có của CLB** (ảnh lịch tập): đen `#0A0A0A`, trắng, xám đậm `#1A1A1A`, **đỏ `#E10600`** làm màu nhấn.
-- Font: tiêu đề **Anton** (in hoa, đậm), nội dung **Be Vietnam Pro** — cả hai đủ dấu tiếng Việt.
-- Logo: vẽ lại logo "GL" lục giác thành **SVG sắc nét** (ảnh hiện tại có một vết đen ở đầu chữ L và là ảnh raster); dùng cho header, favicon, ảnh share.
-- Hero full-width ảnh tối, chữ in hoa cỡ lớn, khoảng trắng rộng, góc vuông, nút đỏ khối đặc. Chỉ lấy cảm hứng phong cách từ yibuko.com.
-- Ảnh: dùng ảnh placeholder cho đến khi anh gửi ảnh thật (hoặc anh tự upload qua CMS).
+Permissions: **Owner** (full access, with an "Accounts" screen to create coach accounts and tick permissions) and **Coach** (whatever the owner grants; default: students + posts).
 
 ---
 
-## 7. Các giai đoạn
+## 6. Design
 
-| GĐ | Nội dung | Anh kiểm tra được |
+- **Colours follow the club's existing identity** (schedule image): black `#0A0A0A`, white, dark grey `#1A1A1A`, **red `#E10600`** as the accent.
+- Fonts: headings **Anton** (uppercase, bold), body **Be Vietnam Pro** — both have full Vietnamese diacritics.
+- Logo: the hexagon "GL" logo redrawn as a **crisp SVG** (the original is a raster image with a black blot at the top of the L); used in the header, favicon and share image.
+- Full-width dark hero image, large uppercase type, generous whitespace, square corners, solid red buttons. Style inspiration only from yibuko.com.
+- Images: placeholders until real photos arrive (or the owner uploads them in the CMS).
+
+---
+
+## 7. Phases
+
+| Phase | Content | What the owner can check |
 |---|---|---|
-| **0 — Nền móng** | `git init` + nối repo GitHub, khởi tạo dự án, schema + migration, seed (cơ sở, môn, lịch thật), logo SVG, layout, CLAUDE.md, README | `npm run dev` mở trang chủ khung |
-| **1 — Web public MVP** | Song ngữ VI/EN, Trang chủ, Môn học, Lịch học, HLV, Tin tức, Học phí, FAQ, Liên hệ, Học thử, nút Gọi/Zalo, SEO/OG/sitemap | Xem trên điện thoại, gửi form học thử |
-| **2 — CMS lõi** | Đăng nhập + phân quyền, Tổng quan, Học viên, Học thử → học viên, Lớp & lịch / Môn / HLV / Cơ sở, Tin tức + upload ảnh R2 | Thêm học viên, đăng bài có ảnh → thấy ngay trên web |
-| **3 — Nghiệp vụ** | Học phí tháng, Xuất CSV, Tài khoản + phân quyền HLV | Ghi nhận học phí, xuất CSV mở bằng Excel, tạo tài khoản HLV và tick quyền |
-| **4 — Hoàn thiện** | Giới thiệu, Cấp đai, Thư viện, Thành tích, Cảm nhận + CMS, Cài đặt | Mọi nội dung public sửa được từ CMS |
-| **5 — Deploy** | Tạo D1/R2 cloud, Turnstile, deploy, gắn 2 tên miền con | Web chạy trên tên miền thật |
+| **0 — Foundation** | `git init` + GitHub remote, project setup, schema + migration, seed (locations, disciplines, real schedule), SVG logo, layout, CLAUDE.md, README | `npm run dev` opens the home page skeleton |
+| **1 — Public site MVP** | VI/EN, Home, Disciplines, Schedule, Coaches, News, Fees, FAQ, Contact, Trial class, Call/Zalo buttons, SEO/OG/sitemap | Browse on a phone, submit the trial form |
+| **2 — Core CMS** | Login + permissions, Dashboard, Students, Trial → student, Classes & schedule / Disciplines / Coaches / Locations, News + R2 image upload | Add a student, post with photos → visible on the site immediately |
+| **3 — Business** | Monthly fees, CSV export, Accounts + coach permissions | Record fees, open the CSV in Excel, create a coach account and tick permissions |
+| **4 — Polish** | About, Belts, Gallery, Achievements, Testimonials + CMS, Settings | Every public text is editable from the CMS |
+| **5 — Deploy** | Create cloud D1/R2, deploy, attach 2 subdomains (Turnstile still optional) | The site runs on the real domain |
 
-Mỗi giai đoạn xong: chạy thử local, commit + push lên repo Glory, cập nhật CLAUDE.md.
-
----
-
-## 8. Cố ý không làm
-CMS song ngữ (CMS chỉ tiếng Việt), dịch tự động, điểm danh, thi lên đai, đăng nhập cho khách, like/comment, ảnh học viên, thanh toán online, nhắc học phí tự động qua SMS/Zalo, upload video trực tiếp, trình soạn thảo rich-text.
+After each phase: test locally, commit + push to the Glory repo, update CLAUDE.md.
 
 ---
 
-## 9. Câu hỏi còn mở
+## 8. Deliberately out of scope
+Bilingual CMS (the CMS is Vietnamese only), machine translation, attendance, belt exams, visitor login, likes/comments, student photos, online payment, automatic fee reminders via SMS/Zalo, direct video upload, rich-text editor.
 
-Đã chốt: song ngữ VI–EN · HLV mặc định phương án B, chủ CLB tự phân quyền · bỏ điểm danh + thi đai · có học viên nhỏ tuổi.
+---
 
-Còn lại — **không chặn việc bắt đầu**, tôi để dữ liệu mẫu và thay khi anh gửi:
+## 9. Open questions
 
-Đã chốt thêm: địa chỉ cơ sở 1 = 125/9/18 · logo = ảnh "GL" đen–trắng, tôi vẽ lại thành SVG · tên miền giữ `huutrong203.id.vn` (đã ở Cloudflare).
+Decided: bilingual VI–EN · coach default = option B, the owner sets permissions · no attendance or belt exams · young students supported · location 1 address = 125/9/18 · logo = black–white "GL" image, redrawn as SVG · domain stays `huutrong203.id.vn` (already on Cloudflare).
 
-1. **Ảnh lịch tập cơ sở 2**: chưa nhận được. Không gấp — thầy có thể tự up trong CMS.
-2. **Học phí**: ✅ đã có 4 gói (Premium / Standard / Trẻ em / HSSV). Không làm QR/thanh toán trên web — học viên quét mã tại CLB. Còn hỏi: **"lớp Fighter"** là lớp nào?
-3. **HLV còn thiếu thành tích/ảnh**: Ninh Văn Tỉnh, Huỳnh Minh Đức, Nguyễn Huy Vĩnh Tâm, Nhi Thảo — anh có thì gửi, không thì để trống, thầy tự bổ sung trong CMS.
-4. *(Gợi ý, không bắt buộc)* CLB có sẵn `gloryfightclub.vn` (đang chạy Google Sites). Sau này muốn chuyển web sang tên miền đó chỉ cần thêm Custom Domain, không phải sửa code.
+Still open — **none of these block work**; placeholders stay until the answers arrive:
+
+1. **Location 2 schedule image**: not received yet. Not urgent — the head coach can upload it in the CMS.
+2. **Fees**: ✅ 4 plans (Premium / Standard / Kids / Student). No QR/payment on the site — students scan the code at the club. Still to ask: which class is the **"Fighter class"**?
+3. **Coaches missing achievements/photos**: Ninh Văn Tỉnh, Huỳnh Minh Đức, Nguyễn Huy Vĩnh Tâm, Nhi Thảo — send them if available; otherwise left empty for the head coach to fill in via the CMS.
+4. *(Optional suggestion)* The club already owns `gloryfightclub.vn` (currently on Google Sites). Moving the site there later only needs a new Custom Domain, no code changes.
