@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api, can, fmtDate, monthLabel, navigate, todayVN, toast, useApi, vnd, type Me } from '../lib';
+import { api, can, fmtDate, monthLabel, navigate, todayVN, toast, useApi, useDirty, vnd, type Me } from '../lib';
 import { A, Badge, Button, Chips, ErrorBox, Icon, Loading, Page, Select, TextArea, TextInput, confirmDanger, Empty, inputCls, LinkButton } from '../ui';
 import { daysLabel } from '../resources';
 import { StudentImport } from './StudentImport';
@@ -97,6 +97,8 @@ export function StudentEdit({ id, me }: { id: string; me: Me }) {
   const lk = useApi<Lookups>('/admin/lookups').data;
   const [form, setForm] = useState({ ...blank, joinedAt: todayVN() });
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const markDirty = useDirty();
   const editable = can(me, 'students.edit');
 
   useEffect(() => {
@@ -109,7 +111,7 @@ export function StudentEdit({ id, me }: { id: string; me: Me }) {
   if (!isNew && error) return <Page title="Học viên" back="/admin/hoc-vien"><ErrorBox message={error} retry={reload} /></Page>;
   if ((!isNew && !data) || !lk) return <Loading />;
 
-  const set = (k: keyof typeof form) => (v: any) => setForm((x) => ({ ...x, [k]: v }));
+  const set = (k: keyof typeof form) => (v: any) => { setForm((x) => ({ ...x, [k]: v })); markDirty(true); };
   const age = form.birthYear ? new Date().getFullYear() - Number(form.birthYear) : null;
   const isKid = age != null && age < 16;
   const classOpts = lk.classes.filter((k) => k.isActive && (!form.locationId || k.locationId === Number(form.locationId)));
@@ -117,6 +119,7 @@ export function StudentEdit({ id, me }: { id: string; me: Me }) {
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
+    setErr('');
     const payload = {
       ...form,
       birthYear: form.birthYear ? Number(form.birthYear) : null,
@@ -126,14 +129,16 @@ export function StudentEdit({ id, me }: { id: string; me: Me }) {
     try {
       if (isNew) {
         const row = await api<{ id: number }>('/admin/students', { body: payload });
+        markDirty(false);
         toast('Đã thêm học viên');
         navigate(`/admin/hoc-vien/${row.id}`, true);
       } else {
         await api(`/admin/students/${id}`, { method: 'PUT', body: payload });
+        markDirty(false);
         toast('Đã lưu');
         reload();
       }
-    } catch (err: any) { toast(err.message, 'err'); } finally { setBusy(false); }
+    } catch (e: any) { setErr(e.message); toast(e.message, 'err'); } finally { setBusy(false); }
   }
 
   return (
@@ -166,13 +171,14 @@ export function StudentEdit({ id, me }: { id: string; me: Me }) {
           <div className="sm:col-span-2"><TextArea label="Ghi chú" value={form.note} onChange={set('note')} rows={3} /></div>
         </fieldset>
 
+        {err && <ErrorBox message={err} />}
         {editable && (
           <div className="sticky bottom-20 z-10 flex gap-3 lg:bottom-4">
             <Button type="submit" loading={busy} icon="check" className="flex-1 sm:flex-none">{isNew ? 'Thêm học viên' : 'Lưu thay đổi'}</Button>
             {!isNew && can(me, 'delete') && (
               <Button type="button" variant="danger" icon="trash" onClick={async () => {
                 if (!confirmDanger(`Xoá hẳn học viên "${form.fullName}" và toàn bộ lịch sử học phí?\n\nNếu học viên chỉ nghỉ học, hãy đổi trạng thái thành "Đã nghỉ" thay vì xoá.`)) return;
-                try { await api(`/admin/students/${id}`, { method: 'DELETE' }); toast('Đã xoá'); navigate('/admin/hoc-vien', true); } catch (err: any) { toast(err.message, 'err'); }
+                try { await api(`/admin/students/${id}`, { method: 'DELETE' }); markDirty(false); toast('Đã xoá'); navigate('/admin/hoc-vien', true); } catch (err: any) { toast(err.message, 'err'); }
               }}>Xoá</Button>
             )}
           </div>

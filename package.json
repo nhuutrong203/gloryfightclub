@@ -10,6 +10,7 @@
     "preview": "astro build && astro preview",
     "deploy": "astro build && wrangler deploy",
     "check": "astro check",
+    "test": "node --test \"tests/*.test.mjs\"",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "wrangler d1 migrations apply glory-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply glory-db --remote",

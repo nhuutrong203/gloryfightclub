@@ -1,7 +1,10 @@
 import type { Context, Next } from 'hono';
-import type { ZodType } from 'zod';
+import { z, type ZodType } from 'zod';
 import { can, type Permission } from '../lib/auth';
 import type { Env } from '.';
+
+// Câu báo lỗi mặc định của zod bằng tiếng Việt ("Quá nhỏ: …" thay vì "Too small: …").
+z.config(z.locales.vi());
 
 /** Middleware: yêu cầu ít nhất một trong các quyền. */
 export const need = (...perms: Permission[]) => async (c: Context<Env>, next: Next) => {
@@ -15,14 +18,19 @@ export const ownerOnly = async (c: Context<Env>, next: Next) => {
   await next();
 };
 
-/** Đọc + validate JSON body; trả về [data, null] hoặc [null, Response lỗi]. */
-export async function body<T>(c: Context<any>, schema: ZodType<T>): Promise<[T, null] | [null, Response]> {
+/** Đọc + validate JSON body; trả về [data, null] hoặc [null, Response lỗi].
+ *  labels: tên cột → nhãn trên form, để báo "Năm sinh: …" thay vì "birthYear: …". */
+export async function body<T>(c: Context<any>, schema: ZodType<T>, labels: Record<string, string> = {}): Promise<[T, null] | [null, Response]> {
   const raw = await c.req.json().catch(() => null);
   const r = schema.safeParse(raw);
   if (r.success) return [r.data, null];
-  const issue = r.error.issues[0];
-  return [null, c.json({ error: `Dữ liệu chưa hợp lệ: ${issue.path.join('.') || 'body'} — ${issue.message}` }, 400)];
+  return [null, c.json({ error: issueText(r.error.issues[0], labels) }, 400)];
 }
+
+export const issueText = (issue: z.core.$ZodIssue, labels: Record<string, string> = {}) => {
+  const key = String(issue.path[0] ?? '');
+  return key ? `${labels[key] ?? issue.path.join('.')}: ${issue.message}` : `Dữ liệu chưa hợp lệ: ${issue.message}`;
+};
 
 export const idParam = (c: Context<any>) => {
   const n = Number(c.req.param('id'));

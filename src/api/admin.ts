@@ -58,6 +58,17 @@ adminRoutes.get('/dashboard', async (c) => {
 const SETTING_KEYS = ['club', 'hero', 'about', 'texts'] as const;
 // texts = { vi: { key: 'chữ' }, en: {...} } — chỉ chuỗi, để trang public render an toàn.
 const textsSchema = z.object({ vi: z.record(z.string().max(64), z.string().max(1000)), en: z.record(z.string().max(64), z.string().max(1000)) });
+// club: mọi trang public dùng name/slogan/hotlines → thiếu là sập cả web, nên bắt buộc ở đây.
+const required = (label: string) => z.string({ error: `Nhập ${label}` }).trim().min(1, `Nhập ${label}`).max(500);
+const link = z.string().trim().max(500).regex(/^https?:\/\//i, 'Link phải bắt đầu bằng https://').nullish().or(z.literal('')).transform((v) => v || null);
+const clubSchema = z.looseObject({
+  name: required('tên CLB'),
+  slogan: required('slogan'),
+  hotlines: z.array(z.string().trim().min(1).max(20)).min(1, 'Nhập ít nhất 1 hotline'),
+  zalo: required('số Zalo'),
+  facebook: link,
+  instagram: link,
+});
 adminRoutes.get('/settings', need('content'), async (c) => {
   const rows = await db.select().from(schema.settings).where(inArray(schema.settings.key, [...SETTING_KEYS]));
   return c.json(Object.fromEntries(rows.map((r) => [r.key, r.value])));
@@ -65,7 +76,8 @@ adminRoutes.get('/settings', need('content'), async (c) => {
 adminRoutes.put('/settings/:key', need('content'), async (c) => {
   const key = c.req.param('key') ?? '';
   if (!SETTING_KEYS.includes(key as any)) return c.notFound();
-  const [value, err] = await body(c, key === 'texts' ? textsSchema : z.record(z.string(), z.unknown()));
+  const [value, err] = await body(c, key === 'texts' ? textsSchema : key === 'club' ? clubSchema : z.record(z.string(), z.unknown()),
+    { name: 'Tên CLB', slogan: 'Slogan', hotlines: 'Hotline', zalo: 'Số Zalo', facebook: 'Link Facebook', instagram: 'Link Instagram' });
   if (err) return err;
   if (JSON.stringify(value).length > 50_000) return c.json({ error: 'Nội dung quá dài' }, 400);
   await db.insert(schema.settings).values({ key, value }).onConflictDoUpdate({ target: schema.settings.key, set: { value } });
@@ -98,6 +110,7 @@ function isImage(b: Uint8Array, ext: string) {
 
 // ── Tài khoản (chỉ chủ CLB) ──
 const permEnum = z.enum(Object.keys(PERMISSIONS) as [keyof typeof PERMISSIONS, ...(keyof typeof PERMISSIONS)[]]);
+const USER_LABELS = { username: 'Tên đăng nhập', fullName: 'Họ tên', password: 'Mật khẩu', role: 'Vai trò', permissions: 'Quyền', coachId: 'HLV' };
 const userCols = { id: schema.users.id, username: schema.users.username, fullName: schema.users.fullName, role: schema.users.role, permissions: schema.users.permissions, coachId: schema.users.coachId, isActive: schema.users.isActive };
 
 adminRoutes.get('/users', ownerOnly, async (c) => c.json({
@@ -114,7 +127,7 @@ adminRoutes.post('/users', ownerOnly, async (c) => {
     role: z.enum(['owner', 'coach']),
     permissions: z.array(permEnum).default(DEFAULT_COACH_PERMISSIONS),
     coachId: z.number().int().positive().nullish().transform((v) => v ?? null),
-  }));
+  }), USER_LABELS);
   if (err) return err;
   const dup = await db.select({ id: schema.users.id }).from(schema.users).where(eq(schema.users.username, data.username)).get();
   if (dup) return c.json({ error: 'Tên đăng nhập đã tồn tại' }, 409);
@@ -133,7 +146,7 @@ adminRoutes.put('/users/:id', ownerOnly, async (c) => {
     coachId: z.number().int().positive().nullish(),
     isActive: z.boolean().optional(),
     password: z.string().min(8, 'Mật khẩu tối thiểu 8 ký tự').max(200).optional(),
-  }));
+  }), USER_LABELS);
   if (err) return err;
   // Không cho tự khoá / tự hạ quyền chính mình (tránh mất quyền chủ CLB).
   if (id === c.get('user').id && (data.isActive === false || data.role === 'coach')) {

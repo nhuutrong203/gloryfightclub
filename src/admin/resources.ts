@@ -3,7 +3,7 @@
 //  - giao diện CMS (ResourcePage): sinh danh sách + form
 // Học viên, học phí, học thử, tin tức, cài đặt, tài khoản có màn hình riêng.
 
-export type FieldType = 'text' | 'textarea' | 'number' | 'bool' | 'image' | 'select' | 'multi' | 'color' | 'time' | 'date' | 'days';
+export type FieldType = 'text' | 'textarea' | 'number' | 'bool' | 'image' | 'select' | 'multi' | 'color' | 'time' | 'date' | 'days' | 'url';
 
 export type Field = {
   name: string; // tên property Drizzle (camelCase)
@@ -16,6 +16,8 @@ export type Field = {
   ref?: ResourceKey;
   options?: { value: string; label: string }[];
   help?: string;
+  /** Chỉ hiện ô này khi điều kiện đúng (ô ẩn được lưu là trống). */
+  showIf?: (row: Record<string, any>) => boolean;
 };
 
 export type Resource = {
@@ -27,14 +29,18 @@ export type Resource = {
   fields: Field[];
   /** sinh slug tự động từ cột này nếu bảng có slug */
   slugFrom?: string;
+  /** 'sort' = sắp xếp bằng nút ↑↓ trong danh sách; server tự đặt sort cho mục mới. */
   orderBy?: string;
+  /** Mục mới lên đầu danh sách thay vì xuống cuối. */
+  newFirst?: boolean;
+  /** Kiểm tra giữa các ô (chạy ở cả CMS lẫn API); trả câu lỗi hoặc null. */
+  check?: (row: Record<string, any>) => string | null;
 };
 
 export type ResourceKey =
   | 'locations' | 'disciplines' | 'classes' | 'coaches' | 'belts'
   | 'feePlans' | 'gallery' | 'testimonials' | 'faqs' | 'achievements';
 
-const sort: Field = { name: 'sort', label: 'Thứ tự hiển thị', type: 'number', help: 'Số nhỏ hiện trước' };
 const pub: Field = { name: 'isPublic', label: 'Hiện trên website', type: 'bool' };
 
 export const DAY_LABEL: Record<string, string> = { '2': 'T2', '3': 'T3', '4': 'T4', '5': 'T5', '6': 'T6', '7': 'T7', '8': 'CN' };
@@ -55,6 +61,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
     listTitle: (r) => r.name,
     listSub: (r) => `${daysLabel(r.days)} · ${r.startTime}–${r.endTime}`,
     orderBy: 'startTime',
+    check: (r) => (r.startTime && r.endTime && r.endTime <= r.startTime ? 'Giờ kết thúc phải sau giờ bắt đầu' : null),
     fields: [
       { name: 'name', label: 'Tên lớp', type: 'text', required: true, en: true, help: 'Vd: MMA, MMA / Muay Thái' },
       { name: 'locationId', label: 'Cơ sở', type: 'select', ref: 'locations', required: true },
@@ -85,7 +92,6 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
       { name: 'disciplineIds', label: 'Môn dạy', type: 'multi', ref: 'disciplines' },
       { name: 'isFeatured', label: 'Nổi bật ở trang chủ', type: 'bool' },
       pub,
-      sort,
     ],
   },
   disciplines: {
@@ -101,7 +107,6 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
       { name: 'description', label: 'Mô tả chi tiết', type: 'textarea', en: true },
       { name: 'hasBelts', label: 'Có hệ thống đai', type: 'bool' },
       pub,
-      sort,
     ],
   },
   locations: {
@@ -114,9 +119,8 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
       { name: 'name', label: 'Tên cơ sở', type: 'text', required: true, en: true },
       { name: 'address', label: 'Địa chỉ', type: 'textarea', required: true },
       { name: 'phone', label: 'Số điện thoại', type: 'text' },
-      { name: 'mapUrl', label: 'Link Google Maps', type: 'text' },
+      { name: 'mapUrl', label: 'Link Google Maps', type: 'url', help: 'Mở Google Maps → Chia sẻ → Sao chép đường liên kết' },
       { name: 'scheduleImageKey', label: 'Ảnh lịch tập (tuỳ chọn)', type: 'image', help: 'Có ảnh thì trang Lịch học hiện ảnh này cho cơ sở' },
-      sort,
     ],
   },
   feePlans: {
@@ -124,7 +128,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
     title: 'Gói học phí',
     listTitle: (r) => r.name,
     listSub: (r) => `${Number(r.pricePerMonth).toLocaleString('vi-VN')} đ/tháng`,
-    orderBy: 'sort',
+    orderBy: 'pricePerMonth',
     fields: [
       { name: 'name', label: 'Tên gói', type: 'text', required: true, en: true },
       { name: 'pricePerMonth', label: 'Giá / tháng (VND)', type: 'number', required: true },
@@ -134,7 +138,6 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
       { name: 'badge', label: 'Nhãn nổi bật', type: 'text', help: 'Vd: BEST CHOICE' },
       { name: 'isFeatured', label: 'Gói nổi bật', type: 'bool' },
       pub,
-      sort,
     ],
   },
   belts: {
@@ -158,14 +161,15 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
     listTitle: (r) => r.caption || (r.type === 'video' ? 'Video' : 'Ảnh'),
     listSub: (r) => r.album ?? '',
     orderBy: 'sort',
+    newFirst: true,
+    check: (r) => (r.type === 'photo' && !r.key ? 'Chọn ảnh' : r.type === 'video' && !r.videoUrl ? 'Nhập link video' : null),
     fields: [
       { name: 'type', label: 'Loại', type: 'select', required: true, options: [{ value: 'photo', label: 'Ảnh' }, { value: 'video', label: 'Video (link YouTube/Facebook)' }] },
-      { name: 'key', label: 'Ảnh', type: 'image' },
-      { name: 'videoUrl', label: 'Link video', type: 'text' },
+      { name: 'key', label: 'Ảnh', type: 'image', showIf: (r) => r.type === 'photo' },
+      { name: 'videoUrl', label: 'Link video', type: 'url', help: 'Link YouTube (hiện ngay trên web) hoặc Facebook', showIf: (r) => r.type === 'video' },
       { name: 'caption', label: 'Chú thích', type: 'text', en: true },
       { name: 'album', label: 'Album', type: 'text', help: 'Vd: Giải đấu 2025' },
       pub,
-      sort,
     ],
   },
   testimonials: {
@@ -180,7 +184,6 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
       { name: 'content', label: 'Nội dung', type: 'textarea', required: true, en: true },
       { name: 'photoKey', label: 'Ảnh', type: 'image' },
       pub,
-      sort,
     ],
   },
   faqs: {
@@ -192,7 +195,6 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
       { name: 'question', label: 'Câu hỏi', type: 'text', required: true, en: true },
       { name: 'answer', label: 'Trả lời', type: 'textarea', required: true, en: true },
       pub,
-      sort,
     ],
   },
   achievements: {
@@ -209,10 +211,12 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
       { name: 'imageKey', label: 'Ảnh huy chương / giấy chứng nhận / lên bục', type: 'image', help: 'Ảnh thật giúp khách tin hơn — hiện ở trang chủ, trang HLV và trang Thành tích.' },
       { name: 'description', label: 'Mô tả', type: 'textarea', en: true },
       pub,
-      sort,
     ],
   },
 };
+
+/** Tên cột → nhãn tiếng Việt, để báo lỗi dễ hiểu. */
+export const fieldLabels = (r: Resource) => Object.fromEntries(r.fields.flatMap((f) => (f.en ? [[f.name, f.label], [`${f.name}En`, `${f.label} (English)`]] : [[f.name, f.label]])));
 
 /** Tất cả cột được phép ghi (kể cả bản EN). */
 export const writableColumns = (r: Resource) => r.fields.flatMap((f) => (f.en ? [f.name, `${f.name}En`] : [f.name]));

@@ -28,7 +28,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // shortcut: URL tiếng Anh giữ slug tiếng Việt (/en/hoc-phi); đổi sang slug tiếng Anh nếu cần SEO EN mạnh hơn.
   if (pathname === '/en' || pathname.startsWith('/en/')) {
     context.locals.lang = 'en';
-    return next(pathname.slice(3) || '/');
+    // Truyền URL (không phải chuỗi) để giữ ?co-so=, ?trang=… khi rewrite.
+    const url = new URL(context.url);
+    url.pathname = pathname.slice(3) || '/';
+    return next(url);
   }
   context.locals.lang ??= 'vi';
   return next();

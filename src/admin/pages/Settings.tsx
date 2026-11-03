@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api, toast, useApi } from '../lib';
+import { api, toast, useApi, useDirty, useUploading } from '../lib';
 import { Button, ErrorBox, ImageInput, Loading, Page, TextArea, TextInput } from '../ui';
 
 type S = Record<string, any>;
@@ -37,12 +37,15 @@ function Group({ title, k, initial, fields }: { title: string; k: string; initia
     kind === 'list' ? (s[key] ?? []).join(', ') : kind === 'lines' ? (s[key] ?? []).join('\n') : s[key] ?? '']));
   const [form, setForm] = useState<S>(() => toForm(initial));
   const [busy, setBusy] = useState(false);
+  const uploading = useUploading();
+  const markDirty = useDirty();
   useEffect(() => setForm(toForm(initial)), [initial]);
-  const set = (key: string) => (v: any) => setForm((x) => ({ ...x, [key]: v }));
+  const set = (key: string) => (v: any) => { setForm((x) => ({ ...x, [key]: v })); markDirty(true); };
 
   return (
     <form className="space-y-4 border border-neutral-200 bg-white p-4" onSubmit={async (e) => {
       e.preventDefault();
+      if (uploading) return toast('Đợi ảnh tải lên xong đã', 'err');
       setBusy(true);
       // Giữ các khoá cũ không có trên form (vd. dữ liệu thêm sau này).
       const value: S = { ...initial };
@@ -52,7 +55,7 @@ function Group({ title, k, initial, fields }: { title: string; k: string; initia
           : kind === 'lines' ? String(v).split('\n').map((x) => x.trim()).filter(Boolean)
           : v === '' ? null : v;
       }
-      try { await api(`/admin/settings/${k}`, { method: 'PUT', body: value }); toast('Đã lưu'); } catch (err: any) { toast(err.message, 'err'); } finally { setBusy(false); }
+      try { await api(`/admin/settings/${k}`, { method: 'PUT', body: value }); markDirty(false); toast('Đã lưu'); } catch (err: any) { toast(err.message, 'err'); } finally { setBusy(false); }
     }}>
       <h2 className="font-display text-2xl uppercase">{title}</h2>
       {fields.map(([key, label, kind]) => (
@@ -62,7 +65,7 @@ function Group({ title, k, initial, fields }: { title: string; k: string; initia
             : <TextInput label={label} value={form[key]} onChange={(e) => set(key)(e.target.value)} />}
         </div>
       ))}
-      <Button type="submit" loading={busy} icon="check">Lưu {title.toLowerCase()}</Button>
+      <Button type="submit" loading={busy} disabled={uploading} icon="check">{uploading ? 'Đang tải ảnh…' : `Lưu ${title.toLowerCase()}`}</Button>
     </form>
   );
 }

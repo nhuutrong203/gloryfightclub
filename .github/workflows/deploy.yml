@@ -40,6 +40,9 @@ jobs:
           npx wrangler types   # sinh worker-configuration.d.ts (không commit vào git)
           npx astro check
 
+      - name: Test
+        run: npm test
+
       - name: Cập nhật cấu trúc database (chỉ chạy migration mới)
         run: npx wrangler d1 migrations apply glory-db --remote
 

@@ -38,7 +38,30 @@ const subscribe = (fn: () => void) => {
   return () => { listeners.delete(fn); window.removeEventListener('popstate', fn); };
 };
 export const usePath = () => useSyncExternalStore(subscribe, () => location.pathname + location.search);
+
+// ───────── Chống mất dữ liệu đang gõ ─────────
+// URL của form đang có thay đổi chưa lưu (null = không có).
+let dirtyAt: string | null = null;
+const LEAVE = 'Bạn có thay đổi chưa lưu. Rời trang và bỏ các thay đổi này?';
+export const setDirty = (on: boolean) => { dirtyAt = on ? location.pathname + location.search : null; };
+/** Form gọi markDirty(true) khi người dùng sửa, markDirty(false) khi lưu xong; rời trang thì tự xoá cờ. */
+export function useDirty() {
+  useEffect(() => () => setDirty(false), []);
+  return setDirty;
+}
+if (typeof window !== 'undefined') {
+  // Nút Back của trình duyệt / Android: hỏi trước; huỷ thì quay lại đúng form (chạy trước router vì đăng ký trước).
+  window.addEventListener('popstate', () => {
+    if (!dirtyAt) return;
+    if (confirm(LEAVE)) dirtyAt = null;
+    else history.pushState(null, '', dirtyAt);
+  });
+  window.addEventListener('beforeunload', (e) => { if (dirtyAt) e.preventDefault(); });
+}
+
 export function navigate(to: string, replace = false) {
+  if (dirtyAt && !confirm(LEAVE)) return;
+  dirtyAt = null;
   history[replace ? 'replaceState' : 'pushState'](null, '', to);
   listeners.forEach((fn) => fn());
   window.scrollTo(0, 0);
@@ -90,9 +113,20 @@ async function shrink(file: File, maxSide: number): Promise<Blob> {
   return blob.type === 'image/webp' ? blob : encode('image/jpeg', 0.85);
 }
 
+// Số ảnh đang tải lên: form khoá nút Lưu khi > 0, kẻo lưu xong mới có key ảnh → mất ảnh.
+let uploads = 0;
+const uploadSubs = new Set<() => void>();
+const setUploads = (d: number) => { uploads += d; uploadSubs.forEach((f) => f()); };
+export const useUploading = () => useSyncExternalStore((f) => { uploadSubs.add(f); return () => uploadSubs.delete(f); }, () => uploads > 0);
+
 /** Upload 1 ảnh, báo tiến trình 0–100 qua onProgress. Trả key R2. */
 export async function uploadImage(file: File, onProgress?: (pct: number) => void, maxSide = 1600): Promise<string> {
   if (!file.type.startsWith('image/')) throw new Error('File này không phải ảnh');
+  setUploads(1);
+  try { return await send(file, onProgress, maxSide); } finally { setUploads(-1); }
+}
+
+async function send(file: File, onProgress: ((pct: number) => void) | undefined, maxSide: number): Promise<string> {
   const blob = await shrink(file, maxSide);
   const form = new FormData();
   form.append('file', new File([blob], blob.type === 'image/webp' ? 'image.webp' : 'image.jpg', { type: blob.type }));

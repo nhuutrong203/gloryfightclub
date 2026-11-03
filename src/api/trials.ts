@@ -1,10 +1,10 @@
 import { Hono } from 'hono';
-import { desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, ne, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { db, schema } from '../db';
 import { vnNow } from '../lib/util';
 import { body, idParam, need } from './guard';
-import { nextStudentCode } from './students';
+import { createStudent } from './students';
 import type { Env } from '.';
 
 const t = schema.trialRegistrations;
@@ -35,10 +35,12 @@ trialRoutes.post('/:id/convert', need('students.edit'), async (c) => {
   const trial = await db.select().from(t).where(eq(t.id, id)).get();
   if (!trial) return c.notFound();
   if (trial.studentId) return c.json({ error: 'Đã chuyển thành học viên rồi', studentId: trial.studentId }, 409);
+  // Giữ chỗ trước (chỉ 1 request thắng) để bấm 2 lần không tạo 2 học viên.
+  const claimed = await db.update(t).set({ status: 'enrolled' }).where(and(eq(t.id, id), ne(t.status, 'enrolled'))).returning({ id: t.id });
+  if (!claimed.length) return c.json({ error: 'Đăng ký này đang được chuyển thành học viên, tải lại trang để xem' }, 409);
   const { date } = vnNow();
   const kid = trial.age != null && trial.age < 16;
-  const [student] = await db.insert(schema.students).values({
-    code: await nextStudentCode(),
+  const student = await createStudent({
     fullName: trial.fullName,
     phone: kid ? null : trial.phone,
     parentPhone: kid ? trial.phone : null,
@@ -47,8 +49,11 @@ trialRoutes.post('/:id/convert', need('students.edit'), async (c) => {
     joinedAt: date,
     status: 'active',
     note: [trial.preferredTime && `Giờ mong muốn: ${trial.preferredTime}`, trial.note].filter(Boolean).join('\n') || null,
-  }).returning();
-  await db.update(t).set({ status: 'enrolled', studentId: student.id }).where(eq(t.id, id));
+  }).catch(async (e) => {
+    await db.update(t).set({ status: trial.status }).where(eq(t.id, id)); // tạo lỗi → trả lại trạng thái cũ
+    throw e;
+  });
+  await db.update(t).set({ studentId: student.id }).where(eq(t.id, id));
   return c.json({ studentId: student.id }, 201);
 });
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { dict, type DictKey } from '../../i18n';
-import { api, toast, useApi } from '../lib';
+import { api, toast, useApi, useDirty } from '../lib';
 import { Button, ErrorBox, Icon, Loading, Page, inputCls } from '../ui';
 
 type Texts = { vi: Record<string, string>; en: Record<string, string> };
@@ -30,6 +30,8 @@ export function Texts() {
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const markDirty = useDirty();
+  useEffect(() => markDirty(dirty), [dirty]);
 
   useEffect(() => { if (data) setTexts({ vi: data.texts?.vi ?? {}, en: data.texts?.en ?? {} }); }, [data]);
 

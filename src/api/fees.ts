@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { and, asc, eq, inArray, ne, or } from 'drizzle-orm';
+import { asc, eq, inArray, ne, or } from 'drizzle-orm';
 import { z } from 'zod';
 import { db, schema } from '../db';
 import { vnNow } from '../lib/util';
@@ -12,12 +12,13 @@ const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 /** Học phí của 1 tháng: học viên đang học (hoặc đã đóng tháng đó) + khoản đã đóng. */
 feeRoutes.get('/', need('fees.view'), async (c) => {
   const m = month.safeParse(c.req.query('month')).data ?? vnNow().month;
+  const paidThisMonth = db.select({ id: schema.payments.studentId }).from(schema.payments).where(eq(schema.payments.month, m));
   const payments = await db.select().from(schema.payments).where(eq(schema.payments.month, m));
-  const paidIds = payments.map((p) => p.studentId);
   const students = await db
     .select({ id: schema.students.id, code: schema.students.code, fullName: schema.students.fullName, phone: schema.students.phone, parentPhone: schema.students.parentPhone, locationId: schema.students.locationId, feePlanId: schema.students.feePlanId, status: schema.students.status })
     .from(schema.students)
-    .where(or(eq(schema.students.status, 'active'), ...(paidIds.length ? [inArray(schema.students.id, paidIds)] : [])))
+    // Subquery thay vì danh sách id: D1 chỉ nhận tối đa 100 tham số mỗi câu lệnh.
+    .where(or(eq(schema.students.status, 'active'), inArray(schema.students.id, paidThisMonth)))
     .orderBy(asc(schema.students.fullName));
   return c.json({ month: m, students, payments });
 });
@@ -33,12 +34,11 @@ const paySchema = z.object({
 });
 
 feeRoutes.post('/', need('fees.edit'), async (c) => {
-  const [data, err] = await body(c, paySchema);
+  const [data, err] = await body(c, paySchema, { amount: 'Số tiền', paidAt: 'Ngày đóng', method: 'Hình thức', note: 'Ghi chú', month: 'Tháng', feePlanId: 'Gói' });
   if (err) return err;
-  const exists = await db.select({ id: schema.payments.id }).from(schema.payments)
-    .where(and(eq(schema.payments.studentId, data.studentId), eq(schema.payments.month, data.month))).get();
-  if (exists) return c.json({ error: 'Học viên này đã được ghi nhận đóng tháng này rồi' }, 409);
-  const [row] = await db.insert(schema.payments).values({ ...data, createdBy: c.get('user').id }).returning();
+  // Unique (học viên, tháng) do DB đảm bảo: bấm 2 lần thì lần sau không ghi gì.
+  const [row] = await db.insert(schema.payments).values({ ...data, createdBy: c.get('user').id }).onConflictDoNothing().returning();
+  if (!row) return c.json({ error: 'Học viên này đã được ghi nhận đóng tháng này rồi' }, 409);
   return c.json(row, 201);
 });
 

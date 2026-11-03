@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { api, can, mediaUrl, navigate, toast, uploadMany, useApi, type Me } from '../lib';
+import { api, can, mediaUrl, navigate, toast, uploadMany, useApi, useDirty, type Me } from '../lib';
 import { A, Badge, Button, Empty, ErrorBox, Icon, LinkButton, Loading, Page, TextArea, TextInput, Toggle, confirmDanger } from '../ui';
 
 type Post = { id: number; slug: string; title: string | null; titleEn: string | null; content: string; contentEn: string | null; publishedAt: number; isPublic: boolean; images: string[] };
@@ -49,6 +49,8 @@ export function PostEdit({ id, me }: { id: string; me: Me }) {
   const [showEn, setShowEn] = useState(false);
   const [uploading, setUploading] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const markDirty = useDirty();
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -61,30 +63,33 @@ export function PostEdit({ id, me }: { id: string; me: Me }) {
   if (!isNew && list.error) return <Page title="Bài viết" back="/admin/tin-tuc"><ErrorBox message={list.error} /></Page>;
   if (!isNew && !existing) return list.data ? <Page title="Bài viết" back="/admin/tin-tuc"><Empty>Không tìm thấy bài.</Empty></Page> : <Loading />;
 
-  const set = (k: keyof typeof form) => (v: any) => setForm((x) => ({ ...x, [k]: v }));
+  const set = (k: keyof typeof form) => (v: any) => { setForm((x) => ({ ...x, [k]: v })); markDirty(true); };
 
   async function addFiles(files: FileList) {
     const arr = [...files].slice(0, 20 - form.images.length);
     setUploading(arr.length);
+    markDirty(true);
     await uploadMany(arr, (key) => setForm((x) => ({ ...x, images: [...x.images, key] })), () => setUploading((n) => n - 1));
   }
-  const move = (i: number, d: number) => setForm((x) => {
+  const move = (i: number, d: number) => { markDirty(true); setForm((x) => {
     const imgs = [...x.images];
     [imgs[i], imgs[i + d]] = [imgs[i + d], imgs[i]];
     return { ...x, images: imgs };
-  });
+  }); };
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     if (uploading) return toast('Đợi ảnh tải lên xong đã', 'err');
     setBusy(true);
+    setErr('');
     const payload = { ...form, publishedAt: schedule ? form.publishedAt : isNew ? Date.now() : Math.min(form.publishedAt, Date.now()) };
     try {
       if (isNew) await api('/admin/posts', { body: payload });
       else await api(`/admin/posts/${id}`, { method: 'PUT', body: payload });
+      markDirty(false);
       toast(isNew ? (schedule ? 'Đã hẹn giờ đăng' : 'Đã đăng bài') : 'Đã lưu');
       navigate('/admin/tin-tuc', true);
-    } catch (err: any) { toast(err.message, 'err'); setBusy(false); }
+    } catch (e: any) { setErr(e.message); toast(e.message, 'err'); setBusy(false); }
   }
 
   return (
@@ -134,12 +139,13 @@ export function PostEdit({ id, me }: { id: string; me: Me }) {
           {schedule && <TextInput label="Thời gian đăng" type="datetime-local" required value={toLocalInput(form.publishedAt)} onChange={(e) => e.target.value && set('publishedAt')(fromLocalInput(e.target.value))} />}
         </section>
 
+        {err && <ErrorBox message={err} />}
         <div className="sticky bottom-20 z-10 flex gap-3 lg:bottom-4">
           <Button type="submit" loading={busy} disabled={uploading > 0} icon="check" className="flex-1 sm:flex-none">{isNew ? (schedule ? 'Hẹn giờ đăng' : 'Đăng bài') : 'Lưu'}</Button>
           {!isNew && can(me, 'delete') && (
             <Button type="button" variant="danger" icon="trash" onClick={async () => {
               if (!confirmDanger('Xoá bài viết này?')) return;
-              try { await api(`/admin/posts/${id}`, { method: 'DELETE' }); toast('Đã xoá'); navigate('/admin/tin-tuc', true); } catch (e: any) { toast(e.message, 'err'); }
+              try { await api(`/admin/posts/${id}`, { method: 'DELETE' }); markDirty(false); toast('Đã xoá'); navigate('/admin/tin-tuc', true); } catch (e: any) { toast(e.message, 'err'); }
             }}>Xoá</Button>
           )}
         </div>

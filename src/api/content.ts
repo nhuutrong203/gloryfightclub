@@ -1,9 +1,9 @@
 import { Hono } from 'hono';
-import { asc, eq } from 'drizzle-orm';
+import { asc, eq, sql } from 'drizzle-orm';
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core';
 import { z, type ZodType } from 'zod';
 import { db, schema } from '../db';
-import { RESOURCES, writableColumns, type Field, type ResourceKey } from '../admin/resources';
+import { RESOURCES, fieldLabels, writableColumns, type Field, type ResourceKey } from '../admin/resources';
 import { slugify } from '../lib/util';
 import { body, idParam, need } from './guard';
 import type { Env } from '.';
@@ -37,6 +37,7 @@ function fieldSchema(f: Field): ZodType {
     case 'days': return z.string().regex(/^[2-8]{1,7}$/, 'Chọn ít nhất một ngày');
     case 'color': return z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Màu dạng #RRGGBB');
     case 'date': return z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish().or(z.literal('')).transform((v) => v || null);
+    case 'url': return z.string().trim().max(1000).regex(/^https?:\/\/\S+$/i, 'Link phải bắt đầu bằng https://').nullish().or(z.literal('')).transform((v) => v || null);
     case 'image': return z.string().regex(/^public\/[\w\-/.]+$/).nullish().or(z.literal('')).transform((v) => v || null);
     case 'textarea': return f.required ? req(z.string().max(10000)) : optStr(10000);
     default: return f.required ? req(z.string().max(500)) : optStr(500);
@@ -70,23 +71,45 @@ contentRoutes.get('/:res', async (c) => {
 contentRoutes.post('/:res', need('content'), async (c) => {
   const key = resolve(c.req.param('res') ?? '');
   if (!key) return c.notFound();
-  const [data, err] = await body(c, schemas[key]);
+  const [data, err] = await body(c, schemas[key], fieldLabels(RESOURCES[key]));
   if (err) return err;
   const missing = RESOURCES[key].fields.find((f) => f.required && (data[f.name] == null || data[f.name] === ''));
   if (missing) return c.json({ error: `${missing.label} là bắt buộc` }, 400);
+  const bad = RESOURCES[key].check?.(data);
+  if (bad) return c.json({ error: bad }, 400);
   const values: Record<string, unknown> = pick(data, writableColumns(RESOURCES[key]));
   const slugFrom = RESOURCES[key].slugFrom;
   if (slugFrom) values.slug = `${slugify(String(data[slugFrom]))}-${crypto.randomUUID().slice(0, 4)}`;
-  const [row] = await db.insert(TABLES[key]).values(values as any).returning();
+  // Thứ tự hiển thị không nhập tay: mục mới nằm cuối (thư viện: đầu) danh sách, đổi bằng nút ↑↓.
+  const t = TABLES[key];
+  if (t.sort) {
+    const r = await db.select({ n: RESOURCES[key].newFirst ? sql<number>`coalesce(min(${t.sort}), 1) - 1` : sql<number>`coalesce(max(${t.sort}), 0) + 1` }).from(t).get();
+    values.sort = r?.n ?? 0;
+  }
+  const [row] = await db.insert(t).values(values as any).returning();
   return c.json(row, 201);
+});
+
+// Sắp xếp lại: client gửi id theo thứ tự mới → sort = 1, 2, 3… (luôn khác nhau).
+contentRoutes.put('/:res/order', need('content'), async (c) => {
+  const key = resolve(c.req.param('res') ?? '');
+  if (!key || RESOURCES[key].orderBy !== 'sort') return c.notFound();
+  const [data, err] = await body(c, z.object({ ids: z.array(z.number().int().positive()).min(1).max(1000) }));
+  if (err) return err;
+  const t = TABLES[key];
+  const [first, ...rest] = data.ids.map((id, i) => db.update(t).set({ sort: i + 1 } as any).where(eq(t.id, id)));
+  await db.batch([first, ...rest]);
+  return c.json({ ok: true });
 });
 
 contentRoutes.put('/:res/:id', need('content'), async (c) => {
   const key = resolve(c.req.param('res') ?? '');
   const id = idParam(c);
   if (!key || !id) return c.notFound();
-  const [data, err] = await body(c, schemas[key]);
+  const [data, err] = await body(c, schemas[key], fieldLabels(RESOURCES[key]));
   if (err) return err;
+  const bad = RESOURCES[key].check?.(data);
+  if (bad) return c.json({ error: bad }, 400);
   const values = pick(data, writableColumns(RESOURCES[key]));
   if (!Object.keys(values).length) return c.json({ error: 'Không có gì để lưu' }, 400);
   const [row] = await db.update(TABLES[key]).set(values as any).where(eq(TABLES[key].id, id)).returning();
@@ -97,6 +120,16 @@ contentRoutes.delete('/:res/:id', need('content'), need('delete'), async (c) => 
   const key = resolve(c.req.param('res') ?? '');
   const id = idParam(c);
   if (!key || !id) return c.notFound();
+  // Môn học: xoá sẽ kéo theo mọi cấp đai (cascade) và để lại lớp trỏ tới môn không còn → chặn, gợi ý ẩn.
+  if (key === 'disciplines') {
+    const u = await db.get<{ belts: number; classes: number }>(sql`select
+      (select count(*) from belts where discipline_id = ${id}) as belts,
+      (select count(*) from classes, json_each(classes.discipline_ids) j where j.value = ${id}) as classes`);
+    if (u && (u.belts || u.classes)) {
+      const what = [u.belts && `${u.belts} cấp đai`, u.classes && `${u.classes} lớp`].filter(Boolean).join(' và ');
+      return c.json({ error: `Môn này đang có ${what}. Tắt "Hiện trên website" để ẩn môn, hoặc xoá/đổi các mục đó trước.` }, 409);
+    }
+  }
   try {
     await db.delete(TABLES[key]).where(eq(TABLES[key].id, id));
   } catch {

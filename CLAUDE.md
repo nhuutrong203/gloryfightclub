@@ -14,7 +14,7 @@ Website quảng bá + CMS quản lý võ sinh cho **GLORY FIGHT CLUB** (MMA, Kud
 - Mỗi cơ sở: lịch nhập trong CMS hoặc ảnh lịch (`locations.schedule_image_key`).
 - Cơ sở 1: 125/9/18 Nguyễn Thị Nhuần, An Phú Đông. Logo gốc (raster): `docs/logo-source.png`.
 - Tên miền `huutrong203.id.vn` đã ở nameserver Cloudflare → deploy chỉ cần thêm 2 Custom Domain cho Worker, không đụng bản ghi DNS khác.
-- **Đang chạy thật** tại https://gloryfightclub.huutrong203.id.vn và https://cms-gloryfightclub.huutrong203.id.vn. **Push lên `main` = tự deploy** (GitHub Actions `.github/workflows/deploy.yml`: wrangler types → astro check → D1 migrations --remote → deploy; cần secret `CLOUDFLARE_API_TOKEN`). Deploy tay: `npm run deploy`.
+- **Đang chạy thật** tại https://gloryfightclub.huutrong203.id.vn và https://cms-gloryfightclub.huutrong203.id.vn. **Push lên `main` = tự deploy** (GitHub Actions `.github/workflows/deploy.yml`: wrangler types → astro check → npm test → D1 migrations --remote → deploy; cần secret `CLOUDFLARE_API_TOKEN`). Deploy tay: `npm run deploy`.
 - Sửa schema: tạo migration bằng `npm run db:generate` và commit — CI tự áp lên D1 cloud trước khi deploy. Migration phải tương thích ngược (thêm cột/bảng), vì code cũ vẫn chạy trong lúc migrate.
 
 ## Trạng thái
@@ -50,6 +50,7 @@ Astro 7 SSR + `@astrojs/cloudflare` 14 (Cloudflare Workers) · React (CMS SPA) �
 npm install
 npm run db:reset   # D1 local: tạo bảng + seed/seed.sql (thật) + seed/sample.sql (demo)
 npm run dev        # web http://localhost:4321 (EN /en) · CMS http://localhost:4321/admin
+npm test           # test nhanh (node --test, tests/*.test.mjs; CI chạy trước khi deploy)
 ```
 Tài khoản demo LOCAL (trong `seed/sample.sql`): `admin` (chủ CLB) và `hlv` (HLV), mật khẩu `glory2026`.
 Tạo tài khoản thật: `node scripts/create-user.mjs <username> <mật-khẩu> "<Họ tên>" owner [--remote]`.
@@ -76,13 +77,21 @@ src/api/              index.ts (CSRF origin check, auth middleware) · guard.ts 
 src/admin/            React CMS: App.tsx (router tự viết, khung, menu dưới) · lib.ts (api, useApi, toast, uploadImage nén WebP) · ui.tsx · resources.ts · pages/*
 ```
 - `src/admin/resources.ts` là **nguồn duy nhất** cho các mục nội dung đơn giản: vừa sinh form CMS vừa sinh zod + cột được ghi ở API. Thêm cột nội dung → thêm field ở đây.
+- Thứ tự hiển thị (`sort`) **không có ô nhập**: mục mới tự nhận `max(sort)+1` (Thư viện `newFirst` → `min-1`, lên đầu); đổi thứ tự bằng nút ↑↓ trong danh sách → `PUT /api/admin/content/:res/order {ids}` ghi lại 1, 2, 3… Chỉ mục có `orderBy: 'sort'` mới có nút; Gói học phí sắp theo giá (giống trang public).
+- Form có ảnh khoá nút Lưu khi đang tải ảnh (`useUploading()` trong `lib.ts`).
+- Chống mất chữ đang gõ: form gọi `useDirty()` (lib.ts) → `markDirty(true)` khi sửa, `markDirty(false)` khi lưu xong; `navigate()` và nút Back hỏi trước khi rời. Form mới phải làm theo.
+- Field trong `resources.ts`: `type: 'url'` (bắt buộc https://), `showIf` (ẩn ô theo ô khác, ô ẩn lưu trống), `check` ở resource (kiểm tra giữa các ô, chạy cả CMS lẫn API).
+- Lỗi API: zod báo tiếng Việt (`z.config(z.locales.vi())` trong `guard.ts`), `body(c, schema, labels)` đổi tên cột thành nhãn form. Form hiện lỗi ngay trên nút Lưu.
+- Xoá môn học bị chặn khi còn cấp đai/lớp dùng môn đó (gợi ý tắt "Hiện trên website").
+- Tạo học viên dùng `createStudent()` (students.ts): ghi học viên + lớp trong 1 batch, trùng mã thì thử lại. Ghi học phí dùng unique (học viên, tháng) của DB.
+- D1: tối đa 100 tham số / câu lệnh (đừng `inArray` với danh sách id dài, dùng subquery) và 50 lần gọi / request ở gói Free → ghi nhiều dòng thì gom `db.batch`.
 - Quyền: `students.view`, `students.edit`, `fees.view`, `fees.edit`, `posts`, `content`, `delete`. Owner luôn đủ quyền; tài khoản chỉ owner quản lý. Kiểm tra quyền ở API bằng `need()`, UI chỉ ẩn/hiện.
 - Tìm học viên bỏ dấu làm trong JS (`matchQuery`) — ổn tới vài nghìn học viên.
 - Học phí: 1 dòng `payments` / học viên / tháng (unique). Dashboard "chưa đóng" = học viên `active` không có payment tháng hiện tại.
 - Upload: client nén ≤1600px WebP (fallback JPEG; ảnh JPEG/WebP ≤400KB gửi thẳng), XHR có % tiến trình, ảnh xem trước hiện ngay; `uploadMany` tải 3 ảnh song song (tin tức, "Thêm nhiều ảnh" ở Thư viện). Server kiểm tra magic bytes, ≤8MB, key `public/YYYY-MM/<uuid>.ext`.
 - `/media/*` chạy ở CẢ host public lẫn host CMS (middleware `CMS_PATH`), cache vĩnh viễn ở edge bằng Cache API (key không bao giờ ghi đè).
 - Thành tích có ảnh: hiện ở trang chủ (ưu tiên có ảnh), trang HLV (mục "Hình ảnh thành tích" từ bảng `achievements.coach_id`) và /thanh-tich; bấm ảnh mở ảnh gốc.
-- Nhập học viên: CMS đọc .xlsx (`read-excel-file`, tải động) hoặc .csv, gửi `POST /api/admin/students/import` theo cột của file xuất; có Mã trùng → cập nhật CHỈ các cột có trong file, không có → thêm mới; lỗi trả theo số dòng. Khớp cơ sở/gói theo tên không dấu hoặc viết tắt chữ cái đầu.
+- Nhập học viên: CMS đọc .xlsx (`read-excel-file`, tải động) hoặc .csv, gửi `POST /api/admin/students/import` theo cột của file xuất; có Mã trùng → cập nhật CHỈ các cột có trong file, không có → thêm mới; lỗi trả theo số dòng. Khớp cơ sở/gói theo tên không dấu hoặc viết tắt chữ cái đầu; tên cơ sở/gói/lớp không khớp → báo lỗi dòng đó (không ghi đè thành trống). Kiểm tra hết rồi ghi bằng `db.batch` theo đợt 200 câu lệnh.
 - CMS: tab "Học thử" có huy hiệu đỏ đếm đăng ký mới (tải lại mỗi phút + khi chuyển trang).
 - Form học thử: honeypot `website`; trẻ <16 tuổi khi chuyển thành học viên thì SĐT đăng ký thành SĐT phụ huynh.
 

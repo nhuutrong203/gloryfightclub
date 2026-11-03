@@ -1,9 +1,11 @@
 import { Hono } from 'hono';
 import { and, asc, desc, eq, inArray, sql, type SQL } from 'drizzle-orm';
+import type { BatchItem } from 'drizzle-orm/batch';
 import { z } from 'zod';
 import { db, schema } from '../db';
 import { normalizePhone, vnNow } from '../lib/util';
-import { body, csv, idParam, need } from './guard';
+import { STATUS_IN, byName, fixPhone, fold, parseDate } from '../lib/import';
+import { body, csv, idParam, issueText, need } from './guard';
 import type { Env } from '.';
 
 const s = schema.students;
@@ -19,7 +21,7 @@ const phone = z.string().trim().max(20).nullish().transform((v, ctx) => {
 export const studentSchema = z.object({
   fullName: z.string().trim().min(2, 'Nhập họ tên').max(100),
   phone,
-  birthYear: z.coerce.number().int().min(1940).max(2030).nullish().transform((v) => v ?? null),
+  birthYear: z.coerce.number().int().min(1940, 'Năm sinh từ 1940 trở đi').max(2030, 'Năm sinh chưa đúng').nullish().transform((v) => v ?? null),
   parentName: z.string().trim().max(100).nullish().transform((v) => v || null),
   parentPhone: phone,
   locationId: z.number().int().positive().nullish().transform((v) => v ?? null),
@@ -29,6 +31,31 @@ export const studentSchema = z.object({
   note: z.string().trim().max(2000).nullish().transform((v) => v || null),
   classIds: z.array(z.number().int().positive()).max(20).default([]),
 });
+
+export const STUDENT_LABELS = {
+  fullName: 'Họ tên', phone: 'SĐT', birthYear: 'Năm sinh', parentName: 'Tên phụ huynh', parentPhone: 'SĐT phụ huynh',
+  locationId: 'Cơ sở', feePlanId: 'Gói học phí', joinedAt: 'Ngày nhập học', status: 'Trạng thái', note: 'Ghi chú', classIds: 'Lớp',
+};
+
+/** Ghi lớp cho học viên theo mã (dùng được trong cùng batch với lệnh tạo học viên, khi chưa biết id). */
+const classesByCode = (code: string, classIds: number[]) => db.insert(schema.studentClasses).select(
+  db.select({ studentId: s.id, classId: schema.classes.id }).from(s).innerJoin(schema.classes, inArray(schema.classes.id, classIds)).where(eq(s.code, code)),
+);
+
+export const isUnique = (e: unknown) => /UNIQUE constraint failed/.test(String((e as any)?.cause?.message ?? e));
+
+/** Tạo học viên + lớp trong 1 lần ghi. Hai người thêm cùng lúc trùng mã → lấy mã mới, thử lại. */
+export async function createStudent(values: Omit<typeof s.$inferInsert, 'code'>, classIds: number[] = []) {
+  for (let attempt = 0; ; attempt++) {
+    const code = await nextStudentCode();
+    try {
+      const [rows] = await db.batch([db.insert(s).values({ ...values, code }).returning(), ...(classIds.length ? [classesByCode(code, classIds)] : [])]);
+      return rows[0];
+    } catch (e) {
+      if (attempt >= 2 || !isUnique(e)) throw e;
+    }
+  }
+}
 
 /** Mã học viên kế tiếp: GF0001, GF0002… */
 export async function nextStudentCode() {
@@ -44,9 +71,6 @@ function filters(q: Record<string, string | undefined>) {
   if (q.class) w.push(inArray(s.id, db.select({ id: schema.studentClasses.studentId }).from(schema.studentClasses).where(eq(schema.studentClasses.classId, Number(q.class)))));
   return w.length ? and(...w) : undefined;
 }
-
-/** Bỏ dấu để "nguyen van a" tìm ra "Nguyễn Văn A". */
-const fold = (x: string) => x.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase();
 
 /** Lọc theo ô tìm kiếm (tên không dấu, mã, SĐT) — làm trong JS vì SQLite không bỏ dấu được.
  *  shortcut: tải mọi học viên khớp bộ lọc khác rồi lọc; ổn tới vài nghìn học viên, nhiều hơn thì thêm cột search_text. */
@@ -99,18 +123,6 @@ const importRow = z.object({
   note: z.string().trim().max(2000).optional(),
 });
 
-/** "15/08/2026", "2026-08-15", "2026-08-15T…" → "2026-08-15"; không đọc được → null. */
-export function parseDate(v?: string) {
-  if (!v) return null;
-  let m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
-  m = v.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/);
-  return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : null;
-}
-/** Excel hay làm mất số 0 đầu SĐT (912345678) → thêm lại. */
-const fixPhone = (v?: string) => (v && /^\d{9}$/.test(v.replace(/\D/g, '')) ? '0' + v.replace(/\D/g, '') : v || null);
-const STATUS_IN: Record<string, 'active' | 'paused' | 'quit'> = { 'dang hoc': 'active', active: 'active', 'tam nghi': 'paused', paused: 'paused', 'da nghi': 'quit', nghi: 'quit', quit: 'quit' };
-
 studentRoutes.post('/import', need('students.edit'), async (c) => {
   const [data, err] = await body(c, z.object({ rows: z.array(importRow).min(1).max(2000) }));
   if (err) return err;
@@ -118,36 +130,41 @@ studentRoutes.post('/import', need('students.edit'), async (c) => {
     db.select().from(schema.locations), db.select().from(schema.feePlans), db.select().from(schema.classes),
     db.select({ id: s.id, code: s.code }).from(s),
   ]);
-  // Khớp tên không dấu, hoặc viết tắt chữ cái đầu ("HSSV" = "Học sinh – Sinh viên").
-  const initials = (x: string) => fold(x).split(/[^a-z0-9]+/).filter(Boolean).map((w) => w[0]).join('');
-  const byName = <T extends { id: number; name: string }>(list: T[], v?: string) =>
-    v ? (list.find((x) => fold(x.name) === fold(v)) ?? list.find((x) => initials(x.name) === fold(v).replace(/[^a-z0-9]/g, '')))?.id ?? null : null;
   // Lớp ghi giống file xuất: "MMA 246 18:30; Kudo 357 20:00"
-  const classIds = (v?: string) => (v ?? '').split(/[;\n]/).map((x) => x.trim()).filter(Boolean)
-    .map((x) => classes.find((k) => fold(`${k.name} ${k.days} ${k.startTime}`) === fold(x))?.id).filter((x): x is number => !!x);
+  const classOf = (x: string) => classes.find((k) => fold(`${k.name} ${k.days} ${k.startTime}`) === fold(x))?.id;
   const codes = new Map<string, number>(existing.map((e) => [e.code.toUpperCase(), e.id]));
   let next = Number((await nextStudentCode()).slice(2));
   const errors: { row: number; error: string }[] = [];
+  const stmts: BatchItem<'sqlite'>[] = [];
   let created = 0, updated = 0;
 
   for (const [i, r] of data.rows.entries()) {
     const rowNo = i + 2; // dòng 1 là tiêu đề
+    // Tên gõ sai thì báo lỗi, không ghi đè thành "trống" (mất dữ liệu cũ).
+    const locationId = byName(locations, r.location);
+    const feePlanId = byName(plans, r.plan);
+    const classNames = (r.classes ?? '').split(/[;\n]/).map((x) => x.trim()).filter(Boolean);
+    const badClass = classNames.find((x) => !classOf(x));
+    const miss = r.location && !locationId ? `không thấy cơ sở "${r.location}"`
+      : r.plan && !feePlanId ? `không thấy gói học phí "${r.plan}"`
+      : badClass ? `không thấy lớp "${badClass}" (ghi đúng dạng: Tên lớp + thứ + giờ, vd. "MMA 246 18:30")` : null;
+    if (miss) { errors.push({ row: rowNo, error: miss }); continue; }
     const parsed = studentSchema.safeParse({
       fullName: r.fullName ?? '',
       phone: fixPhone(r.phone),
       birthYear: r.birthYear ? Number(r.birthYear) : null,
       parentName: r.parentName || null,
       parentPhone: fixPhone(r.parentPhone),
-      locationId: byName(locations, r.location),
-      feePlanId: byName(plans, r.plan),
+      locationId,
+      feePlanId,
       joinedAt: parseDate(r.joinedAt) ?? vnNow().date,
       status: STATUS_IN[fold(r.status ?? '')] ?? 'active',
       note: r.note || null,
-      classIds: classIds(r.classes),
+      classIds: [...new Set(classNames.map((x) => classOf(x)!))],
     });
     if (!parsed.success) {
       const iss = parsed.error.issues[0];
-      errors.push({ row: rowNo, error: `${iss.path.join('.') || 'dòng'}: ${iss.message}` });
+      errors.push({ row: rowNo, error: issueText(iss, STUDENT_LABELS) });
       continue;
     }
     const { classIds: cls, ...values } = parsed.data;
@@ -157,19 +174,22 @@ studentRoutes.post('/import', need('students.edit'), async (c) => {
       const has = (k: keyof typeof r) => r[k] !== undefined;
       const COL: Record<string, keyof typeof r> = { locationId: 'location', feePlanId: 'plan' };
       const set = Object.fromEntries(Object.entries(values).filter(([k]) => has(COL[k] ?? (k as keyof typeof r))));
-      await db.batch([
-        db.update(s).set({ ...set, updatedAt: Date.now() }).where(eq(s.id, id)),
-        ...(has('classes') ? [db.delete(schema.studentClasses).where(eq(schema.studentClasses.studentId, id))] : []),
-        ...(has('classes') && cls.length ? [db.insert(schema.studentClasses).values(cls.map((classId) => ({ studentId: id, classId })))] : []),
-      ]);
+      stmts.push(db.update(s).set({ ...set, updatedAt: Date.now() }).where(eq(s.id, id)));
+      if (has('classes')) stmts.push(db.delete(schema.studentClasses).where(eq(schema.studentClasses.studentId, id)));
+      if (has('classes') && cls.length) stmts.push(db.insert(schema.studentClasses).values(cls.map((classId) => ({ studentId: id, classId }))));
       updated++;
     } else {
+      // Học viên mới chưa có id → nối lớp qua mã học viên ngay trong cùng đợt ghi.
       const code = `GF${String(next++).padStart(4, '0')}`;
-      const [row] = await db.insert(s).values({ ...values, code }).returning({ id: s.id });
-      if (cls.length) await db.insert(schema.studentClasses).values(cls.map((classId) => ({ studentId: row.id, classId })));
-      codes.set(code, row.id);
+      stmts.push(db.insert(s).values({ ...values, code }));
+      if (cls.length) stmts.push(classesByCode(code, cls));
       created++;
     }
+  }
+  // Ghi theo đợt: D1 giới hạn số lần gọi trong 1 request (gói Free: 50), mỗi đợt chỉ tính 1 lần.
+  for (let k = 0; k < stmts.length; k += 200) {
+    const [first, ...rest] = stmts.slice(k, k + 200);
+    await db.batch([first, ...rest]);
   }
   return c.json({ created, updated, errors });
 });
@@ -206,18 +226,16 @@ studentRoutes.get('/:id', need('students.view'), async (c) => {
 });
 
 studentRoutes.post('/', need('students.edit'), async (c) => {
-  const [data, err] = await body(c, studentSchema);
+  const [data, err] = await body(c, studentSchema, STUDENT_LABELS);
   if (err) return err;
   const { classIds, ...values } = data;
-  const [row] = await db.insert(s).values({ ...values, code: await nextStudentCode() }).returning();
-  if (classIds.length) await db.insert(schema.studentClasses).values(classIds.map((classId) => ({ studentId: row.id, classId })));
-  return c.json(row, 201);
+  return c.json(await createStudent(values, classIds), 201);
 });
 
 studentRoutes.put('/:id', need('students.edit'), async (c) => {
   const id = idParam(c);
   if (!id) return c.notFound();
-  const [data, err] = await body(c, studentSchema);
+  const [data, err] = await body(c, studentSchema, STUDENT_LABELS);
   if (err) return err;
   const { classIds, ...values } = data;
   await db.batch([

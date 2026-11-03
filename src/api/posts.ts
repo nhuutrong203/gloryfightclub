@@ -20,6 +20,8 @@ const postSchema = z.object({
   images: z.array(z.string().regex(/^public\/[\w\-/.]+$/)).max(20).default([]),
 });
 
+const POST_LABELS = { title: 'Tiêu đề', titleEn: 'Title (English)', content: 'Nội dung', contentEn: 'Content (English)', publishedAt: 'Thời gian đăng', images: 'Ảnh' };
+
 postRoutes.get('/', need('posts'), async (c) => {
   const rows = await db.select().from(p).orderBy(desc(p.publishedAt)).limit(100);
   const images = rows.length ? await db.select().from(img).where(inArray(img.postId, rows.map((r) => r.id))).orderBy(asc(img.sort)) : [];
@@ -27,7 +29,7 @@ postRoutes.get('/', need('posts'), async (c) => {
 });
 
 postRoutes.post('/', need('posts'), async (c) => {
-  const [data, err] = await body(c, postSchema);
+  const [data, err] = await body(c, postSchema, POST_LABELS);
   if (err) return err;
   const { images, ...values } = data;
   const slug = `${slugify(values.title || values.content.slice(0, 60))}-${crypto.randomUUID().slice(0, 6)}`;
@@ -39,7 +41,7 @@ postRoutes.post('/', need('posts'), async (c) => {
 postRoutes.put('/:id', need('posts'), async (c) => {
   const id = idParam(c);
   if (!id) return c.notFound();
-  const [data, err] = await body(c, postSchema);
+  const [data, err] = await body(c, postSchema, POST_LABELS);
   if (err) return err;
   const { images, ...values } = data;
   await db.batch([
