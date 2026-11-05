@@ -35,6 +35,8 @@
   html { @apply bg-ink text-bone font-sans antialiased; scroll-behavior: smooth; scroll-padding-top: 5rem; -webkit-tap-highlight-color: transparent; }
   /* overflow-wrap: chữ siêu dài không dấu cách (link, "supercalifragilistic…") tự xuống dòng thay vì tràn khỏi thẻ. */
   body { @apply text-base leading-relaxed; overflow-wrap: break-word; }
+  /* Trừ chữ to kiểu Anton (giá, số liệu, tiêu đề): bẻ giữa từ thì thành "1.000.00 / 0". Chỗ nào cần thì tự thêm break-words. */
+  h1, h2, h3, .font-display { overflow-wrap: normal; }
   /* Chữ in hoa tiếng Việt có dấu chồng (Ổ, Ầ, Ấ) cao hơn chữ hoa: cần ≥1.12 để dấu không đâm vào dòng trên. */
   h1, h2, h3, .display { @apply font-display uppercase leading-[1.12] tracking-wide; text-wrap: balance; }
   p, li { text-wrap: pretty; }

@@ -40,9 +40,10 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
     <div class="grid grid-cols-2 gap-px bg-white/10 border border-white/10" role="tablist" aria-label={t(lang, 'f_location')}>
       {locations.map((l) => (
         <a href={link({ 'co-so': String(l.id) })} role="tab" aria-selected={l.id === loc?.id ? 'true' : 'false'}
-          class:list={['flex min-h-16 flex-col justify-center px-4 py-3 transition-colors', l.id === loc?.id ? 'bg-glory text-white' : 'bg-ink hover:bg-coal']}>
-          <span class="font-display text-xl sm:text-2xl uppercase leading-tight">{tr(l, 'name', lang)}</span>
-          <span class:list={['hidden sm:block text-sm truncate', l.id === loc?.id ? 'text-white/85' : 'text-ash']}>{l.address}</span>
+          class:list={['flex min-h-16 flex-col justify-start px-4 py-3 transition-colors', l.id === loc?.id ? 'bg-glory text-white' : 'bg-ink hover:bg-coal']}>
+          <span class="font-display text-xl sm:text-2xl uppercase leading-[1.12]">{tr(l, 'name', lang)}</span>
+          <!-- Địa chỉ đầy đủ (trước bị cắt "…" ở cơ sở 2): khách cần đọc hết để tìm đường. -->
+          <span class:list={['mt-1 hidden text-sm leading-snug sm:block', l.id === loc?.id ? 'text-white/85' : 'text-ash']}>{l.address}</span>
         </a>
       ))}
     </div>
@@ -97,7 +98,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
                             class="group/c mb-1 block border-l-2 border-transparent bg-coal px-3 py-2 transition-colors duration-200 last:mb-0 hover:border-glory hover:bg-white/[0.08] data-[state=done]:opacity-50 data-[state=live]:border-glory data-[state=live]:bg-glory/20">
                             <p class="font-display uppercase leading-[1.12] tracking-wide">{tr(c, 'name', lang)}</p>
                             {coachName(c.coachId) && <p class="mt-0.5 text-xs leading-snug text-ash group-hover/c:text-white/80">{coachName(c.coachId)}</p>}
-                            <p class="mt-1 hidden items-center gap-1.5 font-display text-[11px] uppercase tracking-widest text-white group-data-[state=live]/c:flex">
+                            <p class="mt-1 hidden items-center gap-1.5 font-display text-xs uppercase tracking-widest text-white group-data-[state=live]/c:flex">
                               <span class="size-1.5 animate-pulse rounded-full bg-glory-bright motion-reduce:animate-none" aria-hidden="true"></span>{t(lang, 'today_live')}
                             </p>
                           </Tag>
