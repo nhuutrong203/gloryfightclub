@@ -5,13 +5,21 @@ export class ApiError extends Error {
   constructor(message: string, public status: number) { super(message); }
 }
 
+export const OFFLINE = 'Mất kết nối mạng — kiểm tra 4G / Wi-Fi rồi bấm lại (những gì đang gõ vẫn còn).';
+
 export async function api<T = any>(path: string, opts: { method?: string; body?: unknown; form?: FormData } = {}): Promise<T> {
-  const res = await fetch(`/api${path}`, {
-    method: opts.method ?? (opts.body || opts.form ? 'POST' : 'GET'),
-    headers: opts.body !== undefined ? { 'content-type': 'application/json' } : undefined,
-    body: opts.form ?? (opts.body !== undefined ? JSON.stringify(opts.body) : undefined),
-    credentials: 'same-origin',
-  });
+  let res: Response;
+  try {
+    res = await fetch(`/api${path}`, {
+      method: opts.method ?? (opts.body || opts.form ? 'POST' : 'GET'),
+      headers: opts.body !== undefined ? { 'content-type': 'application/json' } : undefined,
+      body: opts.form ?? (opts.body !== undefined ? JSON.stringify(opts.body) : undefined),
+      credentials: 'same-origin',
+    });
+  } catch {
+    // fetch chỉ ném lỗi khi không tới được server ("Failed to fetch" / "Load failed") → câu tiếng Việt dễ hiểu.
+    throw new ApiError(OFFLINE, 0);
+  }
   const data: any = await res.json().catch(() => ({}));
   if (res.status === 401 && !path.startsWith('/auth/')) setTimeout(() => window.dispatchEvent(new Event('glory:logout')));
   if (!res.ok) throw new ApiError(data.error ?? `Lỗi ${res.status}`, res.status);
@@ -100,9 +108,15 @@ export const shiftMonth = (m: string, delta: number) => {
 
 // ───────── Ảnh: nén trên trình duyệt rồi upload R2 ─────────
 /** Ảnh điện thoại 3–8MB → ≤1600px WebP (~150–300KB). Ảnh đã nhỏ thì gửi thẳng, khỏi nén lại. */
+// Ảnh HEIC của iPhone: Chrome trên Windows / Android không đọc được (iPhone tự đổi sang JPG khi chọn ảnh trên chính iPhone).
+const isHeic = (f: File) => /hei[cf]/i.test(f.type) || /\.hei[cf]$/i.test(f.name);
+export const HEIC = 'Ảnh HEIC của iPhone chưa mở được trên máy này — tải ảnh lên trực tiếp từ iPhone, hoặc đổi ảnh sang JPG rồi thử lại.';
+
 async function shrink(file: File, maxSide: number): Promise<Blob> {
   if (file.size <= 400_000 && /^image\/(jpeg|webp)$/.test(file.type)) return file;
-  const bmp = await createImageBitmap(file);
+  const bmp = await createImageBitmap(file).catch(() => {
+    throw new Error(isHeic(file) ? HEIC : 'Không mở được ảnh này — thử ảnh khác (JPG, PNG) hoặc chụp màn hình ảnh rồi tải lên.');
+  });
   const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
   const canvas = document.createElement('canvas');
   canvas.width = Math.round(bmp.width * scale);
@@ -124,6 +138,7 @@ export const useUploading = () => useSyncExternalStore((f) => { uploadSubs.add(f
 
 /** Upload 1 ảnh, báo tiến trình 0–100 qua onProgress. Trả key R2. */
 export async function uploadImage(file: File, onProgress?: (pct: number) => void, maxSide = 1600): Promise<string> {
+  if (isHeic(file) && !file.type) throw new Error(HEIC); // Windows: file .HEIC thường không có kiểu file → kẻo báo nhầm "không phải ảnh"
   if (!file.type.startsWith('image/')) throw new Error('File này không phải ảnh');
   setUploads(1);
   try { return await send(file, onProgress, maxSide); } finally { setUploads(-1); }

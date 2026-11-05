@@ -1,9 +1,9 @@
 import { Hono } from 'hono';
-import { getCookie } from 'hono/cookie';
+import { getCookie, setCookie } from 'hono/cookie';
 import { and, eq, gt } from 'drizzle-orm';
 import { db, schema } from '../db';
-import { SESSION_COOKIE, sha256Hex, type SessionUser } from '../lib/auth';
-import { authRoutes } from './auth';
+import { SESSION_COOKIE, SESSION_DAYS, sha256Hex, type SessionUser } from '../lib/auth';
+import { authRoutes, cookieOpts } from './auth';
 import { publicRoutes } from './public';
 import { contentRoutes } from './content';
 import { studentRoutes } from './students';
@@ -39,14 +39,21 @@ app.route('/auth', authRoutes);
 app.use('/admin/*', async (c, next) => {
   const token = getCookie(c, SESSION_COOKIE);
   if (!token) return c.json({ error: 'Chưa đăng nhập' }, 401);
+  const sid = await sha256Hex(token);
   const row = await db
-    .select({ id: schema.users.id, username: schema.users.username, fullName: schema.users.fullName, role: schema.users.role, permissions: schema.users.permissions })
+    .select({ id: schema.users.id, username: schema.users.username, fullName: schema.users.fullName, role: schema.users.role, permissions: schema.users.permissions, expiresAt: schema.sessions.expiresAt })
     .from(schema.sessions)
     .innerJoin(schema.users, eq(schema.users.id, schema.sessions.userId))
-    .where(and(eq(schema.sessions.id, await sha256Hex(token)), gt(schema.sessions.expiresAt, Date.now()), eq(schema.users.isActive, true)))
+    .where(and(eq(schema.sessions.id, sid), gt(schema.sessions.expiresAt, Date.now()), eq(schema.users.isActive, true)))
     .get();
   if (!row) return c.json({ error: 'Phiên đăng nhập đã hết hạn' }, 401);
-  c.set('user', row);
+  // Gia hạn khi còn < 15 ngày: ai dùng CMS thường xuyên không bao giờ bị đăng xuất giữa chừng (mỗi người ghi DB tối đa ~2 lần/tháng).
+  if (row.expiresAt - Date.now() < 15 * 86400_000) {
+    await db.update(schema.sessions).set({ expiresAt: Date.now() + SESSION_DAYS * 86400_000 }).where(eq(schema.sessions.id, sid));
+    setCookie(c, SESSION_COOKIE, token, cookieOpts(c));
+  }
+  const { expiresAt: _, ...user } = row;
+  c.set('user', user);
   c.header('cache-control', 'no-store');
   await next();
 });

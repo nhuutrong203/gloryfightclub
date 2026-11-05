@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { api, can, fmtDate, monthLabel, shiftMonth, todayVN, toast, useApi, vnd, type Me } from '../lib';
-import { A, Badge, Button, Empty, ErrorBox, Icon, Loading, Page, Select, TextInput, confirmDanger, inputCls } from '../ui';
+import { A, Badge, Button, Empty, ErrorBox, Icon, Loading, MoneyInput, Page, Select, TextInput, confirmDanger, inputCls } from '../ui';
 import type { Lookups } from './Students';
 import { fold } from '../../lib/import';
 
@@ -135,7 +135,7 @@ function PaySheet({ student, month, plans, onClose, onDone }: { student: Student
         <div className="space-y-4">
           <Select label="Gói" value={planId} placeholder="Khác" onChange={(v) => { setPlanId(v); const p = plans.find((x) => x.id === Number(v)); if (p) setAmount(String(p.pricePerMonth)); }}
             options={plans.map((p) => ({ value: p.id, label: `${p.name} — ${vnd(p.pricePerMonth)}` }))} />
-          <TextInput label="Số tiền (VND)" type="number" inputMode="numeric" min={0} step={1000} required value={amount} onChange={(e) => setAmount(e.target.value)} help={amount ? vnd(Number(amount)) : undefined} />
+          <MoneyInput label="Số tiền (VND)" required value={amount} onChange={setAmount} />
           <div className="grid grid-cols-2 border border-neutral-300" role="radiogroup" aria-label="Hình thức">
             {([['transfer', 'Chuyển khoản'], ['cash', 'Tiền mặt']] as const).map(([v, label]) => (
               <button key={v} type="button" role="radio" aria-checked={method === v} onClick={() => setMethod(v)} className={`min-h-12 font-semibold cursor-pointer ${method === v ? 'bg-ink text-white' : 'bg-white'}`}>{label}</button>

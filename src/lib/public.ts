@@ -28,7 +28,7 @@ export const publicDisciplines = () =>
 export async function publicCoaches() {
   const [coaches, awards] = await Promise.all([
     db.select().from(schema.coaches).where(eq(schema.coaches.isPublic, true)).orderBy(asc(schema.coaches.sort)),
-    db.select({ coachId: schema.achievements.coachId, title: schema.achievements.title, titleEn: schema.achievements.titleEn })
+    db.select({ coachId: schema.achievements.coachId, title: schema.achievements.title, titleEn: schema.achievements.titleEn, eventName: schema.achievements.eventName, eventDate: schema.achievements.eventDate })
       .from(schema.achievements).where(eq(schema.achievements.isPublic, true)).orderBy(asc(schema.achievements.sort)),
   ]);
   return coaches.map((c) => ({ ...c, awards: awards.filter((a) => a.coachId === c.id) }));

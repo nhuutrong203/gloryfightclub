@@ -111,6 +111,44 @@ test('huy chương: đọc vàng/bạc/đồng từ chữ tự do, không nhầm
   assert.equal(beltColor('Võ sĩ MMA'), null);
 });
 
+test('bậc đai tự đánh lại: chèn giữa, dời lên, dời xuống, xoá', async () => {
+  const { rerank } = await import('../src/lib/util.ts');
+  const apply = (rows, ch) => rows.map((r) => ({ ...r, rank: ch.find(([id]) => id === r.id)?.[1] ?? r.rank })).sort((a, b) => a.rank - b.rank).map((r) => r.id);
+  const kudo = [1, 2, 3, 4, 5].map((id) => ({ id, rank: id })); // trắng, tím, xanh, vàng, xanh lá
+  // Thêm đai mới (id 9) ở bậc 4 → nằm trước đai vàng, vàng + xanh lá lùi xuống.
+  const ins = [...kudo, { id: 9, rank: 4 }];
+  assert.deepEqual(apply(ins, rerank(ins, 9)), [1, 2, 3, 9, 4, 5]);
+  // Dời đai bậc 2 xuống bậc 4 → đứng ĐÚNG bậc 4 (sau đai đang ở bậc 4).
+  const down = kudo.map((r) => (r.id === 2 ? { ...r, rank: 4 } : r));
+  assert.deepEqual(apply(down, rerank(down, 2, 2)), [1, 3, 4, 2, 5]);
+  // Dời đai bậc 5 lên bậc 2.
+  const up = kudo.map((r) => (r.id === 5 ? { ...r, rank: 2 } : r));
+  assert.deepEqual(apply(up, rerank(up, 5, 5)), [1, 5, 2, 3, 4]);
+  // Xoá đai bậc 3 → các đai sau dồn lên, không hở bậc; đã đúng thì không đổi gì.
+  assert.deepEqual(rerank(kudo.filter((r) => r.id !== 3)), [[4, 3], [5, 4]]);
+  assert.deepEqual(rerank(kudo), []);
+});
+
+test('thành tích HLV: gộp ô chữ + mục Thành tích, không đếm đôi (dữ liệu thật trong seed)', async () => {
+  const { extraAwards, tally } = await import('../src/lib/medals.ts');
+  const title = (r) => ({ title: r.title, event: r.eventName, date: r.eventDate });
+  // Thầy Trung: ô chữ đã ghi HCV Kudo 2024 → mục bảng cùng giải không hiện thêm; giải 2025 mới thì hiện.
+  const trung = ['Đai đen Kudo chính thức do Liên đoàn Kudo thế giới cấp', 'Võ sĩ MMA đang thi đấu', 'HCV giải Kudo quốc gia 2024', 'Hơn 5 năm kinh nghiệm huấn luyện'];
+  const rows = [
+    { title: 'HCV Kudo quốc gia', eventName: 'Giải Kudo quốc gia 2024', eventDate: null },
+    { title: 'HCV Kudo quốc gia', eventName: 'Giải Kudo quốc gia 2025', eventDate: null },
+    { title: 'HCB giải trẻ TP.HCM', eventName: null, eventDate: '2026-03-01' },
+  ];
+  const extra = extraAwards(trung, rows, title).map((r) => r.eventName ?? r.title);
+  assert.deepEqual(extra, ['Giải Kudo quốc gia 2025', 'HCB giải trẻ TP.HCM']);
+  assert.deepEqual(tally([...trung, ...extraAwards(trung, rows, title).map((r) => r.title)]), { gold: 2, silver: 1, bronze: 0 });
+  // Thầy Phong: cả 3 mục bảng đều đã có trong ô chữ (tên ngắn hơn) → không thêm gì.
+  const phong = ['HCB giải các CLB Jujitsu quốc gia', 'HCB, HCĐ Đại hội TDTT ĐBSCL', 'HCV Open Jiujitsu Cần Thơ'];
+  assert.deepEqual(extraAwards(phong, [{ title: 'HCV Open Jiujitsu' }, { title: 'HCB Jujitsu' }, { title: 'HCB, HCĐ' }], (r) => ({ title: r.title })), []);
+  // Ô chữ trống → mọi mục bảng đều hiện (như trước); 2 mục giống hệt chỉ hiện 1.
+  assert.equal(extraAwards([], [{ title: 'Vô địch MMA' }, { title: 'Vô địch MMA' }], (r) => ({ title: r.title })).length, 1);
+});
+
 test('lọc HTML nhật ký: chỉ giữ thẻ an toàn, bỏ mã chạy được, link chỉ http(s)', async () => {
   const { tagAction, safeHref } = await import('../src/lib/html.ts');
   // xmp/noembed/noframes/plaintext: ruột là chữ thô chưa lọc, chỉ bỏ thẻ là lọt <img onerror> (đã thử thật trong workerd).

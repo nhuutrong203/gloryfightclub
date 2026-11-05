@@ -16,13 +16,15 @@ import { More, Password } from './pages/More';
 
 export default function App() {
   const [me, setMe] = useState<Me | null | undefined>(undefined);
+  // Phiên hết hạn giữa chừng: hiện ô đăng nhập ĐÈ lên trang (không thay trang) → bài / form đang gõ dở vẫn còn.
+  const [expired, setExpired] = useState(false);
   // Đường dẫn cũ của Nhật ký (/admin/tin-tuc…) → đường dẫn mới, giữ link đã lưu.
   if (location.pathname.startsWith('/admin/tin-tuc')) history.replaceState(null, '', location.pathname.replace('/admin/tin-tuc', '/admin/nhat-ky') + location.search);
   const path = usePath().split(/[?#]/)[0].replace(/\/+$/, '') || '/admin';
 
   useEffect(() => {
     api<Me>('/admin/me').then(setMe, () => setMe(null));
-    const out = () => setMe(null);
+    const out = () => setExpired(true);
     window.addEventListener('glory:logout', out);
     return () => window.removeEventListener('glory:logout', out);
   }, []);
@@ -34,6 +36,7 @@ export default function App() {
     <Shell me={me} path={path}>
       <Route path={path} me={me} />
       <Toasts />
+      {expired && <Login overlay onLogin={() => api<Me>('/admin/me').then((m) => { setMe(m); setExpired(false); })} />}
     </Shell>
   );
 }

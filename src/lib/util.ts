@@ -30,3 +30,14 @@ export function normalizePhone(s: string) {
 /** Link YouTube (watch, youtu.be, shorts, live, embed) → mã video 11 ký tự; link khác → null. */
 export const youtubeId = (url: string | null | undefined) =>
   url?.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([\w-]{11})/)?.[1] ?? null;
+
+/** Đánh lại bậc đai 1, 2, 3… sau khi thêm / sửa / xoá đai (khỏi phải sửa tay từng đai khi chèn đai vào giữa).
+ *  Đai vừa sửa (editedId) giữ đúng bậc đã gõ: đai đang ở bậc đó lùi xuống; nếu dời đai XUỐNG dưới (oldRank nhỏ hơn) thì nó đứng sau đai đang ở bậc đó.
+ *  Trả về [id, bậc mới] của những đai cần đổi. */
+export function rerank(rows: { id: number; rank: number }[], editedId = 0, oldRank?: number): [number, number][] {
+  const edited = rows.find((r) => r.id === editedId);
+  const down = !!edited && oldRank != null && edited.rank > oldRank;
+  const tie = (r: { id: number }) => (r.id === editedId ? (down ? 1 : -1) : 0);
+  const sorted = [...rows].sort((a, b) => a.rank - b.rank || tie(a) - tie(b) || a.id - b.id);
+  return sorted.flatMap((r, i): [number, number][] => (r.rank === i + 1 ? [] : [[r.id, i + 1]]));
+}

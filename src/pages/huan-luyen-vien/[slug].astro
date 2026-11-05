@@ -10,6 +10,7 @@ import MedalTally from '../../components/public/MedalTally.astro';
 import { db, schema } from '../../db';
 import { getSite, mediaUrl } from '../../lib/site';
 import { publicCoaches, publicClasses, publicDisciplines, lines, richText } from '../../lib/public';
+import { extraAwards } from '../../lib/medals';
 import { t, tr, href, type Lang } from '../../i18n';
 
 const lang: Lang = Astro.locals.lang;
@@ -19,6 +20,8 @@ if (!c) return Astro.rewrite('/404');
 const achievementRows = await db.select().from(schema.achievements)
   .where(and(eq(schema.achievements.coachId, c.id), eq(schema.achievements.isPublic, true))).orderBy(asc(schema.achievements.sort));
 const achievements = lines(tr(c, 'achievements', lang));
+// Mục Thành tích (bảng) mà ô chữ chưa ghi → hiện thêm sau các dòng chữ (thêm huy chương mới ở mục Thành tích là thấy ngay).
+const extraRows = extraAwards(achievements, achievementRows, (r) => ({ title: tr(r, 'title', lang), event: r.eventName, date: r.eventDate }));
 const myClasses = classes.filter((x) => x.coachId === c.id);
 const myDisciplines = disciplines.filter((d) => c.disciplineIds.includes(d.id));
 const photo = mediaUrl(c.photoKey);
@@ -59,7 +62,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
       <div class="container-x">
         <div class="flex flex-wrap items-end justify-between gap-6">
           <h2 class="text-5xl sm:text-7xl">{t(lang, 'achievements_title')}</h2>
-          <MedalTally lines={[...achievements, ...(achievements.length ? [] : achievementRows.map((r) => tr(r, 'title', lang)))]} lang={lang} size="lg" />
+          <MedalTally lines={[...achievements, ...extraRows.map((r) => tr(r, 'title', lang))]} lang={lang} size="lg" />
         </div>
         <ul class="mt-10 grid gap-px bg-ink/15 border border-ink/15 sm:grid-cols-2">
           {achievements.map((a, i) => (
@@ -68,8 +71,8 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
               <span class="font-display text-2xl sm:text-3xl uppercase leading-tight">{a}</span>
             </li>
           ))}
-          {/* Bảng thành tích chỉ hiện khi HLV chưa có danh sách dạng chữ, tránh trùng. */}
-          {(achievements.length ? [] : achievementRows).map((r, i) => (
+          {/* Mục bảng chưa có trong ô chữ (extraAwards đã bỏ dòng trùng). */}
+          {extraRows.map((r, i) => (
             <li class="reveal flex items-start gap-4 bg-bone p-6 transition-colors hover:bg-white" style={`--i:${i}`}>
               <AchievementIcon line={tr(r, 'title', lang)} class="size-10" />
               <span><span class="block font-display text-2xl sm:text-3xl uppercase leading-tight">{tr(r, 'title', lang)}</span>{r.eventName && <span class="text-ink/70">{r.eventName}</span>}</span>

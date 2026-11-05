@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { api, can, navigate, siteUrl, toast, type Me } from '../lib';
-import { A, Button, Icon, Page, TextInput } from '../ui';
+import { api, can, siteUrl, toast, type Me } from '../lib';
+import { A, Button, Icon, Page, PasswordInput } from '../ui';
 import { RESOURCES, type ResourceKey } from '../resources';
 
 type Item = { to: string; label: string; icon: string; sub?: string };
@@ -56,8 +56,7 @@ export function menuGroups(me: Me): { title: string; items: Item[] }[] {
 
 async function logout() {
   await api('/auth/logout', { method: 'POST' }).catch(() => {});
-  window.dispatchEvent(new Event('glory:logout'));
-  navigate('/admin', true);
+  location.assign('/admin'); // tải lại hẳn → màn hình đăng nhập (glory:logout chỉ dành cho phiên hết hạn: hiện ô đăng nhập đè lên trang)
 }
 
 /** Trang "Thêm" trên điện thoại; `compact` = phần dưới menu trái trên máy tính. */
@@ -125,9 +124,9 @@ export function Password() {
           setCurrent(''); setNext(''); setAgain('');
         } catch (err: any) { toast(err.message, 'err'); } finally { setBusy(false); }
       }}>
-        <TextInput label="Mật khẩu hiện tại" type="password" autoComplete="current-password" required value={current} onChange={(e) => setCurrent(e.target.value)} />
-        <TextInput label="Mật khẩu mới" type="password" autoComplete="new-password" minLength={8} required help="Tối thiểu 8 ký tự" value={next} onChange={(e) => setNext(e.target.value)} />
-        <TextInput label="Nhập lại mật khẩu mới" type="password" autoComplete="new-password" required value={again} onChange={(e) => setAgain(e.target.value)} />
+        <PasswordInput label="Mật khẩu hiện tại" autoComplete="current-password" required value={current} onChange={(e) => setCurrent(e.target.value)} />
+        <PasswordInput label="Mật khẩu mới" autoComplete="new-password" minLength={8} required help="Tối thiểu 8 ký tự" value={next} onChange={(e) => setNext(e.target.value)} />
+        <PasswordInput label="Nhập lại mật khẩu mới" autoComplete="new-password" required value={again} onChange={(e) => setAgain(e.target.value)} />
         <Button type="submit" loading={busy}>Lưu mật khẩu mới</Button>
       </form>
     </Page>

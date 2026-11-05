@@ -6,14 +6,14 @@ import { mediaUrl } from '../../lib/site';
 import { lines } from '../../lib/public';
 import AchievementIcon from './AchievementIcon.astro';
 import MedalTally from './MedalTally.astro';
-import { tally } from '../../lib/medals';
+import { extraAwards, tally } from '../../lib/medals';
 import type { schema } from '../../db';
 
-interface Props { coach: typeof schema.coaches.$inferSelect & { awards?: { title: string; titleEn: string | null }[] }; lang: Lang; i?: number; tone?: 'light' | 'dark'; class?: string }
+interface Props { coach: typeof schema.coaches.$inferSelect & { awards?: { title: string; titleEn: string | null; eventName: string | null; eventDate: string | null }[] }; lang: Lang; i?: number; tone?: 'light' | 'dark'; class?: string }
 const { coach: c, lang, i = 0, tone = 'dark', class: className } = Astro.props;
-// Giống trang HLV: ô chữ "Thành tích" trống thì lấy từ bảng Thành tích (mục có ảnh) gắn với HLV này.
+// Giống trang HLV: ô chữ "Thành tích" + mục Thành tích gắn HLV này mà ô chữ chưa ghi (extraAwards bỏ dòng trùng, không đếm đôi huy chương).
 const text = lines(tr(c, 'achievements', lang));
-const achievements = text.length ? text : (c.awards ?? []).map((a) => tr(a, 'title', lang));
+const achievements = [...text, ...extraAwards(text, c.awards ?? [], (a) => ({ title: tr(a, 'title', lang), event: a.eventName, date: a.eventDate })).map((a) => tr(a, 'title', lang))];
 const photo = mediaUrl(c.photoKey);
 const medals = tally(achievements);
 const hasMedals = medals.gold + medals.silver + medals.bronze > 0;

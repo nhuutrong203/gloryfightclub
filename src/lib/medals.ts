@@ -47,3 +47,21 @@ export function tally(lines: string[]) {
   }
   return total;
 }
+
+const words = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+const yearIn = (s: string) => s.match(/\b(19|20)\d{2}\b/)?.[0];
+
+/** Mục Thành tích (bảng, gắn HLV) CHƯA có trong ô chữ "Thành tích" của HLV → hiện thêm, không đếm đôi.
+ *  Coi là trùng khi mọi chữ của tên mục nằm trong một dòng (không dấu, không hoa thường) và năm (nếu có) cũng khớp:
+ *  "HCV Kudo quốc gia" (giải 2024) ≈ dòng "HCV giải Kudo quốc gia 2024"; "HCV Kudo quốc gia" (giải 2025) thì là mục mới. */
+export function extraAwards<T>(textLines: string[], rows: T[], info: (r: T) => { title: string; event?: string | null; date?: string | null }): T[] {
+  const lines = textLines.map((l) => new Set(words(l)));
+  return rows.filter((r) => {
+    const { title, event, date } = info(r);
+    const w = words(title);
+    const y = yearIn(`${title} ${event ?? ''} ${date ?? ''}`);
+    const dup = lines.some((l) => w.length > 0 && w.every((x) => l.has(x)) && (!y || l.has(y)));
+    if (!dup) lines.push(new Set(words(`${title} ${y ?? ""}`))); // 2 mục bảng giống hệt nhau (cùng năm) cũng chỉ hiện 1
+    return !dup;
+  });
+}

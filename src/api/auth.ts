@@ -9,7 +9,7 @@ import { body } from './guard';
 
 export const authRoutes = new Hono();
 
-const cookieOpts = (c: { req: { url: string } }) => ({
+export const cookieOpts = (c: { req: { url: string } }) => ({
   httpOnly: true,
   secure: new URL(c.req.url).protocol === 'https:',
   sameSite: 'Lax' as const,

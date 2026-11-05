@@ -4,7 +4,7 @@ import type { SQLiteTable } from 'drizzle-orm/sqlite-core';
 import { z, type ZodType } from 'zod';
 import { db, schema } from '../db';
 import { RESOURCES, fieldLabels, writableColumns, type Field, type ResourceKey } from '../admin/resources';
-import { slugify } from '../lib/util';
+import { rerank, slugify } from '../lib/util';
 import { body, idParam, need } from './guard';
 import { deleteMedia } from './media';
 import type { Env } from '.';
@@ -28,7 +28,7 @@ const optStr = (max: number) => z.string().trim().max(max).nullish().transform((
 function fieldSchema(f: Field): ZodType {
   const req = (s: z.ZodString) => (f.required ? s.trim().min(1, `${f.label} là bắt buộc`) : s);
   switch (f.type) {
-    case 'number': return f.required ? z.coerce.number().int().min(0) : z.coerce.number().int().min(0).nullish().transform((v) => v ?? null);
+    case 'number': case 'money': return f.required ? z.coerce.number().int().min(0) : z.coerce.number().int().min(0).nullish().transform((v) => v ?? null);
     case 'bool': return z.boolean();
     case 'multi': return z.array(z.number().int().positive()).max(20);
     case 'select':
@@ -91,8 +91,18 @@ contentRoutes.post('/:res', need('content'), async (c) => {
     values.sort = r?.n ?? 0;
   }
   const [row] = await db.insert(t).values(values as any).returning();
+  if (key === 'belts') await rerankBelts(row.disciplineId, row.id);
   return c.json(row, 201);
 });
+
+/** Bậc đai trong 1 môn luôn là 1, 2, 3…: chèn đai vào giữa thì các đai sau tự lùi (xem rerank). */
+async function rerankBelts(disciplineId: number, editedId = 0, oldRank?: number) {
+  const b = schema.belts;
+  const changes = rerank(await db.select({ id: b.id, rank: b.rank }).from(b).where(eq(b.disciplineId, disciplineId)), editedId, oldRank);
+  if (!changes.length) return;
+  const [first, ...rest] = changes.map(([id, rank]) => db.update(b).set({ rank }).where(eq(b.id, id)));
+  await db.batch([first, ...rest]);
+}
 
 // Sắp xếp lại: client gửi id theo thứ tự mới → sort = 1, 2, 3… (luôn khác nhau).
 contentRoutes.put('/:res/order', need('content'), async (c) => {
@@ -119,6 +129,11 @@ contentRoutes.put('/:res/:id', need('content'), async (c) => {
   const old = await db.select().from(TABLES[key]).where(eq(TABLES[key].id, id)).get();
   const [row] = await db.update(TABLES[key]).set(values as any).where(eq(TABLES[key].id, id)).returning();
   if (row) await deleteMedia(imagesOf(key, old).filter((k) => k && !imagesOf(key, row).includes(k)));
+  if (row && old && key === 'belts') {
+    const sameDiscipline = old.disciplineId === row.disciplineId;
+    await rerankBelts(row.disciplineId, id, sameDiscipline ? old.rank : undefined);
+    if (!sameDiscipline) await rerankBelts(old.disciplineId); // đổi sang môn khác → môn cũ dồn lại, không hở bậc
+  }
   return row ? c.json(row) : c.notFound();
 });
 
@@ -143,6 +158,7 @@ contentRoutes.delete('/:res/:id', need('content'), need('delete'), async (c) => 
     return c.json({ error: 'Không xoá được vì mục này đang được dùng ở nơi khác (vd. cơ sở đang có lớp).' }, 409);
   }
   await deleteMedia(imagesOf(key, old));
+  if (key === 'belts' && old) await rerankBelts(old.disciplineId); // xoá đai giữa → các đai sau dồn lên
   return c.json({ ok: true });
 });
 

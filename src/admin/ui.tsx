@@ -31,6 +31,8 @@ const PATHS: Record<string, string> = {
   edit: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z',
   play: 'M7 4v16l13-8z',
   video: 'm22 8-6 4 6 4zM4 6h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2',
+  eye: 'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12m10 3a3 3 0 1 0 0-6 3 3 0 0 0 0 6',
+  'eye-off': 'M10.7 5.1A10.4 10.4 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-2.2 3.2M6.6 6.6C3.9 8.4 2 12 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6M2 2l20 20M9.9 9.9a3 3 0 0 0 4.2 4.2',
 };
 export function Icon({ name, className = '' }: { name: keyof typeof PATHS | string; className?: string }) {
   // Giữ cỡ mặc định size-5 khi chỉ truyền màu (vd. "text-glory"), tránh icon phình to.
@@ -148,6 +150,41 @@ export function TextInput({ label, help, error, ...rest }: InputHTMLAttributes<H
   return <Field label={label} help={help} error={error} htmlFor={id}><input id={id} className={inputCls} {...rest} /></Field>;
 }
 
+/** Ô mật khẩu có nút con mắt: gõ trên điện thoại hay sai mà không thấy sai ở đâu. */
+export function PasswordInput({ label, help, ...rest }: InputHTMLAttributes<HTMLInputElement> & { label: string; help?: string }) {
+  const id = useId();
+  const [show, setShow] = useState(false);
+  return (
+    <Field label={label} help={help} htmlFor={id}>
+      <div className="relative">
+        <input id={id} {...rest} type={show ? 'text' : 'password'} className={`${inputCls} pr-14`} />
+        <button type="button" onClick={() => setShow(!show)} aria-label={show ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} aria-pressed={show}
+          className="absolute inset-y-0 right-0 grid w-12 cursor-pointer place-items-center text-neutral-500 hover:text-ink">
+          <Icon name={show ? 'eye-off' : 'eye'} />
+        </button>
+      </div>
+    </Field>
+  );
+}
+
+/** Ô tiền VND: gõ "1.500.000", "1500000" hay "1 500 000" đều được (ô số của trình duyệt hiểu "1.500.000" là 1,5).
+ *  value / onChange chỉ là chữ số; dòng dưới ô luôn đọc lại "= 1.500.000 đ" để khỏi gõ thiếu / thừa số 0. */
+export function MoneyInput({ label, value, onChange, required, help }: { label: string; value: string; onChange: (digits: string) => void; required?: boolean; help?: string }) {
+  const id = useId();
+  const fmt = (d: string) => (d ? Number(d).toLocaleString('vi-VN') : '');
+  const [text, setText] = useState(fmt(value));
+  // Giá trị đổi từ ngoài (vd. chọn gói → tự điền tiền): hiện lại cho khớp.
+  useEffect(() => { if (text.replace(/\D/g, '') !== value) setText(fmt(value)); }, [value]);
+  const read = value ? `= ${Number(value).toLocaleString('vi-VN')} đ` : undefined;
+  return (
+    <Field label={label} help={[read, help].filter(Boolean).join(' · ') || undefined} htmlFor={id}>
+      <input id={id} type="text" inputMode="numeric" autoComplete="off" required={required} className={inputCls} value={text}
+        onChange={(e) => { setText(e.target.value); onChange(e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '')); }}
+        onBlur={() => setText(fmt(value))} />
+    </Field>
+  );
+}
+
 export function TextArea({ label, help, value, onChange, rows = 4, required }: { label: string; help?: string; value: string; onChange: (v: string) => void; rows?: number; required?: boolean }) {
   const id = useId();
   return (
@@ -218,7 +255,7 @@ export function ImageInput({ label, value, onChange, help }: { label: string; va
     const local = URL.createObjectURL(f);
     setPreview(local);
     setPct(0);
-    try { const key = await uploadImage(f, setPct); if (alive.current) { onChange(key); toast('Đã tải ảnh lên'); } }
+    try { const key = await uploadImage(f, setPct); if (alive.current) { onChange(key); toast('Đã tải ảnh — bấm Lưu để giữ ảnh này'); } } // ảnh chưa gắn vào nội dung tới khi bấm Lưu
     catch (err: any) { toast(err.message, 'err'); }
     finally { setPct(null); setPreview(null); URL.revokeObjectURL(local); }
   }

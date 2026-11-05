@@ -3,7 +3,7 @@
 //  - giao diện CMS (ResourcePage): sinh danh sách + form
 // Học viên, học phí, học thử, tin tức, cài đặt, tài khoản có màn hình riêng.
 
-export type FieldType = 'text' | 'textarea' | 'number' | 'bool' | 'image' | 'select' | 'multi' | 'color' | 'time' | 'date' | 'days' | 'url';
+export type FieldType = 'text' | 'textarea' | 'number' | 'money' | 'bool' | 'image' | 'select' | 'multi' | 'color' | 'time' | 'date' | 'days' | 'url';
 
 export type Field = {
   name: string; // tên property Drizzle (camelCase)
@@ -138,7 +138,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
     orderBy: 'pricePerMonth',
     fields: [
       { name: 'name', label: 'Tên gói', type: 'text', required: true, en: true },
-      { name: 'pricePerMonth', label: 'Giá / tháng (VND)', type: 'number', required: true },
+      { name: 'pricePerMonth', label: 'Giá / tháng (VND)', type: 'money', required: true },
       { name: 'headline', label: 'Tiêu đề', type: 'text', en: true, help: 'Vd: Tập tất cả các môn' },
       { name: 'condition', label: 'Điều kiện', type: 'text', en: true, help: 'Vd: Trừ lớp trẻ em' },
       { name: 'features', label: 'Quyền lợi', type: 'textarea', en: true, help: 'Mỗi dòng một ý' },
@@ -158,7 +158,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
       { name: 'disciplineId', label: 'Môn', type: 'select', ref: 'disciplines', required: true },
       { name: 'name', label: 'Tên đai', type: 'text', required: true, en: true },
       { name: 'color', label: 'Màu đai', type: 'color', required: true },
-      { name: 'rank', label: 'Bậc (1 = thấp nhất)', type: 'number', required: true },
+      { name: 'rank', label: 'Bậc (1 = thấp nhất)', type: 'number', required: true, help: 'Chèn đai vào giữa: gõ bậc muốn đặt, các đai từ bậc đó trở đi tự lùi xuống 1 bậc.' },
       { name: 'minMonths', label: 'Số tháng tối thiểu', type: 'number' },
       { name: 'requirements', label: 'Yêu cầu', type: 'textarea', en: true },
     ],
