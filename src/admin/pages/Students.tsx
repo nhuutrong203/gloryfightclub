@@ -160,8 +160,9 @@ export function StudentEdit({ id, me }: { id: string; me: Me }) {
           <div className="sm:col-span-2"><TextInput label="Họ và tên *" required value={form.fullName} onChange={(e) => set('fullName')(e.target.value)} /></div>
           <TextInput label="Số điện thoại" type="tel" inputMode="tel" value={form.phone} onChange={(e) => set('phone')(e.target.value)} help={isKid ? 'Trẻ nhỏ có thể bỏ trống, dùng SĐT phụ huynh' : undefined} />
           <TextInput label="Năm sinh" type="number" inputMode="numeric" min={1940} max={2030} value={form.birthYear} onChange={(e) => set('birthYear')(e.target.value)} help={age != null ? `${age} tuổi` : undefined} />
-          <TextInput label={`Tên phụ huynh${isKid ? ' *' : ''}`} required={isKid} value={form.parentName} onChange={(e) => set('parentName')(e.target.value)} />
-          <TextInput label={`SĐT phụ huynh${isKid ? ' *' : ''}`} type="tel" inputMode="tel" required={isKid} value={form.parentPhone} onChange={(e) => set('parentPhone')(e.target.value)} />
+          {/* Phụ huynh không bắt buộc ở mọi độ tuổi (chủ CLB chọn): trẻ em chỉ gợi ý nên ghi để tiện liên lạc. */}
+          <TextInput label="Tên phụ huynh" value={form.parentName} onChange={(e) => set('parentName')(e.target.value)} help={isKid ? 'Nên ghi để tiện liên lạc' : undefined} />
+          <TextInput label="SĐT phụ huynh" type="tel" inputMode="tel" value={form.parentPhone} onChange={(e) => set('parentPhone')(e.target.value)} />
           <Select label="Cơ sở" value={form.locationId} onChange={set('locationId')} placeholder="Chọn cơ sở" options={lk.locations.map((l) => ({ value: l.id, label: l.name }))} />
           <Select label="Gói học phí" value={form.feePlanId} onChange={set('feePlanId')} placeholder="Chưa chọn" options={lk.feePlans.map((p) => ({ value: p.id, label: `${p.name} — ${vnd(p.pricePerMonth)}` }))} />
           <div className="sm:col-span-2">

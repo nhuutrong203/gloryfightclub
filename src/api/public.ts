@@ -13,6 +13,7 @@ const trialSchema = z.object({
   age: z.coerce.number().int().min(3).max(90).nullish(),
   disciplineId: z.coerce.number().int().positive().nullish(),
   locationId: z.coerce.number().int().positive().nullish(),
+  feePlanId: z.coerce.number().int().positive().nullish(),
   preferredTime: z.string().trim().max(100).nullish(),
   note: z.string().trim().max(1000).nullish(),
   website: z.string().max(200).optional(), // honeypot: người thật không thấy ô này
@@ -30,9 +31,10 @@ publicRoutes.post('/trial', async (c) => {
   if (!phone) return c.json({ ok: false, error: 'Số điện thoại chưa đúng.' }, 400);
 
   // Bỏ id không tồn tại thay vì báo lỗi khóa ngoại.
-  const [d, l] = await Promise.all([
+  const [d, l, p] = await Promise.all([
     data.disciplineId ? db.query.disciplines.findFirst({ where: (t, { eq }) => eq(t.id, data.disciplineId!), columns: { id: true } }) : null,
     data.locationId ? db.query.locations.findFirst({ where: (t, { eq }) => eq(t.id, data.locationId!), columns: { id: true } }) : null,
+    data.feePlanId ? db.query.feePlans.findFirst({ where: (t, { eq }) => eq(t.id, data.feePlanId!), columns: { id: true } }) : null,
   ]);
   await db.insert(schema.trialRegistrations).values({
     fullName: data.fullName,
@@ -40,6 +42,7 @@ publicRoutes.post('/trial', async (c) => {
     age: data.age ?? null,
     disciplineId: d?.id ?? null,
     locationId: l?.id ?? null,
+    feePlanId: p?.id ?? null,
     preferredTime: data.preferredTime || null,
     note: data.note || null,
   });

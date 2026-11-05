@@ -52,6 +52,7 @@ trialRoutes.post('/:id/convert', need('students.edit'), async (c) => {
     parentPhone: kid ? trial.phone : null,
     birthYear: trial.age != null ? Number(date.slice(0, 4)) - trial.age : null,
     locationId: trial.locationId,
+    feePlanId: trial.feePlanId, // gói khách chọn ở form → gợi ý số tiền khi thu học phí
     joinedAt: date,
     status: 'active',
     note: [trial.preferredTime && `Giờ mong muốn: ${trial.preferredTime}`, trial.note].filter(Boolean).join('\n') || null,

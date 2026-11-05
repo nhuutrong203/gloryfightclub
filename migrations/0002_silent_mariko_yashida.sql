@@ -1,0 +1,1 @@
+ALTER TABLE `trial_registrations` ADD `fee_plan_id` integer REFERENCES fee_plans(id);

@@ -1,6 +1,6 @@
 ---
 import Icon, { type IconName } from './Icon.astro';
-import { t, tr, formatVnd, type Lang } from '../../i18n';
+import { t, tr, href, formatVnd, type Lang } from '../../i18n';
 import { lines } from '../../lib/public';
 import type { schema } from '../../db';
 
@@ -36,4 +36,8 @@ const icon = icons[(p.sort - 1) % icons.length] ?? 'star';
       <Icon name="star" filled class="size-4 text-glory" />{p.badge}<Icon name="star" filled class="size-4 text-glory" />
     </p>
   )}
+  <!-- Đăng ký học thử với gói này: form chọn sẵn gói (?goi=), CLB thấy ngay khách quan tâm gói nào. -->
+  <a href={`${href('/dang-ky-hoc-thu', lang)}?goi=${p.id}`} class:list={['mt-4 w-full !text-base', p.isFeatured ? 'btn-red' : 'btn-ghost']}>
+    {t(lang, 'cta_trial')}<Icon name="arrow-right" class="size-5" />
+  </a>
 </article>

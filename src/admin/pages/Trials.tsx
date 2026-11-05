@@ -43,6 +43,7 @@ export function Trials({ me }: { me: Me }) {
               <dl className="mt-2 grid gap-x-4 gap-y-1 text-sm sm:grid-cols-2">
                 {t.disciplineId && <div><dt className="inline text-neutral-500">Môn: </dt><dd className="inline font-semibold">{name(lk?.disciplines, t.disciplineId)}</dd></div>}
                 {t.locationId && <div><dt className="inline text-neutral-500">Cơ sở: </dt><dd className="inline font-semibold">{name(lk?.locations, t.locationId)}</dd></div>}
+                {t.feePlanId && <div><dt className="inline text-neutral-500">Gói quan tâm: </dt><dd className="inline font-semibold">{name(lk?.feePlans, t.feePlanId)}</dd></div>}
                 {t.preferredTime && <div><dt className="inline text-neutral-500">Giờ muốn tập: </dt><dd className="inline">{t.preferredTime}</dd></div>}
                 {t.note && <div className="sm:col-span-2"><dt className="inline text-neutral-500">Ghi chú: </dt><dd className="inline">{t.note}</dd></div>}
               </dl>
@@ -55,7 +56,7 @@ export function Trials({ me }: { me: Me }) {
                     setBusy(t.id);
                     try {
                       const r = await api<{ studentId: number }>(`/admin/trials/${t.id}/convert`, { method: 'POST' });
-                      toast('Đã tạo học viên — bổ sung lớp & gói học phí');
+                      toast(t.feePlanId ? 'Đã tạo học viên (đã gán gói khách chọn) — bổ sung lớp đang học' : 'Đã tạo học viên — bổ sung lớp & gói học phí');
                       navigate(`/admin/hoc-vien/${r.studentId}`);
                     } catch (e: any) { toast(e.message, 'err'); setBusy(null); }
                   }}>Chuyển thành học viên</Button>

@@ -3,12 +3,14 @@ import PublicLayout from '../layouts/PublicLayout.astro';
 import PageHero from '../components/public/PageHero.astro';
 import Icon from '../components/public/Icon.astro';
 import { getSite, telHref } from '../lib/site';
-import { publicDisciplines } from '../lib/public';
-import { t, tr, type Lang } from '../i18n';
+import { publicDisciplines, publicPlans } from '../lib/public';
+import { t, tr, formatVnd, type Lang } from '../i18n';
 
 const lang: Lang = Astro.locals.lang;
-const [{ club, locations }, disciplines] = await Promise.all([getSite(), publicDisciplines()]);
+const [{ club, locations }, disciplines, plans] = await Promise.all([getSite(), publicDisciplines(), publicPlans()]);
 const preselect = disciplines.find((d) => d.slug === Astro.url.searchParams.get('mon'))?.id;
+// ?goi=<id> từ nút "Đăng ký học thử" trên thẻ gói (trang Học phí) → chọn sẵn gói đó.
+const planPre = plans.find((p) => String(p.id) === Astro.url.searchParams.get('goi'))?.id;
 const msg = { ok: t(lang, 'f_ok'), err: t(lang, 'f_err'), tooMany: t(lang, 'f_too_many'), phone: t(lang, 'f_phone_err'), sending: t(lang, 'f_sending'), submit: t(lang, 'f_submit') };
 const field = 'block w-full min-h-12 bg-ink border-2 border-white/20 px-4 py-3 text-base text-white placeholder:text-white/40 focus:border-glory focus:outline-none';
 const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
@@ -30,7 +32,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
         </div>
         <div>
           <label for="f-age" class={label}>{t(lang, 'f_age')}</label>
-          <input id="f-age" name="age" type="number" min="3" max="99" inputmode="numeric" class={field} />
+          <input id="f-age" name="age" type="number" min="3" max="90" inputmode="numeric" class={field} />
         </div>
         <div>
           <label for="f-disc" class={label}>{t(lang, 'f_discipline')}</label>
@@ -46,6 +48,15 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
             {locations.map((l) => <option value={l.id}>{tr(l, 'name', lang)}</option>)}
           </select>
         </div>
+        {plans.length > 0 && (
+          <div class="sm:col-span-2">
+            <label for="f-plan" class={label}>{t(lang, 'f_plan')}</label>
+            <select id="f-plan" name="feePlanId" class={field}>
+              <option value="">{t(lang, 'f_plan_any')}</option>
+              {plans.map((p) => <option value={p.id} selected={p.id === planPre}>{tr(p, 'name', lang)} — {formatVnd(p.pricePerMonth)} {t(lang, 'per_month')}{p.headline ? ` · ${tr(p, 'headline', lang)}` : ''}</option>)}
+            </select>
+          </div>
+        )}
         <div class="sm:col-span-2">
           <label for="f-time" class={label}>{t(lang, 'f_time')}</label>
           <input id="f-time" name="preferredTime" maxlength="100" placeholder={t(lang, 'f_time_ph')} class={field} />
@@ -115,7 +126,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
       const str = (k: string) => String(fd.get(k) ?? '').trim() || undefined;
       const body = {
         fullName: str('fullName'), phone: str('phone'), age: num('age'),
-        disciplineId: num('disciplineId'), locationId: num('locationId'),
+        disciplineId: num('disciplineId'), locationId: num('locationId'), feePlanId: num('feePlanId'),
         preferredTime: str('preferredTime'), note: str('note'), website: String(fd.get('website') ?? ''),
       };
       btn.disabled = true;

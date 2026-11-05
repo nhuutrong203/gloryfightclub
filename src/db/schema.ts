@@ -248,6 +248,7 @@ export const trialRegistrations = sqliteTable('trial_registrations', {
   age: integer('age'),
   disciplineId: integer('discipline_id').references(() => disciplines.id, { onDelete: 'set null' }),
   locationId: integer('location_id').references(() => locations.id, { onDelete: 'set null' }),
+  feePlanId: integer('fee_plan_id').references(() => feePlans.id, { onDelete: 'set null' }), // gói khách quan tâm → thành gói của học viên khi chuyển
   preferredTime: text('preferred_time'),
   note: text('note'),
   status: text('status', { enum: ['new', 'contacted', 'enrolled', 'rejected'] }).notNull().default('new'),
