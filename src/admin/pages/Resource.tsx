@@ -60,6 +60,8 @@ export function ResourceList({ res, me }: { res: ResourceKey; me: Me }) {
                         </span>
                         {row.isPublic === false && <Badge>Ẩn</Badge>}
                         {row.isActive === false && <Badge>Ngưng</Badge>}
+                        {/* Lịch học trên web chỉ hiện tên HLV khi lớp đã gán HLV → nhắc thầy gán. */}
+                        {res === 'classes' && !row.coachId && <Badge tone="amber">Chưa có HLV</Badge>}
                         {!reorder && <Icon name="chevron" className="text-neutral-400" />}
                       </A>
                       {reorder && (

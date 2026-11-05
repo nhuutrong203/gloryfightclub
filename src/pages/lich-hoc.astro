@@ -22,6 +22,8 @@ const byDay = DAYS.map((d) => ({ d, items: classes.filter((c) => c.days.includes
 const today = vnNow().weekday;
 const image = mediaUrl(loc?.scheduleImageKey);
 const coachName = (id: number | null) => coaches.find((c) => c.id === id)?.fullName;
+// Môn đầu tiên của lớp (đang hiện trên web) → bấm vào lớp mở trang môn đó. Open mat không thuộc môn nào → không có link.
+const discOf = (c: (typeof classes)[number]) => disciplines.find((d) => c.disciplineIds.includes(d.id));
 const link = (params: Record<string, string | undefined>) => {
   const u = new URLSearchParams();
   const merged = { 'co-so': loc ? String(loc.id) : undefined, mon: mon?.slug, ...params };
@@ -46,7 +48,8 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
     </div>
 
     <!-- Lọc môn -->
-    <div class="mt-6 -mx-4 px-4 flex gap-2 overflow-x-auto pb-2" aria-label={t(lang, 'f_discipline')}>
+    <!-- Vuốt ngang trên điện thoại; ẩn thanh cuộn xám (chip bị cắt ở mép đã cho biết còn nữa). -->
+    <div class="mt-6 -mx-4 px-4 flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label={t(lang, 'f_discipline')}>
       <a href={link({ mon: '' })} class:list={['shrink-0 min-h-11 inline-flex items-center px-4 border font-display uppercase tracking-wider text-sm', !mon ? 'bg-white text-ink border-white' : 'border-white/20 hover:border-white']}>{t(lang, 'schedule_all')}</a>
       {disciplines.map((d) => (
         <a href={link({ mon: d.slug })} class:list={['shrink-0 min-h-11 inline-flex items-center px-4 border font-display uppercase tracking-wider text-sm', mon?.id === d.id ? 'bg-white text-ink border-white' : 'border-white/20 hover:border-white']}>{tr(d, 'name', lang)}</a>
@@ -85,12 +88,21 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
                   <th scope="row" class="p-3 text-left font-display text-xl tracking-wide whitespace-nowrap">{slot}</th>
                   {DAYS.map((d) => (
                     <td class:list={['border-l border-white/10 p-2 align-top', d === today && 'bg-glory/[0.07]']}>
-                      {cell(slot, d).map((c) => (
-                        <div class="bg-coal px-3 py-2 mb-1 last:mb-0">
-                          <p class="font-display uppercase leading-tight tracking-wide">{tr(c, 'name', lang)}</p>
-                          {coachName(c.coachId) && <p class="text-xs text-ash truncate">{coachName(c.coachId)}</p>}
-                        </div>
-                      ))}
+                      {cell(slot, d).map((c) => {
+                        // Bấm vào lớp → trang môn đó. Cột hôm nay: ca đang tập sáng đỏ, ca đã xong mờ đi (script trong PublicLayout).
+                        const disc = discOf(c);
+                        const Tag = disc ? 'a' : 'div';
+                        return (
+                          <Tag href={disc ? href(`/mon-hoc/${disc.slug}`, lang) : undefined} data-class-time={d === today ? `${c.startTime}-${c.endTime}` : undefined}
+                            class="group/c mb-1 block border-l-2 border-transparent bg-coal px-3 py-2 transition-colors duration-200 last:mb-0 hover:border-glory hover:bg-white/[0.08] data-[state=done]:opacity-50 data-[state=live]:border-glory data-[state=live]:bg-glory/20">
+                            <p class="font-display uppercase leading-[1.12] tracking-wide">{tr(c, 'name', lang)}</p>
+                            {coachName(c.coachId) && <p class="mt-0.5 text-xs leading-snug text-ash group-hover/c:text-white/80">{coachName(c.coachId)}</p>}
+                            <p class="mt-1 hidden items-center gap-1.5 font-display text-[11px] uppercase tracking-widest text-white group-data-[state=live]/c:flex">
+                              <span class="size-1.5 animate-pulse rounded-full bg-glory-bright motion-reduce:animate-none" aria-hidden="true"></span>{t(lang, 'today_live')}
+                            </p>
+                          </Tag>
+                        );
+                      })}
                     </td>
                   ))}
                 </tr>
@@ -113,20 +125,33 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
           <div class="mt-6 space-y-8">
             {byDay.map(({ d, items }) => (
               <section id={`d${d}`} data-panel={d} role="tabpanel" class="scroll-mt-32">
-                <h2 class:list={['flex items-center gap-3 text-3xl', d === today && 'text-glory']}>{dayLong(d, lang)}{d === today && <span class="bg-glory px-2 py-0.5 text-sm text-white tracking-widest">{lang === 'en' ? 'TODAY' : 'HÔM NAY'}</span>}</h2>
+                <h2 class:list={['flex items-center gap-3 text-3xl', d === today && 'text-glory']}>{dayLong(d, lang)}{d === today && <span class="bg-glory px-2 py-0.5 text-sm text-white tracking-widest">{t(lang, 'schedule_today')}</span>}</h2>
                 {items.length === 0
-                  ? <p class="mt-3 border border-dashed border-white/15 p-6 text-center text-ash">{lang === 'en' ? 'No classes this day.' : 'Không có ca tập ngày này.'}</p>
+                  ? <p class="mt-3 border border-dashed border-white/15 p-6 text-center text-ash">{t(lang, 'schedule_day_empty')}</p>
                   : (
                     <ul class="mt-3 space-y-2">
-                      {items.map((c, i) => (
-                        <li class="day-item flex items-stretch border border-white/10 bg-coal" style={`--i:${i}`}>
-                          <span class="flex w-24 shrink-0 flex-col justify-center border-r border-white/10 px-3 py-3 font-display text-xl leading-tight">{c.startTime}<span class="text-ash text-base">{c.endTime}</span></span>
-                          <span class="flex min-w-0 flex-col justify-center border-l-2 border-glory/0 px-4 py-3">
-                            <span class="font-display text-xl uppercase tracking-wide leading-snug">{tr(c, 'name', lang)}</span>
-                            {coachName(c.coachId) && <span class="text-sm text-ash">{t(lang, 'coach')} {coachName(c.coachId)}</span>}
-                          </span>
-                        </li>
-                      ))}
+                      {items.map((c, i) => {
+                        const disc = discOf(c);
+                        const Tag = disc ? 'a' : 'div';
+                        return (
+                          <li class="day-item" style={`--i:${i}`}>
+                            <Tag href={disc ? href(`/mon-hoc/${disc.slug}`, lang) : undefined} data-class-time={d === today ? `${c.startTime}-${c.endTime}` : undefined}
+                              class="group/c flex items-stretch border border-white/10 bg-coal transition-colors duration-200 active:bg-white/[0.08] data-[state=done]:opacity-50 data-[state=live]:border-glory data-[state=live]:bg-glory/15">
+                              <span class="flex w-24 shrink-0 flex-col justify-center border-r border-white/10 px-3 py-3 font-display text-xl leading-tight">{c.startTime}<span class="text-ash text-base">{c.endTime}</span></span>
+                              <span class="flex min-w-0 flex-1 flex-col justify-center px-4 py-3">
+                                <span class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                  <span class="font-display text-xl uppercase tracking-wide leading-[1.12]">{tr(c, 'name', lang)}</span>
+                                  <span class="hidden items-center gap-1.5 bg-glory px-2 py-1 font-display text-xs leading-none tracking-widest text-white group-data-[state=live]/c:inline-flex">
+                                    <span class="size-2 animate-pulse rounded-full bg-white motion-reduce:animate-none" aria-hidden="true"></span>{t(lang, 'today_live')}
+                                  </span>
+                                </span>
+                                {coachName(c.coachId) && <span class="text-sm text-ash">{t(lang, 'coach')} {coachName(c.coachId)}</span>}
+                              </span>
+                              {disc && <Icon name="chevron-right" class="mr-3 size-5 shrink-0 self-center text-ash" />}
+                            </Tag>
+                          </li>
+                        );
+                      })}
                     </ul>
                   )}
               </section>
@@ -137,7 +162,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
     )}
 
     <div class="mt-10 flex flex-col gap-4 border-l-4 border-glory bg-coal p-6 sm:flex-row sm:items-center sm:justify-between">
-      <p class="font-display text-2xl uppercase">{t(lang, 'open_mat')} <span class="text-glory">{t(lang, 'free')}</span> · {t(lang, 'open_mat_time')}</p>
+      <p class="font-display text-2xl uppercase">{t(lang, 'open_mat_name')} <span class="text-glory">{t(lang, 'free')}</span> · {t(lang, 'open_mat_time')}</p>
       <a href={href('/hoc-phi', lang)} class="inline-flex min-h-11 items-center gap-2 font-display uppercase tracking-wider hover:text-glory">{t(lang, 'nav_fees')}<Icon name="arrow-right" /></a>
     </div>
   </section>

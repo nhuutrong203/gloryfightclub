@@ -4,17 +4,19 @@ import { tr, type Lang } from '../../i18n';
 import type { schema } from '../../db';
 
 // Tên + ảnh người viết cảm nhận (trang chủ và /cam-nhan). Chưa có ảnh → ô chữ cái đầu, để các thẻ đều nhau.
-interface Props { item: typeof schema.testimonials.$inferSelect; lang: Lang }
-const { item: x, lang } = Astro.props;
+// large: ảnh to (dải cảm nhận) — ảnh là "gương mặt" của lời khen, nhỏ quá thì không ai nhìn.
+interface Props { item: typeof schema.testimonials.$inferSelect; lang: Lang; large?: boolean; class?: string }
+const { item: x, lang, large = false, class: className = 'mt-6' } = Astro.props;
 const photo = mediaUrl(x.photoKey);
 const initials = x.authorName.replace(/\s*\(.*\)$/, '').trim().split(/\s+/).slice(-2).map((w) => w[0]).join('').toUpperCase();
+const px = large ? 88 : 56;
 ---
-<figcaption class="mt-6 flex items-center gap-4">
+<figcaption class:list={['flex items-center gap-4', className]}>
   {photo
-    ? <img src={photo} alt="" width="56" height="56" loading="lazy" decoding="async" class="size-14 shrink-0 border-2 border-glory object-cover" />
-    : <span class="grid size-14 shrink-0 place-items-center bg-glory font-display text-xl text-white" aria-hidden="true">{initials}</span>}
+    ? <img src={photo} alt="" width={px} height={px} loading="lazy" decoding="async" class:list={['shrink-0 border-2 border-glory object-cover', large ? 'size-[88px]' : 'size-14']} />
+    : <span class:list={['grid shrink-0 place-items-center bg-glory font-display text-white', large ? 'size-[88px] text-3xl' : 'size-14 text-xl']} aria-hidden="true">{initials}</span>}
   <span class="min-w-0">
-    <span class="block font-display text-2xl uppercase">{x.authorName}</span>
+    <span class="block font-display text-2xl uppercase leading-[1.2] break-words">{x.authorName}</span>
     {x.authorRole && <span class="block text-sm text-ash">{tr(x, 'authorRole', lang)}</span>}
   </span>
 </figcaption>

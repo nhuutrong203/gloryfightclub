@@ -33,7 +33,8 @@
 
 @layer base {
   html { @apply bg-ink text-bone font-sans antialiased; scroll-behavior: smooth; scroll-padding-top: 5rem; -webkit-tap-highlight-color: transparent; }
-  body { @apply text-base leading-relaxed; }
+  /* overflow-wrap: chữ siêu dài không dấu cách (link, "supercalifragilistic…") tự xuống dòng thay vì tràn khỏi thẻ. */
+  body { @apply text-base leading-relaxed; overflow-wrap: break-word; }
   /* Chữ in hoa tiếng Việt có dấu chồng (Ổ, Ầ, Ấ) cao hơn chữ hoa: cần ≥1.12 để dấu không đâm vào dòng trên. */
   h1, h2, h3, .display { @apply font-display uppercase leading-[1.12] tracking-wide; text-wrap: balance; }
   p, li { text-wrap: pretty; }

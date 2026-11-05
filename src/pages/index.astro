@@ -7,7 +7,7 @@ import PlanCard from '../components/public/PlanCard.astro';
 import CoachCard from '../components/public/CoachCard.astro';
 import PostCard from '../components/public/PostCard.astro';
 import CtaBand from '../components/public/CtaBand.astro';
-import TestimonialAuthor from '../components/public/TestimonialAuthor.astro';
+import TestimonialBand from '../components/public/TestimonialBand.astro';
 import AchievementIcon from '../components/public/AchievementIcon.astro';
 import { getSite, mediaUrl } from '../lib/site';
 import { vnNow } from '../lib/util';
@@ -78,14 +78,17 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
               <p class="flex items-center gap-2 font-semibold text-ash"><Icon name="map-pin" class="size-4 text-glory" />{tr(l, 'name', lang)}</p>
               <ul class="mt-4 space-y-2">
                 {items.map((c, i) => (
-                  <li class="reveal group/c flex items-baseline gap-4 border-l-4 border-white/20 bg-coal px-4 py-3 transition-opacity data-[state=done]:opacity-50 data-[state=live]:border-glory" style={`--i:${i}`} data-class-time={`${c.startTime}-${c.endTime}`}>
-                    <span class="font-display text-2xl tracking-wide w-32 shrink-0">{c.startTime}<span class="text-ash">–{c.endTime}</span></span>
+                  <li class="reveal group/c flex items-start gap-4 border-l-4 border-white/20 bg-coal px-4 py-3 transition-opacity data-[state=done]:opacity-50 data-[state=live]:border-glory data-[state=live]:bg-glory/10" style={`--i:${i}`} data-class-time={`${c.startTime}-${c.endTime}`}>
+                    <span class="w-32 shrink-0 font-display text-2xl leading-[1.12] tracking-wide">{c.startTime}<span class="text-ash">–{c.endTime}</span></span>
                     <span class="min-w-0">
-                      <span class="font-display text-2xl uppercase tracking-wide">{tr(c, 'name', lang)}</span>
-                      <span class="ml-2 hidden items-center gap-1.5 bg-glory px-2 py-0.5 align-middle font-display text-xs tracking-widest text-white group-data-[state=live]/c:inline-flex">
-                        <span class="size-2 animate-pulse rounded-full bg-white motion-reduce:animate-none" aria-hidden="true"></span>{t(lang, 'today_live')}
+                      <!-- Tên lớp + huy hiệu cùng một hàng, căn giữa theo chiều dọc (không lệch lên trên như align-middle). -->
+                      <span class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <span class="font-display text-2xl uppercase leading-[1.12] tracking-wide">{tr(c, 'name', lang)}</span>
+                        <span class="hidden items-center gap-1.5 bg-glory px-2 py-1 font-display text-xs leading-none tracking-widest text-white group-data-[state=live]/c:inline-flex">
+                          <span class="size-2 animate-pulse rounded-full bg-white motion-reduce:animate-none" aria-hidden="true"></span>{t(lang, 'today_live')}
+                        </span>
                       </span>
-                      {coachName(c.coachId) && <span class="block text-sm text-ash">{coachName(c.coachId)}</span>}
+                      {coachName(c.coachId) && <span class="mt-0.5 block text-sm text-ash">{coachName(c.coachId)}</span>}
                     </span>
                   </li>
                 ))}
@@ -167,7 +170,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
       {plans.map((p, i) => <PlanCard plan={p} lang={lang} i={i} />)}
     </div>
     <div class="mt-10 flex flex-col gap-4 border-2 border-white/15 p-6 sm:flex-row sm:items-center sm:justify-between">
-      <p class="font-display text-3xl uppercase">{t(lang, 'open_mat')} <span class="text-glory italic">{t(lang, 'free')}</span></p>
+      <p class="font-display text-3xl uppercase">{t(lang, 'open_mat_name')} <span class="text-glory italic">{t(lang, 'free')}</span></p>
       <p class="flex items-center gap-2 font-display text-2xl tracking-wide"><Icon name="calendar" class="size-6 text-glory" />{t(lang, 'open_mat_time')}</p>
     </div>
   </section>
@@ -193,18 +196,11 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
   <!-- CẢM NHẬN -->
   {testimonials.length > 0 && (
     <section class="bg-coal py-16 sm:py-24">
-      <div class="container-x">
+      <div class="container-x flex flex-wrap items-end justify-between gap-4">
         <h2 class="text-5xl sm:text-7xl">{t(lang, 'testimonials_title')}</h2>
-        <div class="mt-10 grid gap-6 md:grid-cols-2">
-          {testimonials.slice(0, 4).map((x, i) => (
-            <figure class="reveal relative border-l-4 border-glory bg-ink p-6 sm:p-8" style={`--i:${i}`}>
-              <Icon name="quote" class="size-10 text-glory/40" filled />
-              <blockquote class="mt-4 text-lg text-white/90">{tr(x, 'content', lang)}</blockquote>
-              <TestimonialAuthor item={x} lang={lang} />
-            </figure>
-          ))}
-        </div>
+        <a href={href('/cam-nhan', lang)} class="inline-flex min-h-11 items-center gap-2 font-display uppercase tracking-wider hover:text-glory">{t(lang, 'cta_all')}<Icon name="arrow-right" /></a>
       </div>
+      <div class="mt-10"><TestimonialBand items={testimonials} lang={lang} tone="ink" /></div>
     </section>
   )}
 

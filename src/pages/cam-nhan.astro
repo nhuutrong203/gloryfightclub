@@ -1,11 +1,10 @@
 ---
 import PublicLayout from '../layouts/PublicLayout.astro';
 import PageHero from '../components/public/PageHero.astro';
-import Icon from '../components/public/Icon.astro';
 import CtaBand from '../components/public/CtaBand.astro';
+import TestimonialBand from '../components/public/TestimonialBand.astro';
 import { publicTestimonials } from '../lib/public';
-import TestimonialAuthor from '../components/public/TestimonialAuthor.astro';
-import { t, tr, type Lang } from '../i18n';
+import { t, type Lang } from '../i18n';
 
 const lang: Lang = Astro.locals.lang;
 const items = await publicTestimonials();
@@ -13,17 +12,11 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
 ---
 <PublicLayout path="/cam-nhan" title={t(lang, 'testimonials_title')} description={t(lang, 'testimonials_sub')}>
   <PageHero eyebrow={t(lang, 'nav_testimonials')} title={t(lang, 'testimonials_title')} subtitle={t(lang, 'testimonials_sub')} />
-  <section class="container-x py-14 sm:py-20">
-    {items.length === 0 && <p class="text-white/75">{t(lang, 'testimonials_empty')}</p>}
-    <div class="columns-1 gap-6 md:columns-2 lg:columns-3">
-      {items.map((x, i) => (
-        <figure class="reveal mb-6 break-inside-avoid border-l-4 border-glory bg-coal p-6 sm:p-8" style={`--i:${i % 3}`}>
-          <Icon name="quote" filled class="size-9 text-glory/40" />
-          <blockquote class="mt-4 text-lg text-white/90 whitespace-pre-line">{tr(x, 'content', lang)}</blockquote>
-          <TestimonialAuthor item={x} lang={lang} />
-        </figure>
-      ))}
-    </div>
+  <!-- Dải chạy tràn mép màn hình; nhiều cảm nhận thì 2 hàng chạy ngược chiều. -->
+  <section class="py-14 sm:py-20">
+    {items.length === 0
+      ? <p class="container-x text-white/75">{t(lang, 'testimonials_empty')}</p>
+      : <TestimonialBand items={items} lang={lang} rows={2} />}
   </section>
   <CtaBand lang={lang} />
 </PublicLayout>

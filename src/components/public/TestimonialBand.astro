@@ -1,0 +1,110 @@
+---
+import Icon from './Icon.astro';
+import TestimonialAuthor from './TestimonialAuthor.astro';
+import { t, tr, type Lang } from '../../i18n';
+import type { schema } from '../../db';
+
+// Dải cảm nhận chạy ngang như băng chuyền (trang chủ + /cam-nhan): 100 cảm nhận vẫn gọn trong 1–2 hàng, không phải cuộn dài.
+// Đưa chuột / phím Tab vào thì dừng; nút Dừng cho điện thoại (không có hover); thẻ dài cắt 6 dòng + "Đọc tiếp" mở hộp thoại.
+// Người dùng tắt hiệu ứng (prefers-reduced-motion) → hàng vuốt ngang bằng tay, không tự chạy.
+type Item = typeof schema.testimonials.$inferSelect;
+interface Props { items: Item[]; lang: Lang; rows?: 1 | 2; tone?: 'coal' | 'ink' }
+const { items, lang, rows = 1, tone = 'coal' } = Astro.props;
+// Đủ nhiều thì chia 2 hàng chạy ngược chiều nhau.
+const lanes = rows === 2 && items.length >= 6 ? [items.filter((_, i) => i % 2 === 0), items.filter((_, i) => i % 2 === 1)] : [items];
+// Một vòng ≥ 6 thẻ để dải luôn phủ kín màn hình rộng; vòng được nhân đôi để chạy liền mạch (dịch -50% rồi lặp lại).
+const loop = (list: Item[]) => Array.from({ length: Math.ceil(6 / list.length) }, () => list).flat();
+---
+<div class="tm-band relative" data-tm>
+  <div class="space-y-6">
+    {lanes.map((lane, li) => {
+      const once = loop(lane);
+      return (
+        <div class="tm-lane overflow-hidden py-1">
+          <ul class="tm-track flex w-max" style={`--tm-dur:${once.length * 8}s`} data-dir={li % 2 ? 'rev' : undefined}>
+            {[...once, ...once].map((x, i) => {
+              // Bản lặp chỉ để dải chạy liền: trình đọc màn hình và phím Tab bỏ qua.
+              const copy = i >= lane.length;
+              const text = tr(x, 'content', lang);
+              return (
+                <li class:list={['tm-card flex w-[19rem] shrink-0 pr-5 sm:w-[25rem] sm:pr-6', copy && 'tm-copy']} aria-hidden={copy ? 'true' : undefined} inert={copy}>
+                  <figure class:list={['flex w-full flex-col border-l-4 border-glory p-6 transition-colors duration-200 hover:border-white sm:p-7', tone === 'coal' ? 'bg-coal' : 'bg-ink']}>
+                    <!-- Gương mặt trước, lời nói sau: thẻ ngắn không bị khoảng trống giữa lời và tên. -->
+                    <TestimonialAuthor item={x} lang={lang} large class="" />
+                    <Icon name="quote" filled class="mt-5 size-7 shrink-0 text-glory/40" />
+                    <blockquote class="mt-2 line-clamp-6 whitespace-pre-line break-words text-lg text-white/90">{text}</blockquote>
+                    {/* Chỉ hiện khi chữ thật sự bị cắt (script đo), kể cả cảm nhận ngắn mà nhiều dòng. */}
+                    <button type="button" data-tm-more hidden class="mt-2 min-h-11 items-center gap-1 self-start font-display text-sm uppercase tracking-wider text-glory-bright hover:text-white [&:not([hidden])]:inline-flex">
+                      {t(lang, 'read_more')}<Icon name="arrow-right" class="size-4" />
+                    </button>
+                  </figure>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      );
+    })}
+  </div>
+
+  <div class="container-x mt-6 flex justify-end">
+    <button type="button" data-tm-toggle aria-pressed="false" data-pause={t(lang, 'testimonials_pause')} data-play={t(lang, 'testimonials_play')}
+      class="group inline-flex min-h-11 items-center gap-2 border-2 border-white/20 px-4 font-display text-sm uppercase tracking-wider text-white/85 transition-colors hover:border-white hover:text-white">
+      <Icon name="pause" filled class="size-4 group-aria-pressed:hidden" />
+      <Icon name="play" filled class="hidden size-4 group-aria-pressed:block" />
+      <span>{t(lang, 'testimonials_pause')}</span>
+    </button>
+  </div>
+
+  <dialog data-tm-dialog class="m-auto w-[min(40rem,calc(100vw-2rem))] max-h-[85dvh] overflow-y-auto bg-coal p-0 text-white backdrop:bg-black/80" aria-label={t(lang, 'testimonials_title')}>
+    <div data-tm-body></div>
+    <form method="dialog" class="sticky bottom-0 flex justify-end border-t border-white/10 bg-coal p-3">
+      <button class="btn-ghost !min-h-11 !text-base"><Icon name="x" />{t(lang, 'close')}</button>
+    </form>
+  </dialog>
+</div>
+
+<style>
+  .tm-track { animation: tm-scroll var(--tm-dur, 60s) linear infinite; will-change: transform; }
+  .tm-track[data-dir='rev'] { animation-direction: reverse; }
+  /* Thẻ dùng padding-right thay cho gap → nửa dải dài đúng bằng 1 vòng, lặp không bị giật. */
+  @keyframes tm-scroll { to { transform: translateX(-50%); } }
+  .tm-band:hover .tm-track, .tm-band:focus-within .tm-track, .tm-band[data-paused] .tm-track,
+  .tm-band:has([data-tm-dialog][open]) .tm-track { animation-play-state: paused; } /* đang đọc "Đọc tiếp" thì dải đứng yên */
+  /* Hai mép mờ dần: thẻ trượt vào / ra mềm, không bị cắt cứng. */
+  .tm-lane { mask-image: linear-gradient(90deg, transparent, #000 3rem, #000 calc(100% - 3rem), transparent); }
+  @media (min-width: 640px) { .tm-lane { mask-image: linear-gradient(90deg, transparent, #000 8rem, #000 calc(100% - 8rem), transparent); } }
+  [data-tm-body] figure { border: 0; }
+  @media (prefers-reduced-motion: reduce) {
+    .tm-track { animation: none; }
+    .tm-lane { overflow-x: auto; scroll-snap-type: x mandatory; mask-image: none; padding-inline: 1rem; }
+    .tm-card { scroll-snap-align: start; }
+    .tm-copy, [data-tm-toggle] { display: none; }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-tm]').forEach((root) => {
+    const btn = root.querySelector<HTMLButtonElement>('[data-tm-toggle]')!;
+    btn.addEventListener('click', () => {
+      const paused = !root.hasAttribute('data-paused');
+      root.toggleAttribute('data-paused', paused);
+      btn.setAttribute('aria-pressed', String(paused));
+      btn.querySelector('span')!.textContent = (paused ? btn.dataset.play : btn.dataset.pause) ?? '';
+    });
+    // "Đọc tiếp": mở cảm nhận đầy đủ trong hộp thoại (bản sao của thẻ, bỏ giới hạn 6 dòng).
+    const dlg = root.querySelector<HTMLDialogElement>('[data-tm-dialog]')!;
+    root.querySelectorAll<HTMLButtonElement>('[data-tm-more]').forEach((b) => {
+      const q = b.closest('figure')!.querySelector('blockquote')!;
+      b.hidden = q.scrollHeight <= q.clientHeight + 1; // chữ vừa 6 dòng thì không cần nút
+      b.addEventListener('click', () => {
+        const fig = b.closest('figure')!.cloneNode(true) as HTMLElement;
+        fig.querySelector('[data-tm-more]')?.remove();
+        fig.querySelector('blockquote')?.classList.remove('line-clamp-6');
+        dlg.querySelector('[data-tm-body]')!.replaceChildren(fig);
+        dlg.showModal();
+      });
+    });
+    dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); }); // bấm ra ngoài để đóng
+  });
+</script>
