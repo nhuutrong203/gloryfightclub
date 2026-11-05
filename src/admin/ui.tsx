@@ -167,6 +167,33 @@ export function PasswordInput({ label, help, ...rest }: InputHTMLAttributes<HTML
   );
 }
 
+/** Ô giờ kiểu 24 giờ ("19:30"), giống nhau trên mọi máy. Ô time gốc của trình duyệt hiện theo ngôn ngữ máy:
+ *  máy tiếng Anh thành "07:30 PM" → dễ nhầm sáng / tối. value / onChange dạng "HH:MM" ('' = chưa chọn). */
+export function TimeInput({ label, value, onChange, required, help }: { label: string; value: string; onChange: (v: string) => void; required?: boolean; help?: string }) {
+  const id = useId();
+  const [h = '', m = ''] = value ? value.split(':') : [];
+  const pad = (n: number) => String(n).padStart(2, '0');
+  // Phút cách 5; giờ cũ lẻ phút (vd. 07:20 thì có sẵn, 07:17) vẫn hiện đúng.
+  const mins = [...new Set([...Array.from({ length: 12 }, (_, i) => pad(i * 5)), ...(m ? [m] : [])])].sort();
+  const pick = (hh: string, mm: string) => onChange(hh ? `${hh}:${mm || '00'}` : '');
+  const sel = `${inputCls.replace('w-full', 'w-24')} cursor-pointer text-center font-semibold`; // gọn như đồng hồ, không kéo full ngang
+  return (
+    <Field label={label} help={help} htmlFor={id}>
+      <div className="flex items-center gap-2">
+        <select id={id} aria-label={`${label}: giờ`} required={required} value={h} onChange={(e) => pick(e.target.value, m)} className={sel}>
+          <option value="">Giờ</option>
+          {Array.from({ length: 24 }, (_, i) => pad(i)).map((x) => <option key={x} value={x}>{x}</option>)}
+        </select>
+        <span className="font-display text-2xl" aria-hidden="true">:</span>
+        <select aria-label={`${label}: phút`} disabled={!h} value={h ? m || '00' : ''} onChange={(e) => pick(h, e.target.value)} className={`${sel} disabled:opacity-50`}>
+          {!h && <option value="">Phút</option>}
+          {mins.map((x) => <option key={x} value={x}>{x}</option>)}
+        </select>
+      </div>
+    </Field>
+  );
+}
+
 /** Ô tiền VND: gõ "1.500.000", "1500000" hay "1 500 000" đều được (ô số của trình duyệt hiểu "1.500.000" là 1,5).
  *  value / onChange chỉ là chữ số; dòng dưới ô luôn đọc lại "= 1.500.000 đ" để khỏi gõ thiếu / thừa số 0. */
 export function MoneyInput({ label, value, onChange, required, help }: { label: string; value: string; onChange: (digits: string) => void; required?: boolean; help?: string }) {

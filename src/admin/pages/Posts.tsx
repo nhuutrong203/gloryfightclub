@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { MAX_VIDEO_MB, api, can, mediaUrl, navigate, siteUrl, toast, uploadMany, uploadVideo, useApi, useDirty, type Me } from '../lib';
-import { A, Badge, Button, Empty, ErrorBox, Icon, LinkButton, Loading, Page, TextInput, Toggle, ViewOnSite, confirmDanger, inputCls } from '../ui';
+import { A, Badge, Button, Empty, ErrorBox, Icon, LinkButton, Loading, Page, TextInput, TimeInput, Toggle, ViewOnSite, confirmDanger, inputCls } from '../ui';
 import { RichEditor } from '../RichEditor';
 import { textToHtml, toText } from '../../lib/html';
 import { youtubeId } from '../../lib/util';
@@ -12,7 +12,7 @@ type Post = { id: number; slug: string; title: string | null; titleEn: string | 
 
 const MAX_MEDIA = 24;
 
-/** Chuyển giữa timestamp và giá trị ô datetime-local (giờ máy người dùng). */
+/** Chuyển giữa timestamp và "YYYY-MM-DDTHH:MM" (giờ máy người dùng) cho ô Ngày + ô Giờ. */
 const toLocalInput = (ms: number) => { const d = new Date(ms); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); };
 const fromLocalInput = (s: string) => new Date(s).getTime();
 const fmtDateTime = (ms: number) => new Date(ms).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -214,8 +214,17 @@ export function PostEdit({ id, me }: { id: string; me: Me }) {
           <Toggle label="Hiện trên website" checked={form.isPublic} onChange={set('isPublic')} help={form.isPublic ? undefined : 'Bài đang ẩn, khách không thấy'} />
           <Toggle label="Chọn ngày đăng khác" help="Ghi lại buổi tập hôm trước, hoặc hẹn giờ đăng sau" checked={pickDate}
             onChange={(v) => { setPickDate(v); markDirty(true); }} />
-          {pickDate && <TextInput label="Ngày giờ của buổi tập / giờ đăng" type="datetime-local" required value={toLocalInput(form.publishedAt)} onChange={(e) => e.target.value && set('publishedAt')(fromLocalInput(e.target.value))}
-            help={future ? 'Giờ ở tương lai → bài tự hiện lên web đúng giờ đó' : undefined} />}
+          {/* Ngày + giờ tách 2 ô: giờ luôn kiểu 24 giờ (ô datetime-local gốc hiện "07:30 PM" trên máy tiếng Anh). */}
+          {pickDate && (() => {
+            const [d, tm] = toLocalInput(form.publishedAt).split('T');
+            return (
+              <div className="grid gap-4 border border-neutral-200 bg-white p-3 sm:grid-cols-2">
+                <TextInput label="Ngày của buổi tập / ngày đăng" type="date" required value={d} onChange={(e) => e.target.value && set('publishedAt')(fromLocalInput(`${e.target.value}T${tm}`))} />
+                <TimeInput label="Giờ" required value={tm} onChange={(v) => v && set('publishedAt')(fromLocalInput(`${d}T${v}`))}
+                  help={future ? 'Giờ ở tương lai → bài tự hiện lên web đúng giờ đó' : undefined} />
+              </div>
+            );
+          })()}
         </section>
 
         <div className="sticky bottom-20 z-10 space-y-2 lg:bottom-4">

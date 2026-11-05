@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { api, can, mediaUrl, navigate, siteUrl, toast, uploadMany, useApi, useDirty, useUploading, type Me } from '../lib';
-import { A, Badge, Button, Chips, Empty, ErrorBox, Icon, ImageInput, LinkButton, Loading, MoneyInput, Page, Select, TextArea, TextInput, Toggle, ViewOnSite, confirmDanger, EnHint } from '../ui';
+import { A, Badge, Button, Chips, Empty, ErrorBox, Icon, ImageInput, LinkButton, Loading, MoneyInput, Page, Select, TextArea, TextInput, TimeInput, Toggle, ViewOnSite, confirmDanger, EnHint } from '../ui';
 import { DAY_LABEL, RESOURCES, type Field, type ResourceKey } from '../resources';
 import type { Lookups } from './Students';
 
@@ -151,7 +151,7 @@ export function ResourceEdit({ res, id, me }: { res: ResourceKey; id: string; me
       case 'image': return <ImageInput label={label} value={val || null} onChange={set(name)} help={f.help} />;
       case 'number': return <TextInput label={label} type="number" inputMode="numeric" min={0} required={f.required} value={val ?? ''} onChange={(e) => set(name)(e.target.value)} help={f.help} />;
       case 'money': return <MoneyInput label={label} required={f.required} value={val == null ? '' : String(val)} onChange={set(name)} help={f.help} />;
-      case 'time': return <TextInput label={label} type="time" required={f.required} value={val ?? ''} onChange={(e) => set(name)(e.target.value)} />;
+      case 'time': return <TimeInput label={label} required={f.required} value={val ?? ''} onChange={set(name)} />;
       case 'date': return <TextInput label={label} type="date" value={val ?? ''} onChange={(e) => set(name)(e.target.value)} />;
       case 'url': return <TextInput label={label} type="url" inputMode="url" placeholder="https://…" value={val ?? ''} onChange={(e) => set(name)(e.target.value)} help={f.help} />;
       case 'color': return (
