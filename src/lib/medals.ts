@@ -52,14 +52,15 @@ const words = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(
 const yearIn = (s: string) => s.match(/\b(19|20)\d{2}\b/)?.[0];
 
 /** Mục Thành tích (bảng, gắn HLV) CHƯA có trong ô chữ "Thành tích" của HLV → hiện thêm, không đếm đôi.
- *  Coi là trùng khi mọi chữ của tên mục nằm trong một dòng (không dấu, không hoa thường) và năm (nếu có) cũng khớp:
- *  "HCV Kudo quốc gia" (giải 2024) ≈ dòng "HCV giải Kudo quốc gia 2024"; "HCV Kudo quốc gia" (giải 2025) thì là mục mới. */
-export function extraAwards<T>(textLines: string[], rows: T[], info: (r: T) => { title: string; event?: string | null; date?: string | null }): T[] {
+ *  Coi là trùng khi mọi chữ của tên mục nằm trong một dòng (không dấu, không hoa thường) và năm ghi trong tên / tên giải (nếu có) cũng khớp:
+ *  "HCV Kudo quốc gia" (giải 2024) ≈ dòng "HCV giải Kudo quốc gia 2024"; "HCV Kudo quốc gia" (giải 2025) thì là mục mới.
+ *  Không lấy năm từ ô Ngày: ô này hay điền đại (trên cloud có mục HCV Kudo 2024 mà Ngày ghi 18/11/2026 → bị đếm thành 2 HCV). */
+export function extraAwards<T>(textLines: string[], rows: T[], info: (r: T) => { title: string; event?: string | null }): T[] {
   const lines = textLines.map((l) => new Set(words(l)));
   return rows.filter((r) => {
-    const { title, event, date } = info(r);
+    const { title, event } = info(r);
     const w = words(title);
-    const y = yearIn(`${title} ${event ?? ''} ${date ?? ''}`);
+    const y = yearIn(`${title} ${event ?? ''}`);
     const dup = lines.some((l) => w.length > 0 && w.every((x) => l.has(x)) && (!y || l.has(y)));
     if (!dup) lines.push(new Set(words(`${title} ${y ?? ""}`))); // 2 mục bảng giống hệt nhau (cùng năm) cũng chỉ hiện 1
     return !dup;

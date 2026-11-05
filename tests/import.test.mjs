@@ -131,7 +131,7 @@ test('bậc đai tự đánh lại: chèn giữa, dời lên, dời xuống, xo�
 
 test('thành tích HLV: gộp ô chữ + mục Thành tích, không đếm đôi (dữ liệu thật trong seed)', async () => {
   const { extraAwards, tally } = await import('../src/lib/medals.ts');
-  const title = (r) => ({ title: r.title, event: r.eventName, date: r.eventDate });
+  const title = (r) => ({ title: r.title, event: r.eventName });
   // Thầy Trung: ô chữ đã ghi HCV Kudo 2024 → mục bảng cùng giải không hiện thêm; giải 2025 mới thì hiện.
   const trung = ['Đai đen Kudo chính thức do Liên đoàn Kudo thế giới cấp', 'Võ sĩ MMA đang thi đấu', 'HCV giải Kudo quốc gia 2024', 'Hơn 5 năm kinh nghiệm huấn luyện'];
   const rows = [
@@ -142,6 +142,9 @@ test('thành tích HLV: gộp ô chữ + mục Thành tích, không đếm đôi
   const extra = extraAwards(trung, rows, title).map((r) => r.eventName ?? r.title);
   assert.deepEqual(extra, ['Giải Kudo quốc gia 2025', 'HCB giải trẻ TP.HCM']);
   assert.deepEqual(tally([...trung, ...extraAwards(trung, rows, title).map((r) => r.title)]), { gold: 2, silver: 1, bronze: 0 });
+  // Đúng mục đang có trên cloud: tên giải không ghi năm, ô Ngày điền 18/11/2026 → vẫn là HCV 2024 đã có, KHÔNG thành 2 HCV.
+  const cloud = [{ title: 'HCV Kudo quốc gia', eventName: 'HCV Kudo quốc gia', eventDate: '2026-11-18' }];
+  assert.deepEqual(extraAwards(trung, cloud, title), []);
   // Thầy Phong: cả 3 mục bảng đều đã có trong ô chữ (tên ngắn hơn) → không thêm gì.
   const phong = ['HCB giải các CLB Jujitsu quốc gia', 'HCB, HCĐ Đại hội TDTT ĐBSCL', 'HCV Open Jiujitsu Cần Thơ'];
   assert.deepEqual(extraAwards(phong, [{ title: 'HCV Open Jiujitsu' }, { title: 'HCB Jujitsu' }, { title: 'HCB, HCĐ' }], (r) => ({ title: r.title })), []);

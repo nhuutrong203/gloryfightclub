@@ -21,7 +21,7 @@ const achievementRows = await db.select().from(schema.achievements)
   .where(and(eq(schema.achievements.coachId, c.id), eq(schema.achievements.isPublic, true))).orderBy(asc(schema.achievements.sort));
 const achievements = lines(tr(c, 'achievements', lang));
 // Mục Thành tích (bảng) mà ô chữ chưa ghi → hiện thêm sau các dòng chữ (thêm huy chương mới ở mục Thành tích là thấy ngay).
-const extraRows = extraAwards(achievements, achievementRows, (r) => ({ title: tr(r, 'title', lang), event: r.eventName, date: r.eventDate }));
+const extraRows = extraAwards(achievements, achievementRows, (r) => ({ title: tr(r, 'title', lang), event: r.eventName }));
 const myClasses = classes.filter((x) => x.coachId === c.id);
 const myDisciplines = disciplines.filter((d) => c.disciplineIds.includes(d.id));
 const photo = mediaUrl(c.photoKey);
