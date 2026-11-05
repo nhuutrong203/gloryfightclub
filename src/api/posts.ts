@@ -82,6 +82,8 @@ postRoutes.put('/:id', need('posts'), async (c) => {
   if (err) return err;
   const { media, values } = await clean(data);
   if (!toText(values.content) && !media.length) return c.json({ error: 'Viết vài dòng hoặc thêm ảnh / video' }, 400);
+  // Người khác vừa xoá bài → báo rõ thay vì lỗi khoá ngoại 500.
+  if (!(await db.select({ id: p.id }).from(p).where(eq(p.id, id)).get())) return c.json({ error: 'Bài này đã bị xoá' }, 404);
   const before = await fileKeys(id);
   await db.batch([
     db.update(p).set({ ...values, updatedAt: Date.now() }).where(eq(p.id, id)),

@@ -90,7 +90,6 @@ studentRoutes.get('/', need('students.view'), async (c) => {
   const where = filters(q);
   const all = matchQuery(await db.select().from(s).where(where).orderBy(SORTS[q.sort as keyof typeof SORTS] ?? SORTS.name), q.q);
   const rows = all.slice((page - 1) * 50, page * 50);
-  const total = { n: all.length };
   const { month } = vnNow();
   const ids = rows.map((r) => r.id);
   const [links, paid] = ids.length
@@ -101,7 +100,7 @@ studentRoutes.get('/', need('students.view'), async (c) => {
     : [[], []];
   const paidSet = new Set(paid.map((p) => p.studentId));
   return c.json({
-    total: total?.n ?? 0,
+    total: all.length,
     page,
     rows: rows.map((r) => ({ ...r, classIds: links.filter((l) => l.studentId === r.id).map((l) => l.classId), paidThisMonth: paidSet.has(r.id) })),
   });
@@ -135,18 +134,21 @@ studentRoutes.post('/import', need('students.edit'), async (c) => {
   const codes = new Map<string, number>(existing.map((e) => [e.code.toUpperCase(), e.id]));
   let next = Number((await nextStudentCode()).slice(2));
   const errors: { row: number; error: string }[] = [];
-  const stmts: BatchItem<'sqlite'>[] = [];
-  let created = 0, updated = 0;
+  const todo: { row: number; isNew: boolean; stmts: BatchItem<'sqlite'>[] }[] = [];
 
   for (const [i, r] of data.rows.entries()) {
     const rowNo = i + 2; // dòng 1 là tiêu đề
-    // Tên gõ sai thì báo lỗi, không ghi đè thành "trống" (mất dữ liệu cũ).
+    // Chữ gõ sai thì báo lỗi, không ghi đè bằng "trống" / hôm nay / Đang học (mất dữ liệu cũ).
     const locationId = byName(locations, r.location);
     const feePlanId = byName(plans, r.plan);
+    const joinedAt = parseDate(r.joinedAt);
+    const status = STATUS_IN[fold(r.status ?? '')];
     const classNames = (r.classes ?? '').split(/[;\n]/).map((x) => x.trim()).filter(Boolean);
     const badClass = classNames.find((x) => !classOf(x));
     const miss = r.location && !locationId ? `không thấy cơ sở "${r.location}"`
       : r.plan && !feePlanId ? `không thấy gói học phí "${r.plan}"`
+      : r.joinedAt && !joinedAt ? `ngày nhập học "${r.joinedAt}" chưa đúng (ghi dạng ngày/tháng/năm, vd. 15/08/2026)`
+      : r.status && !status ? `trạng thái "${r.status}" chưa đúng (ghi Đang học, Tạm nghỉ hoặc Đã nghỉ)`
       : badClass ? `không thấy lớp "${badClass}" (ghi đúng dạng: Tên lớp + thứ + giờ, vd. "MMA 246 18:30")` : null;
     if (miss) { errors.push({ row: rowNo, error: miss }); continue; }
     const parsed = studentSchema.safeParse({
@@ -157,8 +159,8 @@ studentRoutes.post('/import', need('students.edit'), async (c) => {
       parentPhone: fixPhone(r.parentPhone),
       locationId,
       feePlanId,
-      joinedAt: parseDate(r.joinedAt) ?? vnNow().date,
-      status: STATUS_IN[fold(r.status ?? '')] ?? 'active',
+      joinedAt: joinedAt ?? vnNow().date,
+      status: status ?? 'active',
       note: r.note || null,
       classIds: [...new Set(classNames.map((x) => classOf(x)!))],
     });
@@ -171,26 +173,36 @@ studentRoutes.post('/import', need('students.edit'), async (c) => {
     const id = r.code ? codes.get(r.code.toUpperCase()) : undefined;
     if (id) {
       // Cập nhật: chỉ đổi cột có trong file, cột vắng giữ nguyên dữ liệu cũ.
-      const has = (k: keyof typeof r) => r[k] !== undefined;
+      // Ô trống ở cột bắt buộc (trạng thái, ngày nhập học) = giữ nguyên, không thành "Đang học" / hôm nay.
+      const has = (k: keyof typeof r) => r[k] !== undefined && !(r[k] === '' && (k === 'status' || k === 'joinedAt'));
       const COL: Record<string, keyof typeof r> = { locationId: 'location', feePlanId: 'plan' };
       const set = Object.fromEntries(Object.entries(values).filter(([k]) => has(COL[k] ?? (k as keyof typeof r))));
-      stmts.push(db.update(s).set({ ...set, updatedAt: Date.now() }).where(eq(s.id, id)));
+      const stmts: BatchItem<'sqlite'>[] = [db.update(s).set({ ...set, updatedAt: Date.now() }).where(eq(s.id, id))];
       if (has('classes')) stmts.push(db.delete(schema.studentClasses).where(eq(schema.studentClasses.studentId, id)));
       if (has('classes') && cls.length) stmts.push(db.insert(schema.studentClasses).values(cls.map((classId) => ({ studentId: id, classId }))));
-      updated++;
+      todo.push({ row: rowNo, isNew: false, stmts });
     } else {
       // Học viên mới chưa có id → nối lớp qua mã học viên ngay trong cùng đợt ghi.
       const code = `GF${String(next++).padStart(4, '0')}`;
-      stmts.push(db.insert(s).values({ ...values, code }));
-      if (cls.length) stmts.push(classesByCode(code, cls));
-      created++;
+      todo.push({ row: rowNo, isNew: true, stmts: [db.insert(s).values({ ...values, code }), ...(cls.length ? [classesByCode(code, cls)] : [])] });
     }
   }
-  // Ghi theo đợt: D1 giới hạn số lần gọi trong 1 request (gói Free: 50), mỗi đợt chỉ tính 1 lần.
-  for (let k = 0; k < stmts.length; k += 200) {
-    const [first, ...rest] = stmts.slice(k, k + 200);
-    await db.batch([first, ...rest]);
+  // Ghi theo đợt 60 dòng (≤ 180 lệnh), mỗi đợt là 1 transaction và chỉ tính 1 lần gọi D1 (gói Free: 50 lần / request → đủ 2000 dòng).
+  // Một đợt lỗi (vd. trùng mã vì có người vừa thêm học viên) → dừng, báo các dòng chưa ghi để nhập lại riêng, không nhân đôi dòng đã ghi.
+  let created = 0, updated = 0;
+  for (let k = 0; k < todo.length; k += 60) {
+    const part = todo.slice(k, k + 60);
+    const [first, ...rest] = part.flatMap((x) => x.stmts);
+    try {
+      await db.batch([first, ...rest]);
+    } catch (e) {
+      console.error('Nhập học viên lỗi', e);
+      for (const x of todo.slice(k)) errors.push({ row: x.row, error: 'chưa ghi được (lỗi khi lưu) — nhập lại riêng các dòng chưa ghi' });
+      break;
+    }
+    for (const x of part) x.isNew ? created++ : updated++;
   }
+  errors.sort((a, b) => a.row - b.row);
   return c.json({ created, updated, errors });
 });
 
@@ -238,6 +250,8 @@ studentRoutes.put('/:id', need('students.edit'), async (c) => {
   const [data, err] = await body(c, studentSchema, STUDENT_LABELS);
   if (err) return err;
   const { classIds, ...values } = data;
+  // Người khác vừa xoá học viên này → báo rõ thay vì lỗi khoá ngoại 500.
+  if (!(await db.select({ id: s.id }).from(s).where(eq(s.id, id)).get())) return c.json({ error: 'Học viên này đã bị xoá' }, 404);
   await db.batch([
     db.update(s).set({ ...values, updatedAt: Date.now() }).where(eq(s.id, id)),
     db.delete(schema.studentClasses).where(eq(schema.studentClasses.studentId, id)),
@@ -249,6 +263,11 @@ studentRoutes.put('/:id', need('students.edit'), async (c) => {
 studentRoutes.delete('/:id', need('students.edit'), need('delete'), async (c) => {
   const id = idParam(c);
   if (!id) return c.notFound();
-  await db.delete(s).where(eq(s.id, id));
+  // Đăng ký học thử đã chuyển thành học viên này → về "Đã liên hệ", để chuyển lại được (không kẹt ở "Đã nhập học").
+  const tr = schema.trialRegistrations;
+  await db.batch([
+    db.update(tr).set({ status: 'contacted', studentId: null }).where(eq(tr.studentId, id)),
+    db.delete(s).where(eq(s.id, id)),
+  ]);
   return c.json({ ok: true });
 });

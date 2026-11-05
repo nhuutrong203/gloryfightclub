@@ -2,13 +2,6 @@ import { and, asc, count, desc, eq, inArray, lte } from 'drizzle-orm';
 import { db, schema } from '../db';
 import { youtubeId } from './util';
 
-/** Chữ số ngày hôm nay theo giờ VN: '2'..'7', '8' = Chủ nhật. */
-export function todayDigit(now = new Date()): string {
-  const wd = now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', weekday: 'short' });
-  const i = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(wd);
-  return i === 0 ? '8' : String(i + 1);
-}
-
 /** Escape HTML, tự nhận link, giữ xuống dòng — cho nội dung văn bản thường (bài tin, mô tả). */
 export function richText(text: string | null | undefined): string {
   if (!text) return '';

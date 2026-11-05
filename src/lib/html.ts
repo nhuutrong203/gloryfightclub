@@ -3,8 +3,10 @@
 // Thẻ được giữ (bỏ hết thuộc tính, trừ href của <a>). Thẻ lạ thì bỏ thẻ nhưng giữ chữ bên trong.
 const KEEP = new Set(['p', 'br', 'div', 'span', 'strong', 'b', 'em', 'i', 'u', 's', 'h2', 'h3', 'ul', 'ol', 'li', 'blockquote', 'a']);
 // Thẻ bỏ cả nội dung (mã chạy được, nhúng, form…).
+// xmp/noembed/noframes/plaintext: bên trong là chữ thô chưa được lọc → bỏ thẻ mà giữ ruột thì ruột thành HTML thật (XSS).
 const DROP = new Set(['script', 'style', 'iframe', 'object', 'embed', 'svg', 'math', 'form', 'input', 'button', 'textarea', 'select',
-  'img', 'video', 'audio', 'source', 'picture', 'canvas', 'link', 'meta', 'base', 'template', 'noscript', 'title', 'head']);
+  'img', 'video', 'audio', 'source', 'picture', 'canvas', 'link', 'meta', 'base', 'template', 'noscript', 'title', 'head',
+  'xmp', 'noembed', 'noframes', 'plaintext']);
 
 /** Quyết định cho 1 thẻ: bỏ cả nội dung / bỏ thẻ giữ chữ / giữ (không thuộc tính nào). Tách riêng để test bằng node. */
 export const tagAction = (tag: string): 'drop' | 'unwrap' | 'keep' => {

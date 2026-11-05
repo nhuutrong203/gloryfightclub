@@ -6,7 +6,8 @@ import { execFileSync } from 'node:child_process';
 import { writeFileSync, rmSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { webcrypto as crypto } from 'node:crypto';
+// Dùng chung với Worker (Node 24 đọc thẳng file .ts): cùng cách băm mật khẩu, cùng quyền mặc định của HLV.
+import { DEFAULT_COACH_PERMISSIONS, hashPassword } from '../src/lib/auth.ts';
 
 const args = process.argv.slice(2).filter((a) => a !== '--remote');
 const remote = process.argv.includes('--remote');
@@ -16,16 +17,9 @@ if (!username || !password || password.length < 8 || !['owner', 'coach'].include
   process.exit(1);
 }
 
-// Cùng thuật toán với src/lib/auth.ts
-const ITER = 100_000;
-const salt = crypto.getRandomValues(new Uint8Array(16));
-const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
-const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: ITER }, key, 256);
-const b64 = (b) => Buffer.from(b).toString('base64');
-const hash = `pbkdf2$${ITER}$${b64(salt)}$${b64(bits)}`;
-
+const hash = await hashPassword(password);
 const q = (s) => `'${String(s).replace(/'/g, "''")}'`;
-const perms = role === 'owner' ? '[]' : '["students.view","students.edit","posts"]';
+const perms = JSON.stringify(role === 'owner' ? [] : DEFAULT_COACH_PERMISSIONS);
 const sql = `INSERT INTO users (username, password_hash, full_name, role, permissions) VALUES (${q(username.toLowerCase())}, ${q(hash)}, ${q(fullName)}, ${q(role)}, ${q(perms)})
 ON CONFLICT(username) DO UPDATE SET password_hash = excluded.password_hash, is_active = 1;
 DELETE FROM sessions WHERE user_id = (SELECT id FROM users WHERE username = ${q(username.toLowerCase())});`;

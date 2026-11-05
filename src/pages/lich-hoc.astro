@@ -4,7 +4,8 @@ import PageHero from '../components/public/PageHero.astro';
 import Icon from '../components/public/Icon.astro';
 import CtaBand from '../components/public/CtaBand.astro';
 import { getSite, mediaUrl, telHref } from '../lib/site';
-import { publicClasses, publicCoaches, publicDisciplines, todayDigit } from '../lib/public';
+import { publicClasses, publicCoaches, publicDisciplines } from '../lib/public';
+import { vnNow } from '../lib/util';
 import { t, tr, href, DAYS, dayShort, dayLong, type Lang } from '../i18n';
 
 const lang: Lang = Astro.locals.lang;
@@ -18,7 +19,7 @@ const classes = allClasses.filter((c) => c.locationId === loc?.id && (!mon || c.
 const slots = [...new Set(classes.map((c) => `${c.startTime}–${c.endTime}`))].sort();
 const cell = (slot: string, d: string) => classes.filter((c) => `${c.startTime}–${c.endTime}` === slot && c.days.includes(d));
 const byDay = DAYS.map((d) => ({ d, items: classes.filter((c) => c.days.includes(d)) }));
-const today = todayDigit();
+const today = vnNow().weekday;
 const image = mediaUrl(loc?.scheduleImageKey);
 const coachName = (id: number | null) => coaches.find((c) => c.id === id)?.fullName;
 const link = (params: Record<string, string | undefined>) => {

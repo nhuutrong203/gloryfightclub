@@ -114,7 +114,8 @@ export function StudentEdit({ id, me }: { id: string; me: Me }) {
   const set = (k: keyof typeof form) => (v: any) => { setForm((x) => ({ ...x, [k]: v })); markDirty(true); };
   const age = form.birthYear ? new Date().getFullYear() - Number(form.birthYear) : null;
   const isKid = age != null && age < 16;
-  const classOpts = lk.classes.filter((k) => k.isActive && (!form.locationId || k.locationId === Number(form.locationId)));
+  // Lớp đang chọn luôn hiện (kể cả lớp cơ sở cũ / lớp đã ngưng) để bỏ chọn được; không thì vẫn bị lưu mà không thấy.
+  const classOpts = lk.classes.filter((k) => form.classIds.includes(k.id) || (k.isActive && (!form.locationId || k.locationId === Number(form.locationId))));
 
   async function save(e: React.FormEvent) {
     e.preventDefault();

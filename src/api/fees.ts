@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { asc, eq, inArray, ne, or } from 'drizzle-orm';
+import { and, asc, eq, inArray, lte, ne, or } from 'drizzle-orm';
 import { z } from 'zod';
 import { db, schema } from '../db';
 import { vnNow } from '../lib/util';
@@ -18,7 +18,8 @@ feeRoutes.get('/', need('fees.view'), async (c) => {
     .select({ id: schema.students.id, code: schema.students.code, fullName: schema.students.fullName, phone: schema.students.phone, parentPhone: schema.students.parentPhone, locationId: schema.students.locationId, feePlanId: schema.students.feePlanId, status: schema.students.status })
     .from(schema.students)
     // Subquery thay vì danh sách id: D1 chỉ nhận tối đa 100 tham số mỗi câu lệnh.
-    .where(or(eq(schema.students.status, 'active'), inArray(schema.students.id, paidThisMonth)))
+    // Người vào học sau tháng đang xem không tính "chưa đóng" ('-31' đủ cho mọi tháng vì so chuỗi YYYY-MM-DD).
+    .where(or(and(eq(schema.students.status, 'active'), lte(schema.students.joinedAt, `${m}-31`)), inArray(schema.students.id, paidThisMonth)))
     .orderBy(asc(schema.students.fullName));
   return c.json({ month: m, students, payments });
 });

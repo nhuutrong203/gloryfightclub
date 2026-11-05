@@ -1,8 +1,8 @@
 // Chạy: npm test (Node 24 đọc thẳng file .ts). Test các quy tắc dễ sai khi nhập dữ liệu.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { byName, fixPhone, parseDate } from '../src/lib/import.ts';
-import { normalizePhone, youtubeId } from '../src/lib/util.ts';
+import { STATUS_IN, byName, fixPhone, fold, parseDate } from '../src/lib/import.ts';
+import { normalizePhone, vnNow, youtubeId } from '../src/lib/util.ts';
 import { textToHtml, toText } from '../src/lib/html.ts';
 import { RESOURCES } from '../src/admin/resources.ts';
 
@@ -12,6 +12,25 @@ test('parseDate đọc ngày kiểu Việt Nam và ISO', () => {
   assert.equal(parseDate('2026-8-1T00:00:00Z'), '2026-08-01');
   assert.equal(parseDate('tháng 8'), null);
   assert.equal(parseDate(''), null);
+  // Ngày sai thì null (route báo lỗi dòng), không lưu "2026-25-11" hay đổi thành hôm nay.
+  assert.equal(parseDate('11/25/2026'), null);
+  assert.equal(parseDate('2026-13-01'), null);
+  assert.equal(parseDate('15/08/26'), null);
+  assert.equal(parseDate('0/8/2026'), null);
+  assert.equal(parseDate('31/02/2026'), null); // ngày không có thật
+  assert.equal(parseDate('29/02/2028'), '2028-02-29'); // năm nhuận
+  assert.equal(parseDate('31/12/2026'), '2026-12-31');
+});
+
+test('trạng thái nhập từ file: chữ lạ không tự thành "Đang học"', () => {
+  assert.equal(STATUS_IN[fold('Đã nghỉ')], 'quit');
+  assert.equal(STATUS_IN[fold('Tạm nghỉ')], 'paused');
+  assert.equal(STATUS_IN[fold('Nghỉ học')], undefined);
+});
+
+test('vnNow: thứ theo giờ Việt Nam (8 = Chủ nhật)', () => {
+  assert.equal(vnNow(new Date('2026-11-08T05:00:00Z')).weekday, '8'); // CN 12h trưa VN
+  assert.equal(vnNow(new Date('2026-11-08T17:30:00Z')).weekday, '2'); // đã sang 0h30 thứ 2 ở VN
 });
 
 test('fixPhone thêm lại số 0 Excel làm mất', () => {
@@ -83,7 +102,8 @@ test('huy chương: đọc vàng/bạc/đồng từ chữ tự do, không nhầm
 
 test('lọc HTML nhật ký: chỉ giữ thẻ an toàn, bỏ mã chạy được, link chỉ http(s)', async () => {
   const { tagAction, safeHref } = await import('../src/lib/html.ts');
-  for (const t of ['script', 'SCRIPT', 'iframe', 'style', 'svg', 'img', 'object', 'form', 'video']) assert.equal(tagAction(t), 'drop', t);
+  // xmp/noembed/noframes/plaintext: ruột là chữ thô chưa lọc, chỉ bỏ thẻ là lọt <img onerror> (đã thử thật trong workerd).
+  for (const t of ['script', 'SCRIPT', 'iframe', 'style', 'svg', 'img', 'object', 'form', 'video', 'xmp', 'noembed', 'noframes', 'plaintext', 'textarea', 'title', 'noscript']) assert.equal(tagAction(t), 'drop', t);
   for (const t of ['p', 'b', 'strong', 'h2', 'h3', 'ul', 'li', 'blockquote', 'a', 'br']) assert.equal(tagAction(t), 'keep', t);
   for (const t of ['font', 'table', 'section', 'h1']) assert.equal(tagAction(t), 'unwrap', t);
   assert.equal(safeHref('https://glory.vn/a?b=1'), 'https://glory.vn/a?b=1');

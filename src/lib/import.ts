@@ -3,13 +3,17 @@
 /** Bỏ dấu, chữ thường: "Nguyễn Văn A" → "nguyen van a". */
 export const fold = (x: string) => x.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase();
 
-/** "15/08/2026", "2026-08-15", "2026-08-15T…" → "2026-08-15"; không đọc được → null. */
+/** "15/08/2026", "2026-08-15", "2026-08-15T…" → "2026-08-15"; không đọc được hoặc ngày không có thật (13/13, 31/02) → null. */
 export function parseDate(v?: string) {
   if (!v) return null;
-  let m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
-  m = v.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/);
-  return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : null;
+  const iso = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  const vn = v.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/);
+  if (!iso && !vn) return null;
+  const [y, mo, d] = iso ? [iso[1], iso[2], iso[3]] : [vn![3], vn![2], vn![1]];
+  // Ngày không có thật thì Date tự lăn sang tháng khác → tháng/ngày đọc lại không khớp.
+  const dt = new Date(Date.UTC(+y, +mo - 1, +d));
+  if (dt.getUTCMonth() !== +mo - 1 || dt.getUTCDate() !== +d) return null;
+  return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`;
 }
 
 /** Excel hay làm mất số 0 đầu SĐT (912345678) → thêm lại. */

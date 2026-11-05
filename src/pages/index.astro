@@ -10,8 +10,9 @@ import CtaBand from '../components/public/CtaBand.astro';
 import TestimonialAuthor from '../components/public/TestimonialAuthor.astro';
 import AchievementIcon from '../components/public/AchievementIcon.astro';
 import { getSite, mediaUrl } from '../lib/site';
+import { vnNow } from '../lib/util';
 import {
-  todayDigit, publicDisciplines, publicCoaches, publicPlans, publicClasses,
+  publicDisciplines, publicCoaches, publicPlans, publicClasses,
   publishedPosts, publicTestimonials, publicAchievements,
 } from '../lib/public';
 import { t, tr, href, dayLong, type Lang } from '../i18n';
@@ -22,7 +23,7 @@ const [disciplines, coaches, plans, classes, posts, testimonials, achievements] 
   publicDisciplines(), publicCoaches(), publicPlans(), publicClasses(),
   publishedPosts(3), publicTestimonials(), publicAchievements(),
 ]);
-const today = todayDigit();
+const today = vnNow().weekday;
 const todayByLoc = locations
   .map((l) => ({ l, items: classes.filter((c) => c.locationId === l.id && c.days.includes(today)) }))
   .filter((x) => x.items.length);

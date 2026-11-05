@@ -3,6 +3,9 @@ import { api, siteUrl, toast, useApi, useDirty, useUploading } from '../lib';
 import { Button, ErrorBox, ImageInput, Loading, Page, TextArea, TextInput, ViewOnSite } from '../ui';
 
 type S = Record<string, any>;
+// Nhóm chưa có trong DB (vd. "about" chưa lưu lần nào): dùng 1 object cố định. `?? {}` tạo object mới mỗi lần vẽ
+// → Group tưởng dữ liệu đổi → xoá chữ đang gõ.
+const NONE: S = {};
 
 // Thông tin chung: liên hệ, hero trang chủ, trang Giới thiệu. Mỗi nhóm lưu riêng.
 export function Settings() {
@@ -19,15 +22,15 @@ export function Settings() {
   return (
     <Page title="Trang chủ · Giới thiệu · Liên hệ" back="/admin/them">
       <div className="space-y-6">
-        <Group title="Liên hệ & mạng xã hội" k="club" view="/lien-he" onDirty={onDirty} initial={data.club ?? {}} fields={[
+        <Group title="Liên hệ & mạng xã hội" k="club" view="/lien-he" onDirty={onDirty} initial={data.club ?? NONE} fields={[
           ['name', 'Tên CLB'], ['slogan', 'Slogan'], ['tagline', 'Mô tả ngắn (hiện khi share link)', 'textarea'], ['tagline_en', 'Mô tả ngắn (English)', 'textarea'],
           ['hotlines', 'Hotline (cách nhau bằng dấu phẩy)', 'list'], ['zalo', 'Số Zalo'], ['facebook', 'Link Facebook'], ['instagram', 'Link Instagram'],
         ]} />
-        <Group title="Ảnh & chữ lớn trang chủ" k="hero" view="/" onDirty={onDirty} initial={data.hero ?? {}} fields={[
+        <Group title="Ảnh & chữ lớn trang chủ" k="hero" view="/" onDirty={onDirty} initial={data.hero ?? NONE} fields={[
           ['image_key', 'Ảnh nền trang chủ', 'image'], ['title', 'Tiêu đề lớn (dùng dấu – để xuống dòng đỏ)'], ['title_en', 'Tiêu đề (English)'],
           ['subtitle', 'Dòng giới thiệu', 'textarea'], ['subtitle_en', 'Dòng giới thiệu (English)', 'textarea'],
         ]} />
-        <Group title="Trang Giới thiệu" k="about" view="/gioi-thieu" onDirty={onDirty} initial={data.about ?? {}} fields={[
+        <Group title="Trang Giới thiệu" k="about" view="/gioi-thieu" onDirty={onDirty} initial={data.about ?? NONE} fields={[
           ['history', 'Câu chuyện / lịch sử CLB', 'textarea'], ['history_en', 'Our story (English)', 'textarea'],
           ['philosophy', 'Triết lý', 'textarea'], ['philosophy_en', 'Philosophy (English)', 'textarea'],
           ['values', 'Giá trị (mỗi dòng một ý)', 'lines'], ['values_en', 'Values (English, one per line)', 'lines'],

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { api, can, fmtDate, monthLabel, shiftMonth, todayVN, toast, useApi, vnd, type Me } from '../lib';
 import { A, Badge, Button, Empty, ErrorBox, Icon, Loading, Page, Select, TextInput, confirmDanger, inputCls } from '../ui';
 import type { Lookups } from './Students';
+import { fold } from '../../lib/import';
 
 type Student = { id: number; code: string; fullName: string; phone: string | null; parentPhone: string | null; locationId: number | null; feePlanId: number | null; status: string };
 type Payment = { id: number; studentId: number; month: string; amount: number; paidAt: string; method: 'cash' | 'transfer'; feePlanId: number | null; note: string | null };
@@ -17,10 +18,10 @@ export function Fees({ me }: { me: Me }) {
 
   const rows = useMemo(() => {
     if (!data) return [];
-    const term = q.trim().toLowerCase();
+    const term = fold(q.trim()); // "nguyen" khớp "Nguyễn", giống trang Học viên
     return data.students
       .map((s) => ({ s, p: data.payments.find((p) => p.studentId === s.id) }))
-      .filter(({ s, p }) => (show === 'all' || (show === 'paid' ? p : !p)) && (!loc || s.locationId === Number(loc)) && (!term || s.fullName.toLowerCase().includes(term) || s.code.toLowerCase().includes(term)));
+      .filter(({ s, p }) => (show === 'all' || (show === 'paid' ? p : !p)) && (!loc || s.locationId === Number(loc)) && (!term || fold(s.fullName).includes(term) || s.code.toLowerCase().includes(term)));
   }, [data, show, loc, q]);
   const total = data?.payments.reduce((a, p) => a + p.amount, 0) ?? 0;
   const unpaidCount = data ? data.students.filter((s) => s.status === 'active' && !data.payments.some((p) => p.studentId === s.id)).length : 0;

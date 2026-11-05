@@ -1,9 +1,9 @@
 ---
 import Icon from './Icon.astro';
 import { tr, href, t, dayLong, type Lang } from '../../i18n';
-import { richText, postHtml, youtubeEmbed, todayDigit, type PostMedia } from '../../lib/public';
+import { richText, postHtml, youtubeEmbed, type PostMedia } from '../../lib/public';
 import { toText } from '../../lib/html';
-import { youtubeId } from '../../lib/util';
+import { vnNow, youtubeId } from '../../lib/util';
 
 // Một trang nhật ký lớp: ô ngày (như tờ lịch), chữ, ảnh / video / YouTube.
 // Thẻ (trang chủ, danh sách): đoạn trích + lưới 1–4 ô, ">4" hiện "+N". full (trang chi tiết): nội dung đủ, video phát được.
@@ -32,7 +32,7 @@ const ytThumb = (m: PostMedia) => `https://i.ytimg.com/vi/${youtubeId(m.key)}/hq
       <span class="mt-1 text-xs font-semibold uppercase tracking-wider">{lang === 'en' ? part({ month: 'short' }) : `Th ${part({ month: 'numeric' })}`}</span>
     </time>
     <div class="min-w-0">
-      <p class="text-sm font-semibold uppercase tracking-wider text-ash">{dayLong(todayDigit(date), lang)} · {part({ year: 'numeric' })}</p>
+      <p class="text-sm font-semibold uppercase tracking-wider text-ash">{dayLong(vnNow(date).weekday, lang)} · {part({ year: 'numeric' })}</p>
       {title && (full
         ? <h1 class="mt-1 text-4xl sm:text-5xl">{title}</h1>
         : <h3 class="mt-1 text-2xl sm:text-3xl"><a href={link} class="hover:text-glory transition-colors">{title}</a></h3>)}

@@ -17,6 +17,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
   if (host === env.PUBLIC_HOST && pathname.startsWith('/admin')) {
     return context.redirect(`https://${env.CMS_HOST}${pathname}`, 302);
   }
+  // Đăng nhập + dữ liệu học viên chỉ ở host CMS (host public chỉ có /api/public).
+  if (host === env.PUBLIC_HOST && /^\/api\/(admin|auth)(\/|$)/.test(pathname)) return new Response('Not found', { status: 404 });
 
   // Mục Tin tức đã thành Nhật ký lớp học: giữ link cũ (đã chia sẻ / Google đã lưu).
   const old = pathname.match(/^(\/en)?\/tin-tuc(\/.*)?$/);
