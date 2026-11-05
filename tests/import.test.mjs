@@ -1,7 +1,7 @@
 // Chạy: npm test (Node 24 đọc thẳng file .ts). Test các quy tắc dễ sai khi nhập dữ liệu.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STATUS_IN, byName, fixPhone, fold, parseDate } from '../src/lib/import.ts';
+import { STATUS_IN, byName, fixPhone, fold, parseDate, updatableColumns } from '../src/lib/import.ts';
 import { normalizePhone, vnNow, youtubeId } from '../src/lib/util.ts';
 import { textToHtml, toText } from '../src/lib/html.ts';
 import { RESOURCES } from '../src/admin/resources.ts';
@@ -26,6 +26,17 @@ test('trạng thái nhập từ file: chữ lạ không tự thành "Đang học
   assert.equal(STATUS_IN[fold('Đã nghỉ')], 'quit');
   assert.equal(STATUS_IN[fold('Tạm nghỉ')], 'paused');
   assert.equal(STATUS_IN[fold('Nghỉ học')], undefined);
+});
+
+test('nhập Excel cập nhật học viên: chỉ ghi cột có trong file, ô trống trạng thái/ngày giữ nguyên', () => {
+  const values = { fullName: 'A', phone: null, locationId: null, status: 'active', joinedAt: '2026-11-05' };
+  // Cột vắng → giữ dữ liệu cũ
+  assert.deepEqual(updatableColumns(values, { fullName: 'A' }), { fullName: 'A' });
+  // Ô trống ở trạng thái / ngày nhập học → giữ (không thành "Đang học" / hôm nay)
+  assert.deepEqual(updatableColumns(values, { fullName: 'A', status: '', joinedAt: '' }), { fullName: 'A' });
+  // Ô có chữ → ghi; ô trống ở cột không bắt buộc → xoá; cột "Cơ sở" của file → locationId
+  assert.deepEqual(updatableColumns(values, { fullName: 'A', status: 'Đang học', phone: '', location: '' }),
+    { fullName: 'A', phone: null, locationId: null, status: 'active' });
 });
 
 test('vnNow: thứ theo giờ Việt Nam (8 = Chủ nhật)', () => {

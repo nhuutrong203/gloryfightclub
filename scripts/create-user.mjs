@@ -1,7 +1,6 @@
 // Tạo / đặt lại mật khẩu tài khoản CMS.
 //   node scripts/create-user.mjs <username> <mật-khẩu> "<Họ tên>" [owner|coach] [--remote]
-// Ví dụ tạo tài khoản chủ CLB trên cloud:
-//   node scripts/create-user.mjs trung "MatKhauManh!" "Lê Thành Trung" owner --remote
+// Repo public: không ghi tên đăng nhập / mật khẩu thật vào ví dụ.
 import { execFileSync } from 'node:child_process';
 import { writeFileSync, rmSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';

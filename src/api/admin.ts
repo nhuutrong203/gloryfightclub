@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { and, asc, eq, gte, inArray, sql } from 'drizzle-orm';
+import { and, asc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
 import { z } from 'zod';
 import { db, schema } from '../db';
@@ -30,14 +30,16 @@ adminRoutes.get('/dashboard', async (c) => {
   const u = c.get('user');
   const { date, month, weekday } = vnNow();
   const st = schema.students;
+  // Cùng quy tắc với trang Học phí: người nhập trước với ngày vào học tháng sau chưa tính (so chuỗi YYYY-MM-DD, '-31' đủ cho mọi tháng).
+  const joinedBy = lte(st.joinedAt, `${month}-31`);
   const [byLocation, newThisMonth, trialsNew, todayClasses, unpaid] = await Promise.all([
     db.select({ locationId: st.locationId, n: sql<number>`count(*)` }).from(st).where(eq(st.status, 'active')).groupBy(st.locationId),
-    db.select({ n: sql<number>`count(*)` }).from(st).where(gte(st.joinedAt, `${month}-01`)).get(),
+    db.select({ n: sql<number>`count(*)` }).from(st).where(and(gte(st.joinedAt, `${month}-01`), joinedBy)).get(),
     db.select({ n: sql<number>`count(*)` }).from(schema.trialRegistrations).where(eq(schema.trialRegistrations.status, 'new')).get(),
     db.select().from(schema.classes).where(and(eq(schema.classes.isActive, true), sql`instr(${schema.classes.days}, ${weekday}) > 0`)).orderBy(asc(schema.classes.startTime)),
     can(u, 'fees.view')
       ? db.select({ n: sql<number>`count(*)` }).from(st)
-          .where(and(eq(st.status, 'active'), sql`not exists (select 1 from payments p where p.student_id = ${st.id} and p.month = ${month})`)).get()
+          .where(and(eq(st.status, 'active'), joinedBy, sql`not exists (select 1 from payments p where p.student_id = ${st.id} and p.month = ${month})`)).get()
       : null,
   ]);
   const revenue = can(u, 'fees.view')

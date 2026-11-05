@@ -68,7 +68,8 @@ export function StudentList({ me }: { me: Me }) {
                         {s.classIds.length > 0 && lk && ` · ${s.classIds.map((id: number) => lk.classes.find((k) => k.id === id)?.name).filter(Boolean).join(', ')}`}
                       </span>
                     </span>
-                    {can(me, 'fees.view') && s.status === 'active' && (s.paidThisMonth ? <Badge tone="green">Đã đóng</Badge> : <Badge tone="red">Chưa đóng</Badge>)}
+                    {/* Người vào học từ tháng sau chưa có học phí tháng này (cùng quy tắc trang Học phí). */}
+                    {can(me, 'fees.view') && s.status === 'active' && s.joinedAt.slice(0, 7) <= todayVN().slice(0, 7) && (s.paidThisMonth ? <Badge tone="green">Đã đóng</Badge> : <Badge tone="red">Chưa đóng</Badge>)}
                   </A>
                 </li>
               ))}

@@ -4,7 +4,7 @@ import type { BatchItem } from 'drizzle-orm/batch';
 import { z } from 'zod';
 import { db, schema } from '../db';
 import { normalizePhone, vnNow } from '../lib/util';
-import { STATUS_IN, byName, fixPhone, fold, parseDate } from '../lib/import';
+import { STATUS_IN, byName, fixPhone, fold, parseDate, updatableColumns } from '../lib/import';
 import { body, csv, idParam, issueText, need } from './guard';
 import type { Env } from '.';
 
@@ -172,14 +172,10 @@ studentRoutes.post('/import', need('students.edit'), async (c) => {
     const { classIds: cls, ...values } = parsed.data;
     const id = r.code ? codes.get(r.code.toUpperCase()) : undefined;
     if (id) {
-      // Cập nhật: chỉ đổi cột có trong file, cột vắng giữ nguyên dữ liệu cũ.
-      // Ô trống ở cột bắt buộc (trạng thái, ngày nhập học) = giữ nguyên, không thành "Đang học" / hôm nay.
-      const has = (k: keyof typeof r) => r[k] !== undefined && !(r[k] === '' && (k === 'status' || k === 'joinedAt'));
-      const COL: Record<string, keyof typeof r> = { locationId: 'location', feePlanId: 'plan' };
-      const set = Object.fromEntries(Object.entries(values).filter(([k]) => has(COL[k] ?? (k as keyof typeof r))));
-      const stmts: BatchItem<'sqlite'>[] = [db.update(s).set({ ...set, updatedAt: Date.now() }).where(eq(s.id, id))];
-      if (has('classes')) stmts.push(db.delete(schema.studentClasses).where(eq(schema.studentClasses.studentId, id)));
-      if (has('classes') && cls.length) stmts.push(db.insert(schema.studentClasses).values(cls.map((classId) => ({ studentId: id, classId }))));
+      // Cập nhật: chỉ đổi cột có trong file (quy tắc + test ở updatableColumns). Cột Lớp có mà ô trống = bỏ hết lớp.
+      const stmts: BatchItem<'sqlite'>[] = [db.update(s).set({ ...updatableColumns(values, r), updatedAt: Date.now() }).where(eq(s.id, id))];
+      if (r.classes !== undefined) stmts.push(db.delete(schema.studentClasses).where(eq(schema.studentClasses.studentId, id)));
+      if (r.classes !== undefined && cls.length) stmts.push(db.insert(schema.studentClasses).values(cls.map((classId) => ({ studentId: id, classId }))));
       todo.push({ row: rowNo, isNew: false, stmts });
     } else {
       // Học viên mới chưa có id → nối lớp qua mã học viên ngay trong cùng đợt ghi.

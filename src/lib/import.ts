@@ -21,6 +21,15 @@ export const fixPhone = (v?: string) => (v && /^\d{9}$/.test(v.replace(/\D/g, ''
 
 export const STATUS_IN: Record<string, 'active' | 'paused' | 'quit'> = { 'dang hoc': 'active', active: 'active', 'tam nghi': 'paused', paused: 'paused', 'da nghi': 'quit', nghi: 'quit', quit: 'quit' };
 
+/** Cập nhật học viên đã có từ file: chỉ ghi cột có trong file (cột vắng giữ dữ liệu cũ).
+ *  Ô trống ở cột bắt buộc (trạng thái, ngày nhập học) cũng giữ nguyên, không thành "Đang học" / hôm nay.
+ *  values: cột DB đã đọc từ dòng; row: chữ gốc của dòng theo tên cột file (location → locationId, plan → feePlanId). */
+export function updatableColumns<T extends Record<string, unknown>>(values: T, row: Record<string, string | undefined>): Partial<T> {
+  const COL: Record<string, string> = { locationId: 'location', feePlanId: 'plan' };
+  const has = (k: string) => row[k] !== undefined && !(row[k] === '' && (k === 'status' || k === 'joinedAt'));
+  return Object.fromEntries(Object.entries(values).filter(([k]) => has(COL[k] ?? k))) as Partial<T>;
+}
+
 const initials = (x: string) => fold(x).split(/[^a-z0-9]+/).filter(Boolean).map((w) => w[0]).join('');
 
 /** Khớp tên không dấu, hoặc viết tắt chữ cái đầu ("HSSV" = "Học sinh – Sinh viên"). Không khớp → null. */

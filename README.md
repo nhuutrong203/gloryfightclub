@@ -55,7 +55,7 @@ npx wrangler r2 bucket create glory-media
    ```
 3. Create the **real** owner account in the cloud (never use the demo accounts):
    ```bash
-   node scripts/create-user.mjs <username> "<StrongPassword>" "Lê Thành Trung" owner --remote
+   node scripts/create-user.mjs <username> "<StrongPassword>" "<Full name>" owner --remote
    ```
    Coaches: the owner creates them in the CMS → Thêm → Tài khoản & phân quyền.
    Forgot the password → run the same command again with a new password to reset it.
