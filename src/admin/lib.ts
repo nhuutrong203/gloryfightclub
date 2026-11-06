@@ -118,8 +118,8 @@ export const shiftMonth = (m: string, delta: number) => {
 const isHeic = (f: File) => /hei[cf]/i.test(f.type) || /\.hei[cf]$/i.test(f.name);
 export const HEIC = 'Ảnh HEIC của iPhone chưa mở được trên máy này — tải ảnh lên trực tiếp từ iPhone, hoặc đổi ảnh sang JPG rồi thử lại.';
 
-async function shrink(file: File, maxSide: number): Promise<Blob> {
-  if (file.size <= 400_000 && /^image\/(jpeg|webp)$/.test(file.type)) return file;
+async function shrink(file: File, maxSide: number, keepSmall = true): Promise<Blob> {
+  if (keepSmall && file.size <= 400_000 && /^image\/(jpeg|webp)$/.test(file.type)) return file;
   const bmp = await createImageBitmap(file).catch(() => {
     throw new Error(isHeic(file) ? HEIC : 'Không mở được ảnh này — thử ảnh khác (JPG, PNG) hoặc chụp màn hình ảnh rồi tải lên.');
   });
@@ -150,11 +150,21 @@ export async function uploadImage(file: File, onProgress?: (pct: number) => void
   try { return await send(file, onProgress, maxSide); } finally { setUploads(-1); }
 }
 
-async function send(file: File, onProgress: ((pct: number) => void) | undefined, maxSide: number): Promise<string> {
-  const blob = await shrink(file, maxSide);
+const asForm = (blob: Blob) => {
   const form = new FormData();
   form.append('file', new File([blob], blob.type === 'image/webp' ? 'image.webp' : 'image.jpg', { type: blob.type }));
-  return xhrUpload('/api/admin/upload', form, onProgress);
+  return form;
+};
+
+async function send(file: File, onProgress: ((pct: number) => void) | undefined, maxSide: number): Promise<string> {
+  const key = await xhrUpload('/api/admin/upload', asForm(await shrink(file, maxSide)), onProgress);
+  // Bản nhỏ 480px cho thẻ / lưới ảnh trên web (điện thoại đỡ tải ảnh 1600px). Lỗi thì bỏ qua: web tự dùng ảnh gốc.
+  try {
+    const form = asForm(await shrink(file, 480, false));
+    form.append('variantOf', key);
+    await xhrUpload('/api/admin/upload', form);
+  } catch (e) { console.warn('Không tạo được ảnh nhỏ', e); }
+  return key;
 }
 
 /** POST có % tiến trình (fetch chưa báo được tiến trình gửi lên) → trả key R2 server sinh ra. */

@@ -1,6 +1,7 @@
 import { env } from 'cloudflare:workers';
 import { sql } from 'drizzle-orm';
 import { db } from '../db';
+import { THUMB } from '../lib/site';
 
 /** Xoá file R2 không còn dùng (ảnh bị đổi/bỏ, bài hoặc mục bị xoá). Gọi SAU khi đã ghi DB.
  *  Chỉ xoá key không còn ở bảng nào. Mọi lỗi chỉ ghi log: việc lưu chính đã xong, không được báo lỗi theo.
@@ -18,7 +19,7 @@ export async function deleteMedia(keys: (string | null | undefined)[]) {
       or exists (select 1 from achievements where image_key = j.value)
       or exists (select 1 from settings where key = 'hero' and json_extract(value, '$.image_key') = j.value)`);
     const free = list.filter((k) => !used.some((u) => u.k === k));
-    if (free.length) await env.MEDIA.delete(free);
+    if (free.length) await env.MEDIA.delete([...free, ...free.map((k) => k + THUMB)]); // kèm bản nhỏ 480px (không có cũng không sao)
   } catch (e) {
     console.error('Dọn file R2 lỗi', list, e);
   }

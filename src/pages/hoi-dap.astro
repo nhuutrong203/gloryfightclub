@@ -10,7 +10,8 @@ const lang: Lang = Astro.locals.lang;
 const faqs = await publicFaqs();
 Astro.response.headers.set('cache-control', 'public, max-age=60');
 ---
-<PublicLayout path="/hoi-dap" title={t(lang, 'faq_title')} description={t(lang, 'faq_sub')}>
+<PublicLayout path="/hoi-dap" title={t(lang, 'faq_title')} description={t(lang, 'faq_sub')}
+  jsonLd={faqs.length ? { '@type': 'FAQPage', mainEntity: faqs.map((f) => ({ '@type': 'Question', name: tr(f, 'question', lang), acceptedAnswer: { '@type': 'Answer', text: tr(f, 'answer', lang) } })) } : undefined}>
   <PageHero eyebrow={t(lang, 'eb_faq')} title={t(lang, 'faq_title')} subtitle={t(lang, 'faq_sub')} />
   <section class="container-x py-14 sm:py-20">
     {faqs.length === 0 && <p class="text-white/75">{t(lang, 'faq_empty')}</p>}

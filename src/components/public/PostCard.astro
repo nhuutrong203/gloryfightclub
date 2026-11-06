@@ -25,6 +25,7 @@ const part = (o: Intl.DateTimeFormatOptions) => date.toLocaleString(lang === 'en
 const shown = p.media.slice(0, 4);
 const extra = p.media.length - shown.length;
 const src = (m: PostMedia) => `/media/${m.key}`;
+const thumb = (m: PostMedia) => `/media/${m.key}?w=480`; // ô ảnh trên thẻ (trang chủ, danh sách) → bản 480px; trang bài dùng ảnh gốc
 const ytThumb = (m: PostMedia) => `https://i.ytimg.com/vi/${youtubeId(m.key)}/hqdefault.jpg`;
 const cover = p.media[0];
 ---
@@ -41,7 +42,7 @@ const cover = p.media[0];
       <div class="relative min-h-28 w-28 shrink-0 overflow-hidden bg-ink sm:aspect-[16/10] sm:min-h-0 sm:w-auto">
         {cover.type === 'video'
           ? <video src={`${src(cover)}#t=0.1`} muted playsinline preload="metadata" class="absolute inset-0 size-full object-cover"></video>
-          : <img src={cover.type === 'image' ? src(cover) : ytThumb(cover).replace('hqdefault', 'mqdefault')} alt="" loading="lazy" decoding="async" class="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105" />}
+          : <img src={cover.type === 'image' ? thumb(cover) : ytThumb(cover).replace('hqdefault', 'mqdefault')} alt="" loading="lazy" decoding="async" class="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105" />}
         {cover.type !== 'image' && <span class="absolute inset-0 grid place-items-center" aria-hidden="true"><span class="grid size-9 place-items-center bg-glory/90 text-white sm:size-12"><Icon name="play" class="size-4 sm:size-5" /></span></span>}
         {p.media.length > 1 && <span class="absolute bottom-2 right-2 bg-ink/80 px-2 py-1 font-display text-sm tracking-wider text-white">+{p.media.length - 1}</span>}
       </div>
@@ -50,7 +51,7 @@ const cover = p.media[0];
       <div class="flex items-center gap-3">
         <time datetime={date.toISOString()} class="hidden w-12 shrink-0 flex-col items-center bg-glory py-1 text-white sm:flex">
           <span class="font-display text-2xl leading-none">{part({ day: 'numeric' })}</span>
-          <span class="text-[11px] font-semibold uppercase tracking-wider">{lang === 'en' ? part({ month: 'short' }) : `Th ${part({ month: 'numeric' })}`}</span>
+          <span class="text-xs font-semibold uppercase tracking-wider">{lang === 'en' ? part({ month: 'short' }) : `Th ${part({ month: 'numeric' })}`}</span>
         </time>
         <p class="text-xs font-semibold uppercase tracking-wider text-ash sm:text-sm">{dayLong(vnNow(date).weekday, lang)}<span class="sm:hidden"> · {part({ day: 'numeric', month: 'numeric' })}</span></p>
       </div>
@@ -87,7 +88,7 @@ const cover = p.media[0];
   {p.media.length > 0 && (full ? (
     <div class="grid gap-1 bg-ink">
       {p.media.map((m) => m.type === 'image'
-        ? <a href={src(m)} data-lightbox="diary" data-caption={title}><img src={src(m)} alt="" loading="lazy" decoding="async" class="h-auto w-full" /></a>
+        ? <a href={src(m)} data-lightbox="diary" data-caption={title}><img src={src(m)} alt={title || t(lang, 'news_title')} loading="lazy" decoding="async" class="h-auto w-full" /></a>
         : m.type === 'video'
           ? <video src={`${src(m)}#t=0.1`} controls playsinline preload="metadata" class="max-h-[85vh] w-full bg-black"></video>
           : <div class="aspect-video"><iframe src={youtubeEmbed(m.key)} title={title || t(lang, 'watch_video')} loading="lazy" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen class="size-full"></iframe></div>)}
@@ -98,7 +99,7 @@ const cover = p.media[0];
         <div class:list={['relative overflow-hidden', shown.length === 1 ? 'aspect-[4/3]' : 'aspect-square', shown.length === 3 && idx === 0 && 'row-span-2 !aspect-auto']}>
           {m.type === 'video'
             ? <video src={`${src(m)}#t=0.1`} muted playsinline preload="metadata" class="absolute inset-0 size-full object-cover"></video>
-            : <img src={m.type === 'image' ? src(m) : ytThumb(m)} alt="" loading="lazy" decoding="async" class="absolute inset-0 size-full object-cover" />}
+            : <img src={m.type === 'image' ? thumb(m) : ytThumb(m)} alt="" loading="lazy" decoding="async" class="absolute inset-0 size-full object-cover" />}
           {m.type !== 'image' && <span class="absolute inset-0 grid place-items-center" aria-hidden="true"><span class="grid size-14 place-items-center bg-glory/90 text-white"><Icon name="play" class="size-6" /></span></span>}
           {idx === 3 && extra > 0 && <span class="absolute inset-0 grid place-items-center bg-ink/70 font-display text-5xl">+{extra}</span>}
         </div>

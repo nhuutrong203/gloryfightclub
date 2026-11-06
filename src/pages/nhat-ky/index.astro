@@ -74,7 +74,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
               {yearMonths.map((a) => (
                 <a href={link({ thang: a.month })} aria-current={month === a.month ? 'page' : undefined} aria-label={`${monthName(a.month)} — ${count(a.n)}`}
                   class:list={['shrink-0 inline-flex min-h-11 items-center gap-1.5 px-3 text-sm font-semibold transition-colors', month === a.month ? 'bg-white text-ink' : 'text-white/75 hover:bg-white/10 hover:text-white']}>
-                  {monthChip(a.month)}<span class:list={['grid min-w-5 place-items-center px-1 text-[11px] leading-5', month === a.month ? 'bg-glory text-white' : 'bg-white/10']}>{a.n}</span>
+                  {monthChip(a.month)}<span class:list={['grid min-w-5 place-items-center px-1 text-xs leading-5', month === a.month ? 'bg-glory text-white' : 'bg-white/10']}>{a.n}</span>
                 </a>
               ))}
             </div>

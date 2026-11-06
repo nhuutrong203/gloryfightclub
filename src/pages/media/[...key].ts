@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
+import { THUMB } from '../../lib/site';
 
 // Phục vụ ảnh/video public từ R2. Key do CMS sinh ra (không đoán được tên file gốc).
 // Key không bao giờ bị ghi đè (mỗi lần upload một uuid mới) nhưng có thể bị XOÁ (vd. phụ huynh xin gỡ ảnh)
@@ -25,7 +26,9 @@ export const GET: APIRoute = async ({ params, request, locals }) => {
   const cache = (caches as unknown as { default: Cache }).default;
   const hit = await cache.match(request);
   if (hit) return hit;
-  const obj = await env.MEDIA.get(params.key);
+  // ?w=480: bản nhỏ (thẻ, lưới ảnh); chưa có thì trả ảnh gốc.
+  const small = new URL(request.url).searchParams.get('w') === '480' ? await env.MEDIA.get(params.key + THUMB) : null;
+  const obj = small ?? (await env.MEDIA.get(params.key));
   if (!obj) return new Response('Not found', { status: 404 });
   obj.writeHttpMetadata(headers);
   headers.set('etag', obj.httpEtag);

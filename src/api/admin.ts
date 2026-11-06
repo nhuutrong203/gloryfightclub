@@ -8,6 +8,7 @@ import { DEFAULT_COACH_PERMISSIONS, PERMISSIONS, SESSION_COOKIE, can, hashPasswo
 import { vnNow } from '../lib/util';
 import { body, idParam, need, ownerOnly } from './guard';
 import { deleteMedia } from './media';
+import { THUMB } from '../lib/site';
 import { owesIn } from './fees';
 import type { Env } from '.';
 
@@ -120,7 +121,12 @@ adminRoutes.post('/upload', need('posts', 'content'), async (c) => {
   if (file.size > 8 * 1024 * 1024) return c.json({ error: 'Ảnh quá lớn (tối đa 8MB)' }, 400);
   const bytes = new Uint8Array(await file.arrayBuffer());
   if (!isImage(bytes, ext)) return c.json({ error: 'File không phải ảnh hợp lệ' }, 400);
-  const key = `public/${vnNow().month}/${crypto.randomUUID()}.${ext}`;
+  // variantOf = key ảnh gốc vừa upload → đây là bản nhỏ 480px của nó (CMS gửi ngay sau ảnh gốc), lưu ở `<key>.w480`.
+  const variantOf = form?.get('variantOf');
+  if (variantOf != null && (typeof variantOf !== 'string' || !/^public\/[\w\-/.]+$/.test(variantOf) || variantOf.endsWith(THUMB) || file.size > 400_000)) {
+    return c.json({ error: 'Bản ảnh nhỏ không hợp lệ' }, 400);
+  }
+  const key = variantOf ? variantOf + THUMB : `public/${vnNow().month}/${crypto.randomUUID()}.${ext}`;
   await env.MEDIA.put(key, bytes, { httpMetadata: { contentType: file.type } });
   return c.json({ key }, 201);
 });

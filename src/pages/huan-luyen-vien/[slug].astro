@@ -8,7 +8,7 @@ import CtaBand from '../../components/public/CtaBand.astro';
 import AchievementIcon from '../../components/public/AchievementIcon.astro';
 import MedalTally from '../../components/public/MedalTally.astro';
 import { db, schema } from '../../db';
-import { mediaUrl } from '../../lib/site';
+import { mediaUrl, thumbUrl } from '../../lib/site';
 import { publicCoaches, publicClasses, publicDisciplines, lines, richText } from '../../lib/public';
 import { extraAwards } from '../../lib/medals';
 import { t, tr, href, type Lang } from '../../i18n';
@@ -86,7 +86,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
               {achievementRows.filter((r) => r.imageKey).map((r, i) => (
                 <li class="reveal" style={`--i:${i % 3}`}>
                   <a href={mediaUrl(r.imageKey)} data-lightbox="coach-achievements" data-caption={tr(r, 'title', lang)} class="group block overflow-hidden bg-ink">
-                    <img src={mediaUrl(r.imageKey)} alt={tr(r, 'title', lang)} loading="lazy" class="aspect-[4/3] w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                    <img src={thumbUrl(r.imageKey)} alt={tr(r, 'title', lang)} loading="lazy" class="aspect-[4/3] w-full object-cover transition-transform duration-500 group-hover:scale-105" />
                   </a>
                   <p class="mt-2 font-display text-lg uppercase leading-snug sm:text-xl">{tr(r, 'title', lang)}</p>
                   {r.eventName && <p class="text-sm text-ink/70">{r.eventName}{r.eventDate && ` · ${r.eventDate.slice(0, 4)}`}</p>}

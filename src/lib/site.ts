@@ -30,3 +30,7 @@ export async function getSite() {
 
 export const telHref = (phone: string) => `tel:${phone.replace(/\D/g, '')}`;
 export const mediaUrl = (key: string | null | undefined) => (key ? `/media/${key}` : null);
+/** Bản nhỏ 480px của ảnh (lưu cạnh ảnh gốc: `<key>.w480`, CMS tạo khi upload) cho thẻ / lưới ảnh.
+ *  Chưa có bản nhỏ (ảnh cũ) thì /media tự trả ảnh gốc → không bao giờ vỡ ảnh. Ảnh lớn / mở lightbox vẫn dùng mediaUrl. */
+export const THUMB = '.w480';
+export const thumbUrl = (key: string | null | undefined) => (key ? `/media/${key}?w=480` : null);

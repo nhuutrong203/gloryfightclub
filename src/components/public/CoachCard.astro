@@ -2,7 +2,7 @@
 import Logo from '../Logo.astro';
 import Icon from './Icon.astro';
 import { tr, href, t, type Lang } from '../../i18n';
-import { mediaUrl } from '../../lib/site';
+import { thumbUrl } from '../../lib/site';
 import { lines } from '../../lib/public';
 import AchievementIcon from './AchievementIcon.astro';
 import MedalTally from './MedalTally.astro';
@@ -14,7 +14,7 @@ const { coach: c, lang, i = 0, tone = 'dark', class: className } = Astro.props;
 // Giống trang HLV: ô chữ "Thành tích" + mục Thành tích gắn HLV này mà ô chữ chưa ghi (extraAwards bỏ dòng trùng, không đếm đôi huy chương).
 const text = lines(tr(c, 'achievements', lang));
 const achievements = [...text, ...extraAwards(text, c.awards ?? [], (a) => ({ title: tr(a, 'title', lang), event: a.eventName })).map((a) => tr(a, 'title', lang))];
-const photo = mediaUrl(c.photoKey);
+const photo = thumbUrl(c.photoKey); // thẻ HLV nhỏ → bản 480px
 const medals = tally(achievements);
 const hasMedals = medals.gold + medals.silver + medals.bronze > 0;
 // Chưa có ảnh: hiện chữ viết tắt (vd. "LT") thay vì khung trống.
