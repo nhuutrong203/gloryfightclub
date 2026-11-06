@@ -214,15 +214,6 @@ a:hover .roll::before, a:focus-visible .roll::before { translate: 0 0; }
   animation: spin-border 5s linear infinite; }
 @keyframes spin-border { to { --spin: 360deg; } }
 
-/* Vòng con trỏ (chỉ máy có chuột; con trỏ thật vẫn hiện): to + đỏ khi trỏ vào thứ bấm được. Script tạo và di chuyển. */
-.cursor-ring { position: fixed; left: 0; top: 0; z-index: 70; width: 36px; height: 36px; margin: -18px 0 0 -18px; pointer-events: none;
-  border: 2px solid var(--color-glory-bright); border-radius: 9999px; opacity: 0;
-  transition: scale .25s cubic-bezier(.2,.7,.2,1), opacity .25s, background-color .25s, border-color .25s; }
-.cursor-ring.is-on { opacity: 1; }
-.cursor-ring.is-link { scale: 1.7; background: rgb(225 6 0 / .18); }
-.cursor-ring.is-text { scale: .45; }
-.cursor-ring.is-down { scale: .75; }
-
 @media (hover: hover) and (pointer: fine) {
   .btn-red:hover::after { translate: 400% 0; transition: translate .7s cubic-bezier(.2,.7,.2,1); }
 }
@@ -237,7 +228,7 @@ a:hover .roll::before, a:focus-visible .roll::before { translate: 0 0; }
   [data-tilt]::after, .btn-red::after { display: none; }
   .wipe::before { transition: none; }
   .block-reveal, .block-reveal::after, .grain::after, .drift-x, .premium-glow { animation: none; }
-  .block-reveal::after, .cursor-ring { display: none; }
+  .block-reveal::after { display: none; }
   .roll > span, .roll::before { transition: none; }
   ::view-transition-old(root), ::view-transition-new(root), .hero-in, .hero-line, .stripe-in, #mnav[open] > div, #mnav[open] li { animation: none; }
 }

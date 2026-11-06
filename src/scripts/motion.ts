@@ -86,28 +86,14 @@ nav?.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => { na
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && nav?.open) nav.open = false; });
 
 // ── Máy có chuột: thẻ [data-tilt] nghiêng theo con trỏ + quầng sáng; nút [data-magnetic] nhích theo con trỏ;
-//    quầng đỏ [data-spot] (hero) đi theo con trỏ; vòng con trỏ đuổi theo chuột, to ra trên thứ bấm được. ──
+//    quầng đỏ [data-spot] (hero) đi theo con trỏ. Con trỏ chuột để bình thường (vòng tròn đuổi theo chuột đã bỏ theo ý chủ web). ──
 if (finePointer && !reduced) {
-  const ring = document.createElement('div');
-  ring.className = 'cursor-ring';
-  ring.setAttribute('aria-hidden', 'true');
-  document.body.appendChild(ring);
-  let rx = -100, ry = -100, tx = -100, ty = -100, ringRaf = 0;
-  const follow = () => {
-    rx += (tx - rx) * 0.22; ry += (ty - ry) * 0.22; // đuổi theo, hơi trễ cho có "đà"
-    ring.style.translate = `${rx}px ${ry}px`;
-    ringRaf = Math.abs(tx - rx) + Math.abs(ty - ry) > 0.3 ? requestAnimationFrame(follow) : 0;
-  };
-  const CLICKABLE = 'a, button, summary, label, select, [role="button"], [data-lightbox]';
-  document.addEventListener('pointerdown', () => ring.classList.add('is-down'));
-  document.addEventListener('pointerup', () => ring.classList.remove('is-down'));
 
   let tilt: HTMLElement | null = null;
   let mag: HTMLElement | null = null;
   let ev: PointerEvent | null = null;
   let queued = false;
   const release = () => {
-    ring.classList.remove('is-on');
     if (tilt) { tilt.classList.remove('is-tilting'); tilt.style.setProperty('--rx', '0deg'); tilt.style.setProperty('--ry', '0deg'); tilt = null; }
     if (mag) { mag.style.setProperty('--tx', '0px'); mag.style.setProperty('--ty', '0px'); mag = null; }
   };
@@ -136,11 +122,6 @@ if (finePointer && !reduced) {
       spot.style.setProperty('--sx', `${ev.clientX - r.left}px`);
       spot.style.setProperty('--sy', `${ev.clientY - r.top}px`);
     }
-    tx = ev.clientX; ty = ev.clientY;
-    if (!ring.classList.contains('is-on')) { rx = tx; ry = ty; ring.classList.add('is-on'); }
-    ring.classList.toggle('is-link', !!target.closest(CLICKABLE));
-    ring.classList.toggle('is-text', !!target.closest('input, textarea, [contenteditable]'));
-    if (!ringRaf) ringRaf = requestAnimationFrame(follow);
     if (m) {
       const r = m.getBoundingClientRect();
       // Kẹp ±10px / ±6px: nút rộng cả màn hình mà nhân theo tỉ lệ thì trượt quá xa khỏi chỗ bấm.
