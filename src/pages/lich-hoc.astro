@@ -92,6 +92,9 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
       ))}
     </div>
 
+    <!-- Lịch có thể đổi (chủ CLB dặn): nhắc nhỏ ngay trên bảng, kèm cách hỏi lại. -->
+    <p class="mt-6 flex items-start gap-2 text-sm text-ash"><Icon name="clock" class="mt-0.5 size-4 shrink-0 text-glory-bright" />{t(lang, 'schedule_note')}</p>
+
     {image && <img src={image} alt={`${t(lang, 'schedule_image_alt')} — ${loc ? tr(loc, 'name', lang) : ''}`} class="mt-8 w-full h-auto border border-white/10" />}
 
     {classes.length === 0 && !image && (
