@@ -34,8 +34,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
     <div>
       {history ? (
         <>
-          <p class="eyebrow">01</p>
-          <h2 class="mt-2 text-5xl sm:text-6xl">{t(lang, 'about_history')}</h2>
+          <h2 class="text-5xl sm:text-6xl">{t(lang, 'about_history')}</h2>
           <div class="mt-6 text-lg text-white/85" set:html={richText(history)} />
         </>
       ) : (
@@ -57,8 +56,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
   {philosophy && (
     <section class="bg-bone text-ink py-14 sm:py-20">
       <div class="container-x max-w-4xl">
-        <p class="eyebrow !text-glory-dark">02</p>
-        <h2 class="mt-2 text-5xl sm:text-6xl">{t(lang, 'about_philosophy')}</h2>
+        <h2 class="text-5xl sm:text-6xl">{t(lang, 'about_philosophy')}</h2>
         <div class="mt-6 text-xl leading-relaxed" set:html={richText(philosophy)} />
       </div>
     </section>
@@ -66,8 +64,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
 
   {values.length > 0 && (
     <section class="container-x py-14 sm:py-20">
-      <p class="eyebrow">03</p>
-      <h2 class="mt-2 text-5xl sm:text-6xl">{t(lang, 'about_values')}</h2>
+      <h2 class="text-5xl sm:text-6xl">{t(lang, 'about_values')}</h2>
       <ul class="mt-10 grid gap-px bg-white/10 border border-white/10 sm:grid-cols-2 lg:grid-cols-3">
         {values.map((v, i) => (
           <li class="reveal bg-ink p-6 sm:p-8" style={`--i:${i}`}>
