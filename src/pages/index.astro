@@ -36,18 +36,18 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
   <!-- HERO -->
   <section class="relative isolate overflow-hidden min-h-[calc(100dvh-8rem)] lg:min-h-[calc(100dvh-4rem)] flex items-end">
     {heroImage
-      ? <img src={heroImage} alt="" class="absolute inset-0 -z-20 size-full object-cover opacity-60" fetchpriority="high" />
+      ? <img src={heroImage} alt="" class="hero-media absolute inset-0 -z-20 size-full object-cover opacity-60" fetchpriority="high" />
       : <Logo class="absolute -z-20 -right-28 top-1/2 -translate-y-1/2 h-[125%] w-auto text-white/[0.05]" title="" />}
     <div class="absolute inset-0 -z-10 bg-gradient-to-t from-ink via-ink/70 to-ink/10"></div>
-    <div class="absolute -z-10 right-0 top-0 h-full w-24 sm:w-40 bg-glory/90 -skew-x-[14deg] translate-x-16 sm:translate-x-24"></div>
+    <div class="stripe-in absolute -z-10 right-0 top-0 h-full w-24 sm:w-40 origin-right bg-glory/90 -skew-x-[14deg] translate-x-16 sm:translate-x-24"></div>
     <div class="container-x pb-14 pt-24 sm:pb-20">
       <p class="eyebrow hero-in flex items-center gap-3 !text-xs sm:!text-sm"><span class="h-0.5 w-10 shrink-0 bg-glory"></span>{disciplines.map((d) => tr(d, 'name', lang)).join(' · ')}</p>
       <h1 class="text-[clamp(3.5rem,15vw,11rem)]">
-        {titleParts.map((part, i) => <span class:list={['hero-in block', i === 1 && 'text-glory']} style={`--d:${120 + i * 110}ms`}>{part.trim()}</span>)}
+        {titleParts.map((part, i) => <span class:list={['hero-line block', i === 1 && 'text-glory']} style={`--d:${120 + i * 140}ms`}>{part.trim()}</span>)}
       </h1>
       <p class="hero-in mt-6 max-w-xl text-lg sm:text-xl text-white/85" style="--d:380ms">{lang === 'en' ? hero.subtitle_en : hero.subtitle}</p>
       <div class="hero-in mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4" style="--d:480ms">
-        <a href={href('/dang-ky-hoc-thu', lang)} class="btn-red !text-xl !px-8">{t(lang, 'cta_trial')}<Icon name="arrow-right" /></a>
+        <a href={href('/dang-ky-hoc-thu', lang)} class="btn-red !text-xl !px-8" data-magnetic>{t(lang, 'cta_trial')}<Icon name="arrow-right" /></a>
         <a href={href('/lich-hoc', lang)} class="btn-ghost !text-xl !px-8"><Icon name="calendar" />{t(lang, 'nav_schedule')}</a>
       </div>
       <dl class="hero-in mt-12 grid max-w-2xl grid-cols-3 border-t border-white/15 pt-6" style="--d:580ms">
@@ -55,6 +55,11 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
         <div><dt class="text-sm text-ash">{t(lang, 'coaches_label')}</dt><dd class="font-display text-4xl sm:text-5xl" data-count={coaches.length}>{coaches.length}</dd></div>
         <div><dt class="text-sm text-ash">{t(lang, 'locations_title')}</dt><dd class="font-display text-4xl sm:text-5xl" data-count={locations.length}>{locations.length}</dd></div>
       </dl>
+    </div>
+    <!-- Gợi ý cuộn xuống (trang trí, chỉ màn rộng). -->
+    <div class="pointer-events-none absolute bottom-8 right-8 hidden flex-col items-center gap-2 lg:flex" aria-hidden="true">
+      <span class="h-14 w-px bg-white/30"></span>
+      <Icon name="chevron-down" class="scroll-cue size-6 text-glory" />
     </div>
   </section>
 
@@ -108,15 +113,15 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
       </div>
       <div class="mt-12 grid gap-px bg-white/10 border border-white/10 sm:grid-cols-2 lg:grid-cols-3">
         {disciplines.map((d, i) => (
-          <a href={href(`/mon-hoc/${d.slug}`, lang)} class:list={['reveal group relative overflow-hidden bg-ink p-7 sm:p-9 min-h-72 flex flex-col transition-colors duration-200 hover:bg-glory']} style={`--i:${i}`}>
+          <a href={href(`/mon-hoc/${d.slug}`, lang)} class:list={['reveal wipe group relative overflow-hidden bg-ink p-7 sm:p-9 min-h-72 flex flex-col']} style={`--i:${i}`} data-tilt>
             <span class="font-display text-7xl text-outline-white leading-none group-hover:[-webkit-text-stroke-color:rgb(255_255_255/0.6)]" aria-hidden="true">0{i + 1}</span>
             <h3 class="mt-auto pt-10 text-4xl sm:text-5xl">{tr(d, 'name', lang)}</h3>
             <p class="mt-3 text-white/75 group-hover:text-white line-clamp-3">{tr(d, 'summary', lang)}</p>
             <Icon name="arrow-up-right" class="absolute right-6 top-6 size-8 transition-transform duration-200 group-hover:translate-x-1 group-hover:-translate-y-1" />
           </a>
         ))}
-        <a href={href('/dang-ky-hoc-thu', lang)} class="reveal group bg-bone text-ink p-7 sm:p-9 min-h-72 flex flex-col justify-between hover:bg-white" style={`--i:${disciplines.length}`}>
-          <Icon name="arrow-up-right" class="size-10 text-glory" />
+        <a href={href('/dang-ky-hoc-thu', lang)} class="reveal group relative overflow-hidden bg-bone text-ink p-7 sm:p-9 min-h-72 flex flex-col justify-between hover:bg-white" style={`--i:${disciplines.length}`} data-tilt>
+          <Icon name="arrow-up-right" class="size-10 text-glory transition-transform duration-300 group-hover:translate-x-1.5 group-hover:-translate-y-1.5 group-hover:scale-110" />
           <span class="font-display text-4xl sm:text-5xl uppercase leading-[1.12]">{t(lang, 'cta_trial')}</span>
         </a>
       </div>
@@ -148,7 +153,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
           {[...achievements].sort((x, y) => Number(!!y.imageKey) - Number(!!x.imageKey)).slice(0, 4).map((a, i) => (
             <li class="reveal bg-ink p-6" style={`--i:${i}`}>
               {a.imageKey
-                ? <a href={mediaUrl(a.imageKey)} data-lightbox="home-achievements" data-caption={tr(a, 'title', lang)} class="group -mx-6 -mt-6 mb-5 block aspect-[4/3] overflow-hidden"><img src={mediaUrl(a.imageKey)} alt={tr(a, 'title', lang)} loading="lazy" class="size-full object-cover transition-transform duration-500 group-hover:scale-105" /></a>
+                ? <a href={mediaUrl(a.imageKey)} data-lightbox="home-achievements" data-caption={tr(a, 'title', lang)} class="group -mx-6 -mt-6 mb-5 block aspect-[4/3] overflow-hidden"><img src={mediaUrl(a.imageKey)} alt={tr(a, 'title', lang)} loading="lazy" class="size-full object-cover" data-zoom /></a>
                 : <AchievementIcon line={tr(a, 'title', lang)} class="size-10" />}
               <p class="mt-4 font-display text-3xl uppercase leading-tight">{tr(a, 'title', lang)}</p>
               {a.eventName && <p class="mt-2 text-white/75">{a.eventName}</p>}
@@ -209,7 +214,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
     <h2 class="text-5xl sm:text-7xl">{t(lang, 'locations_title')}</h2>
     <div class="mt-10 grid gap-px bg-white/10 border border-white/10 md:grid-cols-2">
       {locations.map((l, i) => (
-        <div class="reveal relative overflow-hidden bg-ink p-7 sm:p-10" style={`--i:${i}`}>
+        <div class="reveal relative overflow-hidden bg-ink p-7 sm:p-10" style={`--i:${i}`} data-tilt>
           <span class="pointer-events-none absolute -bottom-10 right-2 font-display text-[11rem] leading-none text-white/[0.05]" aria-hidden="true">{i + 1}</span>
           <p class="eyebrow">{tr(l, 'name', lang)}</p>
           <p class="relative mt-4 max-w-sm text-lg leading-relaxed">{l.address}</p>

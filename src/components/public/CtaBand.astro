@@ -17,7 +17,7 @@ const { club } = Astro.locals.site;
       <p class="mt-5 max-w-xl text-lg text-white">{t(lang, 'final_cta_sub')}</p>
     </div>
     <div class="reveal flex flex-col gap-3 sm:flex-row lg:flex-col" style="--i:1">
-      <a href={href('/dang-ky-hoc-thu', lang)} class="btn bg-ink text-white hover:bg-white hover:text-ink">{t(lang, 'cta_trial')}<Icon name="arrow-right" /></a>
+      <a href={href('/dang-ky-hoc-thu', lang)} class="btn bg-ink text-white hover:bg-white hover:text-ink" data-magnetic>{t(lang, 'cta_trial')}<Icon name="arrow-right" /></a>
       <a href={telHref(club.hotlines[0])} class="btn border-2 border-white hover:bg-white hover:text-glory-dark"><Icon name="phone" />{club.hotlines[0]}</a>
     </div>
   </div>

@@ -50,7 +50,10 @@
   @apply inline-flex min-h-12 items-center justify-center gap-2 px-6 py-3 font-display uppercase tracking-wider text-lg leading-none transition duration-200 ease-out active:scale-[0.97];
 }
 @utility btn-red {
-  @apply btn bg-glory text-white hover:bg-white hover:text-ink;
+  @apply btn bg-glory text-white hover:bg-white hover:text-ink relative isolate overflow-hidden;
+  /* Vệt đỏ quét chéo qua nút (nút đã chuyển trắng) khi rê chuột (chỉ máy có chuột, xem phần chuyển động bên dưới). */
+  &::after { content: ''; position: absolute; inset: 0 auto 0 -60%; width: 40%; z-index: -1; pointer-events: none;
+    background: linear-gradient(100deg, transparent, rgb(225 6 0 / .35), transparent); transform: skewX(-20deg); translate: 0; }
 }
 @utility btn-ghost {
   @apply btn border-2 border-white text-white hover:bg-white hover:text-ink;
@@ -74,10 +77,18 @@
   -webkit-text-stroke: 1.5px rgb(255 255 255 / 0.35);
 }
 
-/* Hiện dần khi cuộn tới (script trong PublicLayout thêm .is-in) */
 /* Hero trang chủ: chữ trượt lên lần lượt khi tải trang. */
 .hero-in { animation: hero-in .8s cubic-bezier(.2,.7,.2,1) both; animation-delay: var(--d, 0ms); }
 @keyframes hero-in { from { opacity: 0; transform: translateY(32px); } }
+/* Tiêu đề lớn trồi lên từ sau một "mép cắt" (clip-path chừa -0.35em phía trên cho dấu chồng Ổ/Ầ không bị cắt). */
+.hero-line { animation: line-up .9s cubic-bezier(.16,1,.3,1) both; animation-delay: var(--d, 0ms); }
+@keyframes line-up {
+  from { clip-path: inset(-0.35em -0.1em 100% -0.1em); translate: 0 0.5em; }
+  to { clip-path: inset(-0.35em -0.1em -0.35em -0.1em); translate: 0 0; }
+}
+/* Sọc đỏ chéo ở hero: phóng ra từ mép khi tải trang. */
+.stripe-in { animation: stripe-in .9s cubic-bezier(.7,0,.2,1) .15s both; }
+@keyframes stripe-in { from { scale: 0 1; } }
 
 /* Menu điện thoại: trượt xuống + các mục hiện lần lượt. */
 #mnav[open] > div { animation: menu-in .28s cubic-bezier(.2,.7,.2,1) both; }
@@ -107,11 +118,77 @@
 .rich a { @apply break-words underline decoration-glory underline-offset-4 hover:text-white; }
 .rich strong, .rich b { @apply font-semibold text-white; }
 
-.reveal { opacity: 0; transform: translateY(28px); transition: opacity .6s cubic-bezier(.2,.7,.2,1), transform .6s cubic-bezier(.2,.7,.2,1); transition-delay: calc(var(--i, 0) * 70ms); }
-.reveal.is-in { opacity: 1; transform: none; }
+/* ───── Chuyển động khi cuộn (src/scripts/motion.ts thêm .is-in khi phần tử vào màn hình) ───── */
+/* Dùng translate/opacity (không dùng transform) để không giành transform với hiệu ứng nghiêng thẻ [data-tilt]. */
+.reveal { transition: opacity .6s cubic-bezier(.2,.7,.2,1), translate .6s cubic-bezier(.2,.7,.2,1); transition-delay: calc(var(--i, 0) * 70ms); }
+/* Chỉ đặt translate khi CHƯA hiện: hiện rồi thì trả lại cho class của phần tử (vd. hover:-translate-y ở thẻ học phí). */
+.reveal:not(.is-in) { opacity: 0; translate: 0 28px; }
+/* Tiêu đề h2: trồi lên sau mép cắt khi cuộn tới (script tự gắn cho mọi h2 trong <main>). */
+.reveal-title { clip-path: inset(-0.35em -0.1em 100% -0.1em); translate: 0 0.45em; transition: clip-path .85s cubic-bezier(.16,1,.3,1), translate .85s cubic-bezier(.16,1,.3,1); }
+.reveal-title.is-in { clip-path: inset(-0.35em -0.1em -0.35em -0.1em); translate: 0 0; }
+/* Ảnh trong khối .reveal: thu từ 1.15 về 1 khi hiện (cảm giác "zoom vào"). */
+.reveal [data-zoom] { scale: 1.15; transition: scale 1.2s cubic-bezier(.16,1,.3,1), opacity .3s; }
+.reveal.is-in [data-zoom] { scale: 1; }
+.reveal.is-in:hover [data-zoom] { scale: 1.06; transition-duration: .5s; }
+
+/* Thanh đỏ chạy theo tiến độ cuộn trang, nằm dưới header (CSS scroll-driven; trình duyệt chưa hỗ trợ thì không hiện). */
+.scroll-progress { display: none; }
+@supports (animation-timeline: scroll()) {
+  .scroll-progress { display: block; position: absolute; inset: auto 0 -1px; height: 3px; background: var(--color-glory); transform-origin: left; scale: 0 1;
+    animation: progress linear both; animation-timeline: scroll(root); }
+  @keyframes progress { to { scale: 1 1; } }
+}
+
+/* Header: cuộn xuống thì ẩn cho rộng chỗ đọc, cuộn lên thì hiện lại. */
+#site-header { transition: translate .35s cubic-bezier(.2,.7,.2,1), background-color .3s, box-shadow .3s; }
+#site-header[data-hidden] { translate: 0 -100%; }
+
+/* Ảnh hero trang chủ: zoom chậm (Ken Burns) + trôi chậm hơn trang khi cuộn (parallax, chỉ khi trình duyệt hỗ trợ). */
+.hero-media { animation: kenburns 24s ease-in-out infinite alternate; }
+@keyframes kenburns { from { scale: 1.02; } to { scale: 1.14; } }
+@supports (animation-timeline: scroll()) {
+  .hero-media { animation: kenburns 24s ease-in-out infinite alternate, parallax linear both; animation-timeline: auto, scroll(root); animation-range: normal, 0 100vh; }
+  @keyframes parallax { to { translate: 0 22vh; } }
+}
+
+/* Dải chữ chạy: chữ nghiêng theo cú cuộn (script đặt --skew trên .animate-marquee). */
+.animate-marquee > * { transform: skewX(var(--skew, 0deg)); }
+
+/* Mũi tên "cuộn xuống" ở hero (chỉ màn rộng). */
+.scroll-cue { animation: cue 1.8s cubic-bezier(.6,0,.4,1) infinite; }
+@keyframes cue { 0% { translate: 0 -6px; opacity: 0; } 40% { opacity: 1; } 100% { translate: 0 10px; opacity: 0; } }
+
+/* Thẻ môn học: nền đỏ quét từ dưới lên khi rê chuột / chạm, thay vì đổi màu tức thì. */
+.wipe { isolation: isolate; }
+.wipe::before { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--color-glory); scale: 1 0; transform-origin: bottom; transition: scale .45s cubic-bezier(.7,0,.2,1); }
+.wipe:hover::before, .wipe:focus-visible::before { scale: 1 1; }
+
+/* Nghiêng 3D + quầng sáng theo con trỏ ([data-tilt]; script đặt --rx --ry --mx --my, chỉ máy có chuột). */
+/* Liệt kê từng thuộc tính để giữ độ trễ lần lượt (--i) của .reveal cho translate/opacity. */
+[data-tilt] { transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition-property: transform, translate, opacity, border-color, box-shadow, background-color;
+  transition-duration: .5s, .6s, .6s, .3s, .3s, .3s; transition-timing-function: cubic-bezier(.2,.7,.2,1);
+  transition-delay: 0s, calc(var(--i, 0) * 70ms), calc(var(--i, 0) * 70ms), 0s, 0s, 0s; }
+[data-tilt].is-tilting { transition-duration: .12s, .6s, .6s, .3s, .3s, .3s; }
+[data-tilt]::after { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; opacity: 0; transition: opacity .3s;
+  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), rgb(255 255 255 / .13), transparent 60%); }
+[data-tilt].is-tilting::after { opacity: 1; }
+
+/* Nút nam châm ([data-magnetic]): nhích theo con trỏ — chỉ 1–2 nút chính mỗi màn hình. */
+[data-magnetic] { translate: var(--tx, 0) var(--ty, 0); transition: translate .5s cubic-bezier(.2,.7,.2,1), background-color .2s, color .2s, scale .2s; }
+
+@media (hover: hover) and (pointer: fine) {
+  .btn-red:hover::after { translate: 400% 0; transition: translate .7s cubic-bezier(.2,.7,.2,1); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .reveal { opacity: 1; transform: none; transition: none; }
-  .animate-marquee { animation: none; }
-  ::view-transition-old(root), ::view-transition-new(root), .hero-in, #mnav[open] > div, #mnav[open] li { animation: none; }
+  .reveal:not(.is-in), .reveal-title, .reveal [data-zoom] { opacity: 1; translate: none; scale: none; clip-path: none; transition: none; }
+  .animate-marquee, .hero-media, .scroll-cue { animation: none; }
+  .scroll-progress { display: none; }
+  #site-header[data-hidden] { translate: none; }
+  [data-tilt], [data-magnetic] { transform: none; translate: none; }
+  [data-tilt]::after, .btn-red::after { display: none; }
+  .wipe::before { transition: none; }
+  ::view-transition-old(root), ::view-transition-new(root), .hero-in, .hero-line, .stripe-in, #mnav[open] > div, #mnav[open] li { animation: none; }
 }

@@ -83,7 +83,8 @@ const onTrialPage = path === '/dang-ky-hoc-thu';
   </head>
   <body class="min-h-dvh flex flex-col overflow-x-clip pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
     <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] btn-red">Skip</a>
-    <header id="site-header" class="sticky top-0 z-40 border-b border-white/10 bg-ink/80 backdrop-blur-md transition-[background-color,box-shadow] duration-300 data-[scrolled]:bg-ink/95 data-[scrolled]:shadow-[0_8px_30px_rgb(0_0_0/0.5)]">
+    <header id="site-header" class="sticky top-0 z-40 border-b border-white/10 bg-ink/80 backdrop-blur-md data-[scrolled]:bg-ink/95 data-[scrolled]:shadow-[0_8px_30px_rgb(0_0_0/0.5)]">
+      <span class="scroll-progress" aria-hidden="true"></span>
       <div class="container-x flex h-16 items-center justify-between gap-4">
         <a href={href('/', lang)} class="flex min-h-11 min-w-11 items-center gap-3 shrink-0" aria-label={`${club.name} — ${t(lang, 'home')}`}>
           <Logo class="h-10 w-auto text-white" title="" />
@@ -201,11 +202,8 @@ const onTrialPage = path === '/dang-ky-hoc-thu';
     </div>
 
     <script>
-      // Hiện dần các khối .reveal khi cuộn tới.
-      const io = new IntersectionObserver((entries) => {
-        for (const e of entries) if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); }
-      }, { rootMargin: '0px 0px -8% 0px' });
-      document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+      // Hiện dần khi cuộn, số đếm, header ẩn/hiện, menu mobile, nghiêng thẻ, nút nam châm.
+      import '../scripts/motion';
 
       // Xem ảnh lớn (lightbox). Không có JS thì link vẫn mở ảnh gốc.
       const lb = document.getElementById('lightbox') as HTMLDialogElement;
@@ -255,34 +253,6 @@ const onTrialPage = path === '/dang-ky-hoc-thu';
       };
       markLive();
       setInterval(markLive, 60_000);
-
-      // Số liệu đầu trang chủ đếm từ 0 lên (bỏ qua nếu người dùng tắt hiệu ứng).
-      if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        document.querySelectorAll<HTMLElement>('[data-count]').forEach((el) => {
-          const to = Number(el.dataset.count);
-          const t0 = performance.now() + 500; // đợi chữ hero trượt lên xong
-          el.textContent = '0';
-          const tick = (t: number) => {
-            const p = Math.min(1, Math.max(0, (t - t0) / 900));
-            el.textContent = String(Math.round(to * (1 - (1 - p) ** 3)));
-            if (p < 1) requestAnimationFrame(tick);
-          };
-          requestAnimationFrame(tick);
-          setTimeout(() => { el.textContent = String(to); }, 1600); // tab chạy nền (rAF tạm dừng) vẫn ra đúng số
-        });
-      }
-
-      // Header đậm hơn khi đã cuộn.
-      const header = document.getElementById('site-header');
-      const onScroll = () => header?.toggleAttribute('data-scrolled', scrollY > 8);
-      addEventListener('scroll', onScroll, { passive: true });
-      onScroll();
-
-      // Menu mobile: đóng khi bấm link hoặc Esc; khoá cuộn trang khi mở.
-      const nav = document.getElementById('mnav') as HTMLDetailsElement | null;
-      nav?.addEventListener('toggle', () => { document.documentElement.style.overflow = nav.open ? 'hidden' : ''; });
-      nav?.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => { nav.open = false; }));
-      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && nav?.open) nav.open = false; });
     </script>
   </body>
 </html>
