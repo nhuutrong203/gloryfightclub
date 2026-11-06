@@ -35,37 +35,51 @@ const weekly = locClasses.reduce((n, c) => n + c.days.length, 0);
 const discCount = new Set(locClasses.flatMap((c) => c.disciplineIds).filter((id) => disciplines.some((d) => d.id === id))).size;
 const hours = locClasses.length ? `${locClasses.map((c) => c.startTime).sort()[0]}–${locClasses.map((c) => c.endTime).sort().at(-1)}` : null;
 const todayItems = classes.filter((c) => c.days.includes(today)).sort((a, b) => a.startTime.localeCompare(b.startTime));
+// Nhóm ngày đang có ở cơ sở này (vd. 246, 357, 8) cho chú giải ở đầu trang, theo thứ tự ngày đầu tiên.
+const dayGroups = [...new Set(locClasses.map((c) => c.days))].sort((a, b) => a[0].localeCompare(b[0]) || a.localeCompare(b));
 Astro.response.headers.set('cache-control', 'public, max-age=60');
 ---
 <PublicLayout path="/lich-hoc" title={t(lang, 'schedule_title')} description={t(lang, 'schedule_sub')}>
   <PageHero eyebrow={t(lang, 'eb_schedule')} title={t(lang, 'schedule_title')} subtitle={t(lang, 'schedule_sub')}>
     {locClasses.length > 0 && (
-      <div class="mt-10 grid gap-6 lg:grid-cols-[1fr_minmax(0,28rem)] lg:items-end">
-        <dl class="hero-in grid grid-cols-3 gap-x-4 border-t border-white/15 pt-6 [&_dt]:leading-snug" style="--d:300ms">
+      <>
+        <!-- Chú giải nhóm ngày (thay câu "246 = Thứ 2·4·6…"): lấy từ chính các lớp đang có. -->
+        <div class="hero-in mt-6 flex flex-wrap items-center gap-2" style="--d:300ms">
+          <span class="mr-1 text-sm text-ash">{t(lang, 'schedule_legend')}</span>
+          {dayGroups.map((g) => (
+            <span class="inline-flex items-center gap-2.5 border border-white/15 bg-white/[0.03] px-3 py-1.5">
+              <span class="font-display text-lg leading-none tracking-wide text-glory-bright">{g}</span>
+              <span class="text-sm text-white/80">{[...g].map((d) => dayShort(d, lang)).join(' · ')}</span>
+            </span>
+          ))}
+        </div>
+        <dl class="hero-in mt-10 grid grid-cols-3 gap-x-4 border-t border-white/15 pt-6 [&_dt]:leading-snug" style="--d:380ms">
           <div><dt class="text-sm text-ash">{t(lang, 'schedule_week')}</dt><dd class="font-display text-4xl sm:text-6xl" data-count={weekly}>{weekly}</dd></div>
           <div><dt class="text-sm text-ash">{t(lang, 'nav_disciplines')}</dt><dd class="font-display text-4xl sm:text-6xl" data-count={discCount}>{discCount}</dd></div>
           {hours && <div><dt class="text-sm text-ash">{t(lang, 'schedule_hours')}</dt><dd class="font-display text-2xl leading-[1.6] sm:text-4xl sm:leading-[1.5] whitespace-nowrap">{hours}</dd></div>}
         </dl>
-        <!-- Hôm nay: dòng lớn = lớp đang tập / lớp tiếp theo (script tính theo giờ VN vì trang được cache), chip = các ca hôm nay (ca xong mờ đi). -->
-        <div class="hero-in border-l-4 border-glory bg-coal/90 p-5 sm:p-6" style="--d:420ms" data-today
-          data-next={t(lang, 'schedule_next')} data-live={t(lang, 'today_live')} data-done={t(lang, 'schedule_done_today')}>
-          <p class="eyebrow !mb-2">{t(lang, 'schedule_today')} · {dayLong(today, lang)}</p>
-          {todayItems.length === 0
-            ? <p class="text-lg text-white/85">{t(lang, 'today_none')}</p>
-            : (
-              <>
-                <p data-today-head class="font-display text-2xl uppercase leading-[1.12] tracking-wide sm:text-3xl" aria-live="polite"></p>
-                <ul class="mt-4 flex flex-wrap gap-2">
-                  {todayItems.map((c) => (
-                    <li data-class-time={`${c.startTime}-${c.endTime}`} data-name={tr(c, 'name', lang)}
-                      class="inline-flex items-center gap-2 border border-white/15 px-3 py-1.5 text-sm transition-colors data-[state=done]:opacity-40 data-[state=done]:line-through data-[state=live]:border-glory data-[state=live]:bg-glory data-[state=live]:text-white">
-                      <span class="font-display tracking-wide">{c.startTime}</span>{tr(c, 'name', lang)}
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-        </div>
+      </>
+    )}
+    <!-- Hôm nay (cột phải trên máy tính): dòng lớn = lớp đang tập / lớp tiếp theo (script tính theo giờ VN vì trang được cache), chip = các ca hôm nay. -->
+    {locClasses.length > 0 && (
+      <div slot="aside" class="hero-in border-l-4 border-glory bg-coal/90 p-5 sm:p-6" style="--d:420ms" data-today
+        data-next={t(lang, 'schedule_next')} data-live={t(lang, 'today_live')} data-done={t(lang, 'schedule_done_today')}>
+        <p class="eyebrow !mb-2">{t(lang, 'schedule_today')} · {dayLong(today, lang)}</p>
+        {todayItems.length === 0
+          ? <p class="text-lg text-white/85">{t(lang, 'today_none')}</p>
+          : (
+            <>
+              <p data-today-head class="font-display text-2xl uppercase leading-[1.12] tracking-wide sm:text-3xl" aria-live="polite"></p>
+              <ul class="mt-4 flex flex-wrap gap-2">
+                {todayItems.map((c) => (
+                  <li data-class-time={`${c.startTime}-${c.endTime}`} data-name={tr(c, 'name', lang)}
+                    class="inline-flex items-center gap-2 border border-white/15 px-3 py-1.5 text-sm transition-colors data-[state=done]:opacity-40 data-[state=done]:line-through data-[state=live]:border-glory data-[state=live]:bg-glory data-[state=live]:text-white">
+                    <span class="font-display tracking-wide">{c.startTime}</span>{tr(c, 'name', lang)}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
       </div>
     )}
   </PageHero>
