@@ -2,28 +2,9 @@
 
 Read `CLAUDE.md` first: it holds every rule and convention. This file only says what is **in flight** and what is **next**.
 
-## 1. Not deployed yet (do this first)
+## 1. Deploy state
 
-The live site runs commit `ab70bd1` (Worker version `53bc60a0`). Two commits are waiting:
-
-| Commit | What | State |
-|---|---|---|
-| `05fab71` | Schedule legend shows Sunday as "CN" (78 → "7·CN"), never "8" | pushed, **not deployed** |
-| `7aa19b9` | CMS fields that did nothing now show: Home shows only coaches ticked "Nổi bật ở trang chủ" (4 on the live data) + "Xem tất cả"; class level badge + class note on `/lich-hoc` and in class lists | **not pushed, not deployed** |
-
-Why: Cloudflare had an outage ("Network Performance Issues in Singapore") — `wrangler deploy` got `503 Service Unavailable` from the API. The owner chose to deploy later.
-
-Steps (no migration needed — `0003` and `0004` are already applied on the cloud DB):
-
-```bash
-curl -s https://www.cloudflarestatus.com/api/v2/status.json   # wait until no Singapore incident
-git push origin main
-npm run deploy
-```
-
-Then check on the live site:
-- `/lich-hoc`: legend chips read "246 · 357 · CN" (and "7·CN" if a 78 class exists); classes with a level ≠ "Mọi trình độ" show a badge, notes show under the name.
-- `/`: the coaches section shows the 4 featured coaches + "Xem tất cả".
+Everything up to `f0efb1e` is pushed and live (deployed 2026-11-06, Worker version `12022669`). Checked on the live site: `/lich-hoc` legend reads "246 · 357 · 7·CN · CN"; Home shows the 4 featured coaches + "Xem tất cả". Nothing is waiting.
 
 CI (`.github/workflows/deploy.yml`) still fails at the first step on every push — expected (no `CLOUDFLARE_API_TOKEN` secret, on hold until the owner's domain).
 

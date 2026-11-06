@@ -19,7 +19,7 @@ Promotional website + student-management CMS for **GLORY FIGHT CLUB** (MMA, Kudo
 - Schema changes: create a migration with `npm run db:generate` and commit it — CI applies it to cloud D1 before deploying. Migrations must be backward compatible (add columns/tables only), because the old code keeps running while migrating.
 
 ## Status
-> **In flight:** read `docs/HANDOFF.md` first — commits waiting to be deployed, owner to-dos and open questions (2026-11-06).
+> **Next:** read `docs/HANDOFF.md` first — owner to-dos, open questions and proposed next work (2026-11-06; everything is deployed).
 
 - [x] Plan v3 → `docs/PLAN.md` (approved)
 - [x] Phase 0 — Foundation: Astro 7 + Cloudflare adapter 14, schema + migration `0000_init`, real/demo seed, SVG logo, public layout, home page skeleton (VI/EN)
