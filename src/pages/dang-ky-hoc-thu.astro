@@ -6,8 +6,8 @@ import { telHref } from '../lib/site';
 import { publicClasses, publicCoaches, publicDisciplines, publicPlans } from '../lib/public';
 import { t, tr, formatVnd, dayLong, DAYS, type Lang } from '../i18n';
 
-// Đăng ký học thử, cá nhân hoá: ngày sinh (3 ô chọn) → biết tuổi để gợi ý lớp trẻ em / người lớn; chọn môn + cơ sở →
-// danh sách buổi học thử sắp tới (tính ngay trên trình duyệt theo giờ VN vì trang được cache); cảm ơn có tên, buổi đã chọn,
+// Đăng ký học thử, cá nhân hoá: ngày sinh (3 ô chọn) → biết tuổi để ưu tiên lớp trẻ em / người lớn; chọn môn (+ cơ sở) →
+// 2 buổi học thử có sẵn gần nhất (tính ngay trên trình duyệt theo giờ VN vì trang được cache); cảm ơn có tên, buổi đã chọn,
 // nút Google Calendar + chỉ đường. Logic gợi ý dùng chung với server và test: src/lib/schedule.ts.
 const lang: Lang = Astro.locals.lang;
 const [{ club, locations }, disciplines, plans, classes, coaches] = await Promise.all([
@@ -84,27 +84,27 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
           </select>
         </div>
 
-        <!-- Buổi học thử gợi ý: script điền theo môn / cơ sở / tuổi. Không có JS thì khối này ẩn, khách ghi giờ ở ô bên dưới như cũ. -->
-        <fieldset id="slots" class="hidden sm:col-span-2 border-2 border-white/10 bg-coal p-4 sm:p-5">
-          <legend class="px-2 font-display text-lg uppercase leading-[1.12] tracking-wider sm:text-xl">{t(lang, 'f_slots')}</legend>
-          <p class="text-sm text-white/75">{t(lang, 'f_slots_sub')}</p>
-          <div id="slot-list" class="mt-4 grid gap-2 sm:grid-cols-2"></div>
-          <p id="slot-none" class="mt-4 hidden text-white/80">{t(lang, 'f_slots_none')}</p>
-          <button type="button" id="slot-more" class="mt-3 hidden min-h-11 items-center gap-1 font-display text-sm uppercase tracking-wider text-glory-bright hover:text-white [&:not(.hidden)]:inline-flex">{t(lang, 'f_more')}<Icon name="chevron-down" class="size-4" /></button>
-          <label class="mt-3 flex min-h-12 cursor-pointer items-center gap-3 border-2 border-white/15 px-4 py-2 text-white/85 has-[:checked]:border-white has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-glory">
+        <!-- Buổi học thử có sẵn: hiện sau khi chọn môn, chỉ 2 buổi gần nhất (nhiều quá thì rối mắt). Không có JS thì khối này ẩn, khách ghi giờ ở ô bên dưới. -->
+        <fieldset id="slots" class="hidden sm:col-span-2" aria-describedby="slots-sub">
+          <legend class={label}>{t(lang, 'f_slots')}</legend>
+          <p id="slots-sub" class="-mt-1 mb-3 text-sm text-ash">{t(lang, 'f_slots_sub')}</p>
+          <div id="slot-list" class="grid gap-2 sm:grid-cols-2"></div>
+          <p id="slot-none" class="hidden border-l-2 border-white/20 pl-3 text-sm text-white/80">{t(lang, 'f_slots_none')}</p>
+          <label class="mt-2 inline-flex min-h-11 cursor-pointer items-center gap-2 text-sm text-white/75 hover:text-white has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-glory">
             <input type="radio" name="slot" value="" checked class="size-4 accent-[#e10600]" />{t(lang, 'f_slot_other')}
           </label>
         </fieldset>
         <template id="slot-tpl">
-          <label class="group relative flex cursor-pointer gap-3 border-2 border-white/15 bg-ink p-3 transition-colors hover:border-white/40 has-[:checked]:border-glory has-[:checked]:bg-glory/10 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-glory">
-            <input type="radio" name="slot" class="mt-1 size-4 shrink-0 accent-[#e10600]" />
+          <label class="flex cursor-pointer items-center gap-3 border-2 border-white/15 bg-ink px-4 py-3 transition-colors hover:border-white/40 has-[:checked]:border-glory has-[:checked]:bg-glory/10 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-glory">
+            <input type="radio" name="slot" class="size-4 shrink-0 accent-[#e10600]" />
             <span class="min-w-0 flex-1">
-              <span data-day class="block text-xs font-semibold uppercase tracking-wider text-glory-bright"></span>
-              <span data-time class="block font-display text-2xl leading-[1.12] tracking-wide"></span>
-              <span data-name class="block font-semibold"></span>
-              <span data-where class="block text-sm text-ash"></span>
+              <span class="flex flex-wrap items-baseline gap-x-2">
+                <span data-day class="text-sm font-semibold text-glory-bright"></span>
+                <span data-time class="font-display text-xl tracking-wide"></span>
+              </span>
+              <span data-where class="block truncate text-sm text-ash"></span>
             </span>
-            <span data-level class="hidden self-start bg-white px-2 py-0.5 font-display text-xs tracking-wider text-ink"></span>
+            <span data-level class="hidden shrink-0 bg-white px-2 py-0.5 font-display text-xs tracking-wider text-ink"></span>
           </label>
         </template>
 
@@ -208,9 +208,8 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
     const box = el('slots');
     const list = el('slot-list');
     const none = el('slot-none');
-    const more = el('slot-more');
     const tpl = el<HTMLTemplateElement>('slot-tpl');
-    let limit = 6;
+    const LIMIT = 2; // chỉ 2 buổi gần nhất: đủ để chọn nhanh, không rối mắt
     let slots: { cls: Cls; date: string }[] = [];
     const dayLabel = (date: string) => {
       const today = vnNow().date;
@@ -221,20 +220,21 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
     const renderSlots = () => {
       const chosen = (form.querySelector('input[name=slot]:checked') as HTMLInputElement | null)?.value ?? '';
       const b = birth();
+      const disciplineId = Number(pick('disciplineId').value) || null;
+      box.classList.toggle('hidden', !disciplineId); // chưa chọn môn thì chưa hiện (tránh một loạt lớp không liên quan)
       slots = upcomingSessions(D.classes, new Date(), {
-        disciplineId: Number(pick('disciplineId').value) || null,
+        disciplineId,
         locationId: Number(pick('locationId').value) || null,
         age: b && !Number.isNaN(b.age) ? b.age : null,
       });
-      list.replaceChildren(...slots.slice(0, limit).map(({ cls, date }) => {
+      list.replaceChildren(...slots.slice(0, LIMIT).map(({ cls, date }) => {
         const node = tpl.content.firstElementChild!.cloneNode(true) as HTMLElement;
         const input = node.querySelector('input')!;
         input.value = `${cls.id}|${date}`;
         input.checked = input.value === chosen;
         node.querySelector('[data-day]')!.textContent = dayLabel(date);
         node.querySelector('[data-time]')!.textContent = `${cls.startTime}–${cls.endTime}`;
-        node.querySelector('[data-name]')!.textContent = cls.name;
-        node.querySelector('[data-where]')!.textContent = [locName(cls.locationId)?.name, cls.coach].filter(Boolean).join(' · ');
+        node.querySelector('[data-where]')!.textContent = [cls.name, locName(cls.locationId)?.name, cls.coach].filter(Boolean).join(' · ');
         const lv = M[`level_${cls.level}`];
         if (lv && cls.level !== 'all') { const b = node.querySelector<HTMLElement>('[data-level]')!; b.textContent = lv; b.classList.remove('hidden'); }
         return node;
@@ -242,11 +242,8 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
       // Buổi đang chọn biến khỏi danh sách (đổi môn / cơ sở) → về "Giờ khác".
       if (!form.querySelector('input[name=slot]:checked')) (form.querySelector('input[name=slot][value=""]') as HTMLInputElement).checked = true;
       none.classList.toggle('hidden', slots.length > 0);
-      more.classList.toggle('hidden', slots.length <= limit || limit >= 12);
     };
-    if (D.classes.length) box.classList.remove('hidden');
-    more.addEventListener('click', () => { limit = 12; renderSlots(); });
-    for (const n of ['disciplineId', 'locationId']) pick(n).addEventListener('change', () => { limit = 6; renderSlots(); });
+    for (const n of ['disciplineId', 'locationId']) pick(n).addEventListener('change', renderSlots);
     for (const n of ['bday', 'bmonth', 'byear']) pick(n).addEventListener('change', () => { showBirth(); renderSlots(); });
     // Chọn một buổi khi chưa chọn cơ sở → điền cơ sở của buổi đó (CMS thấy ngay khách tới đâu).
     list.addEventListener('change', (e) => {

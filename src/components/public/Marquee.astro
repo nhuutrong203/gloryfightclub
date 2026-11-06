@@ -1,19 +1,19 @@
 ---
 
 // Dải chữ chạy ngang, mặc định là slogan CLB (sửa trong CMS → Thông tin CLB).
-// outline: chữ viền rỗng cỡ lớn, chạy chậm (rê chuột thì viền đỏ); reverse: chạy ngược chiều.
+// outline: chữ viền rỗng, cao vừa phải, chạy đều (không đổi màu khi rê chuột: dải to mà đổi màu cả dải trông như bị kẹt); reverse: chạy ngược chiều.
 interface Props { text?: string; class?: string; outline?: boolean; reverse?: boolean }
 const { club } = Astro.locals.site;
 const { text = club.slogan, class: className = 'bg-glory text-white', outline = false, reverse = false } = Astro.props;
 // Số bản lặp theo độ dài chữ: nửa dải luôn dài cỡ ~120 ký tự → chữ dài hay ngắn đều chạy cùng tốc độ.
 const items = Array.from({ length: Math.max(2, Math.ceil(120 / Math.max(1, text.length))) }, () => text);
 ---
-<div class:list={['group overflow-hidden select-none', outline ? 'py-5 sm:py-7' : 'py-3', className]} aria-hidden="true">
-  <div class:list={['flex w-max animate-marquee', reverse && '[animation-direction:reverse]']} style={outline ? 'animation-duration:70s' : undefined}>
+<div class:list={['overflow-hidden select-none', outline ? 'py-3 sm:py-4' : 'py-3', className]} aria-hidden="true">
+  <div class:list={['flex w-max animate-marquee', reverse && '[animation-direction:reverse]']} style={outline ? 'animation-duration:40s' : undefined}>
     {[...items, ...items].map((s) => (
       <span class:list={['font-display uppercase tracking-wider flex items-center whitespace-nowrap',
-        outline ? 'text-6xl sm:text-8xl leading-[1.12] px-8 gap-8 text-transparent [-webkit-text-stroke:1.5px_rgb(255_255_255/0.55)] transition-[-webkit-text-stroke-color] duration-500 group-hover:[-webkit-text-stroke-color:var(--color-glory)]' : 'text-2xl sm:text-3xl px-6 gap-6']}>
-        {s}<span class:list={['inline-block rotate-45', outline ? 'size-4 bg-glory' : 'size-2 bg-current']}></span>
+        outline ? 'text-4xl sm:text-6xl leading-[1.12] px-6 gap-6 text-transparent [-webkit-text-stroke:1.2px_rgb(255_255_255/0.55)]' : 'text-2xl sm:text-3xl px-6 gap-6']}>
+        {s}<span class:list={['inline-block rotate-45', outline ? 'size-3 bg-glory' : 'size-2 bg-current']}></span>
       </span>
     ))}
   </div>
