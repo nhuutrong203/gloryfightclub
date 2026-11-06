@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { db, schema } from '../db';
 import { normalizePhone, vnNow } from '../lib/util';
 import { parseDate } from '../lib/import';
-import { ageOn, weekdayOf } from '../lib/schedule';
+import { ageOn, upcomingSessions } from '../lib/schedule';
 import { body } from './guard';
 import { eq } from 'drizzle-orm';
 import type { Policy } from '../lib/site';
@@ -55,10 +55,14 @@ publicRoutes.post('/trial', async (c) => {
     data.feePlanId ? db.query.feePlans.findFirst({ where: (t, { eq }) => eq(t.id, data.feePlanId!), columns: { id: true } }) : null,
     data.classId ? db.query.classes.findFirst({ where: (t, { and, eq }) => and(eq(t.id, data.classId!), eq(t.isPublic, true), eq(t.isActive, true)) }) : null,
   ]);
-  // Buổi học thử chỉ giữ khi lớp có học đúng thứ đó và ngày nằm trong 14 ngày tới (form gửi sai / trang cũ → bỏ, không báo lỗi).
+  // Dùng cùng quy tắc với form: buổi bắt đầu trong <=60 phút hoặc đã qua không còn đặt được.
   const trialDate = data.trialDate ? parseDate(data.trialDate) : null;
-  const inTwoWeeks = trialDate && trialDate >= today && trialDate <= vnNow(new Date(Date.now() + 14 * 86_400_000)).date;
-  const slot = k && trialDate && inTwoWeeks && k.days.includes(weekdayOf(trialDate)) ? { classId: k.id, trialDate } : null;
+  const slot = k && trialDate && upcomingSessions([k], new Date(), { age }).some((s) => s.date === trialDate)
+    ? { classId: k.id, trialDate } : null;
+  if ((data.classId || data.trialDate) && !slot) return c.json({ ok: false, code: 'slot' }, 400);
+  if (slot && ((data.locationId && data.locationId !== k!.locationId) || (data.disciplineId && !k!.disciplineIds.includes(data.disciplineId)))) {
+    return c.json({ ok: false, code: 'slot' }, 400);
+  }
   await db.insert(schema.trialRegistrations).values({
     fullName: data.fullName,
     phone,

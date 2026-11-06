@@ -5,15 +5,15 @@ import { lines } from '../../lib/public';
 import type { schema } from '../../db';
 
 // compact (trang chủ, trang từng môn): bỏ danh sách quyền lợi + nhãn → thẻ thấp, trang ngắn lại trên điện thoại; đủ chi tiết ở /hoc-phi.
-interface Props { plan: typeof schema.feePlans.$inferSelect; lang: Lang; i?: number; compact?: boolean }
-const { plan: p, lang, i = 0, compact = false } = Astro.props;
+interface Props { plan: typeof schema.feePlans.$inferSelect; lang: Lang; compact?: boolean }
+const { plan: p, lang, compact = false } = Astro.props;
 // Icon theo thứ tự gói như poster của CLB.
 const icons: IconName[] = ['crown', 'shield', 'child', 'graduation'];
 const icon = icons[(p.sort - 1) % icons.length] ?? 'star';
 ---
 <!-- Thẻ đầy đủ (/hoc-phi) có id goi-<id>: nút "Xem chi tiết gói" ở thẻ gọn nhảy tới đây, thẻ được nhắm (:target) viền đỏ. -->
-<article id={compact ? undefined : `goi-${p.id}`} data-tilt class:list={['@container reveal relative flex flex-col border-2 scroll-mt-28', !compact && !p.isFeatured && 'target:border-glory', compact ? 'p-5 sm:p-6' : 'p-6 sm:p-8', ' hover:-translate-y-1.5 hover:shadow-[0_20px_50px_-20px_rgb(225_6_0/0.45)]',
-  p.isFeatured ? 'premium-glow' : 'border-white/15 bg-coal']} style={`--i:${i}`}>
+<article id={compact ? undefined : `goi-${p.id}`} data-tilt class:list={['@container relative flex flex-col border-2 scroll-mt-28', !compact && !p.isFeatured && 'target:border-glory', compact ? 'p-5 sm:p-6' : 'p-6 sm:p-8', ' hover:-translate-y-1.5 hover:shadow-[0_20px_50px_-20px_rgb(225_6_0/0.45)]',
+  p.isFeatured ? 'premium-glow' : 'border-white/15 bg-coal']}>
   <p class:list={['absolute -top-4 left-6 px-4 py-1 font-display text-lg uppercase tracking-widest', p.isFeatured ? 'bg-glory text-white' : 'bg-white text-ink']}>
     {tr(p, 'name', lang)}
   </p>
@@ -25,7 +25,7 @@ const icon = icons[(p.sort - 1) % icons.length] ?? 'star';
   </div>
   <div class:list={['border-t border-white/15', compact ? 'mt-4 pt-4' : 'mt-6 pt-6']}>
     <!-- Giá luôn 1 dòng: cỡ chữ theo bề ngang thẻ (24cqi ≈ "1.500.000" vừa khít), tối đa 60px. 4 thẻ/hàng thì thẻ hẹp → chữ nhỏ lại thay vì rớt "0". -->
-    <p class="whitespace-nowrap font-display text-[clamp(2.25rem,24cqi,3.75rem)] leading-none tabular-nums" data-count={p.pricePerMonth}>{formatVnd(p.pricePerMonth)}</p>
+    <p class="whitespace-nowrap font-display text-[clamp(2.25rem,24cqi,3.75rem)] leading-none tabular-nums">{formatVnd(p.pricePerMonth)}</p>
     <p class="mt-1 font-display text-glory-bright tracking-wider">{t(lang, 'per_month')}</p>
   </div>
   {p.audience && (

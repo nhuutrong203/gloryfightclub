@@ -46,7 +46,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
     {locClasses.length > 0 && (
       <>
         <!-- Chú giải nhóm ngày (thay câu "246 = Thứ 2·4·6…"): lấy từ chính các lớp đang có. -->
-        <div class="hero-in mt-6 flex flex-wrap items-center gap-2" style="--d:300ms">
+        <div class="mt-6 hidden flex-wrap items-center gap-2 sm:flex">
           <span class="mr-1 text-sm text-ash">{t(lang, 'schedule_legend')}</span>
           {dayGroups.map((g) => (
             <span class="inline-flex items-center gap-2.5 border border-white/15 bg-white/[0.03] px-3 py-1.5">
@@ -55,16 +55,16 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
             </span>
           ))}
         </div>
-        <dl class="hero-in mt-10 grid grid-cols-3 gap-x-4 border-t border-white/15 pt-6 [&_dt]:leading-snug" style="--d:380ms">
-          <div><dt class="text-sm text-ash">{t(lang, 'schedule_week')}</dt><dd class="font-display text-4xl sm:text-6xl" data-count={weekly}>{weekly}</dd></div>
-          <div><dt class="text-sm text-ash">{t(lang, 'nav_disciplines')}</dt><dd class="font-display text-4xl sm:text-6xl" data-count={discCount}>{discCount}</dd></div>
+        <dl class="mt-10 hidden grid-cols-3 gap-x-4 border-t border-white/15 pt-6 sm:grid [&_dt]:leading-snug">
+          <div><dt class="text-sm text-ash">{t(lang, 'schedule_week')}</dt><dd class="font-display text-4xl sm:text-6xl">{weekly}</dd></div>
+          <div><dt class="text-sm text-ash">{t(lang, 'nav_disciplines')}</dt><dd class="font-display text-4xl sm:text-6xl">{discCount}</dd></div>
           {hours && <div><dt class="text-sm text-ash">{t(lang, 'schedule_hours')}</dt><dd class="font-display text-2xl leading-[1.6] sm:text-4xl sm:leading-[1.5] whitespace-nowrap">{hours}</dd></div>}
         </dl>
       </>
     )}
     <!-- Hôm nay (cột phải trên máy tính): dòng lớn = lớp đang tập / lớp tiếp theo (script tính theo giờ VN vì trang được cache), chip = các ca hôm nay. -->
     {locClasses.length > 0 && (
-      <div slot="aside" class="hero-in border-l-4 border-glory bg-coal/90 p-5 sm:p-6" style="--d:420ms" data-today
+      <div slot="aside" class="border-l-4 border-glory bg-coal/90 p-4 sm:p-6" data-today
         data-next={t(lang, 'schedule_next')} data-live={t(lang, 'today_live')} data-done={t(lang, 'schedule_done_today')}>
         <p class="eyebrow !mb-2">{t(lang, 'schedule_today')} · {dayLong(today, lang)}</p>
         {todayItems.length === 0
@@ -72,7 +72,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
           : (
             <>
               <p data-today-head class="font-display text-2xl uppercase leading-[1.12] tracking-wide sm:text-3xl" aria-live="polite"></p>
-              <ul class="mt-4 flex flex-wrap gap-2">
+              <ul class="mt-4 hidden flex-wrap gap-2 sm:flex">
                 {todayItems.map((c) => (
                   <li data-class-time={`${c.startTime}-${c.endTime}`} data-name={tr(c, 'name', lang)}
                     class="inline-flex items-center gap-2 border border-white/15 px-3 py-1.5 text-sm transition-colors data-[state=done]:opacity-40 data-[state=done]:line-through data-[state=live]:border-glory data-[state=live]:bg-glory data-[state=live]:text-white">
@@ -86,7 +86,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
     )}
   </PageHero>
 
-  <section class="container-x py-10">
+  <section class="container-x py-6 sm:py-10">
     <!-- Chọn cơ sở -->
     <div class="grid grid-cols-2 gap-px bg-white/10 border border-white/10" role="tablist" aria-label={t(lang, 'f_location')}>
       {locations.map((l) => (
@@ -101,7 +101,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
 
     <!-- Lọc môn -->
     <!-- Vuốt ngang trên điện thoại; ẩn thanh cuộn xám (chip bị cắt ở mép đã cho biết còn nữa). -->
-    <div class="mt-6 -mx-4 px-4 flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label={t(lang, 'f_discipline')}>
+    <div class="mt-4 sm:mt-6 -mx-4 px-4 flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label={t(lang, 'f_discipline')}>
       <a href={link({ mon: '' })} class:list={['shrink-0 min-h-11 inline-flex items-center px-4 border font-display uppercase tracking-wider text-sm', !mon ? 'bg-white text-ink border-white' : 'border-white/20 hover:border-white']}>{t(lang, 'schedule_all')}</a>
       {disciplines.map((d) => (
         <a href={link({ mon: d.slug })} class:list={['shrink-0 min-h-11 inline-flex items-center px-4 border font-display uppercase tracking-wider text-sm', mon?.id === d.id ? 'bg-white text-ink border-white' : 'border-white/20 hover:border-white']}>{tr(d, 'name', lang)}</a>
@@ -170,7 +170,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
 
         <!-- Mobile/tablet: theo từng ngày -->
         <div class="lg:hidden" data-days>
-          <div class="sticky top-16 z-20 -mx-4 mt-8 grid grid-cols-7 border-y border-white/10 bg-ink/95 backdrop-blur" role="tablist" aria-label={t(lang, 'schedule_title')}>
+          <div class="sticky top-16 z-20 -mx-4 mt-5 grid grid-cols-7 border-y border-white/10 bg-ink/95 backdrop-blur" role="tablist" aria-label={t(lang, 'schedule_title')}>
             {DAYS.map((d) => (
               <a href={`#d${d}`} role="tab" data-day={d} aria-selected={d === today ? 'true' : 'false'}
                 class="relative grid min-h-12 place-items-center font-display tracking-wider transition-colors duration-200 aria-selected:bg-glory aria-selected:text-white hover:text-glory aria-selected:hover:text-white">

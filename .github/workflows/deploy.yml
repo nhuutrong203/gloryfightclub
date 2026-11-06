@@ -43,6 +43,9 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Test API on disposable local D1
+        run: npm run test:api
+
       - name: Cập nhật cấu trúc database (chỉ chạy migration mới)
         run: npx wrangler d1 migrations apply glory-db --remote
 

@@ -150,21 +150,21 @@ export async function uploadImage(file: File, onProgress?: (pct: number) => void
   try { return await send(file, onProgress, maxSide); } finally { setUploads(-1); }
 }
 
+const asFile = (blob: Blob) => new File([blob], blob.type === 'image/webp' ? 'image.webp' : 'image.jpg', { type: blob.type });
 const asForm = (blob: Blob) => {
   const form = new FormData();
-  form.append('file', new File([blob], blob.type === 'image/webp' ? 'image.webp' : 'image.jpg', { type: blob.type }));
+  form.append('file', asFile(blob));
   return form;
 };
 
 async function send(file: File, onProgress: ((pct: number) => void) | undefined, maxSide: number): Promise<string> {
-  const key = await xhrUpload('/api/admin/upload', asForm(await shrink(file, maxSide)), onProgress);
-  // Bản nhỏ 800px (THUMB_W trong src/lib/site.ts) cho thẻ / lưới ảnh trên web. Lỗi thì bỏ qua: web tự dùng ảnh gốc.
+  const form = asForm(await shrink(file, maxSide));
+  // Gửi bản nhỏ cùng ảnh gốc; server tự đặt cả hai key, nên client không thể ghi đè ảnh cũ.
   try {
-    const form = asForm(await shrink(file, 800, false));
-    form.append('variantOf', key);
-    await xhrUpload('/api/admin/upload', form);
+    const small = await shrink(file, 800, false);
+    if (small.size <= 400_000) form.append('thumbnail', asFile(small));
   } catch (e) { console.warn('Không tạo được ảnh nhỏ', e); }
-  return key;
+  return xhrUpload('/api/admin/upload', form, onProgress);
 }
 
 /** POST có % tiến trình (fetch chưa báo được tiến trình gửi lên) → trả key R2 server sinh ra. */

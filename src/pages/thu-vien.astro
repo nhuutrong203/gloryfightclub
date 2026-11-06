@@ -5,7 +5,7 @@ import PageHero from '../components/public/PageHero.astro';
 import Icon from '../components/public/Icon.astro';
 import { db, schema } from '../db';
 import { youtubeEmbed } from '../lib/public';
-import { thumbUrl } from '../lib/site';
+import { thumbSrcset, thumbUrl } from '../lib/site';
 import { t, tr, href, type Lang } from '../i18n';
 
 const lang: Lang = Astro.locals.lang;
@@ -42,7 +42,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
           <li class:list={['reveal', i % 7 === 0 && 'sm:col-span-2 sm:row-span-2']} style={`--i:${i % 6}`}>
             <button type="button" data-lightbox="gallery" data-src={`/media/${g.key}`} data-caption={tr(g, 'caption', lang)}
               class="group relative block size-full aspect-square overflow-hidden bg-coal" aria-label={tr(g, 'caption', lang) || `${t(lang, 'gallery_title')} ${i + 1}`}>
-              <img src={thumbUrl(g.key)!} alt={tr(g, 'caption', lang)} loading="lazy" class="size-full object-cover transition duration-300 group-hover:scale-105" />
+              <img src={thumbUrl(g.key)!} srcset={thumbSrcset(g.key)} sizes="(max-width: 639px) 50vw, (max-width: 1023px) 50vw, 33vw" alt={tr(g, 'caption', lang)} loading="lazy" class="size-full object-cover transition duration-300 group-hover:scale-105" />
             </button>
           </li>
         ))}

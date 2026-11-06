@@ -1,5 +1,5 @@
 -- DỮ LIỆU THẬT của CLB (nguồn: ảnh lịch tập, Facebook, gloryfightclub.vn).
--- An toàn để nạp lên D1 trên cloud: npm run db:seed:remote
+-- Chỉ nạp vào D1 local: các lệnh DELETE bên dưới sẽ xoá nội dung đã sửa trong CMS trên cloud.
 -- Dữ liệu demo (tin tức, cảm nhận, học viên…) nằm ở seed/sample.sql — CHỈ dùng ở local.
 
 DELETE FROM settings;

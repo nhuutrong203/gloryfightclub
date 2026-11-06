@@ -139,8 +139,8 @@ Astro 7 allows only **one dev server per project**. Stop it before another comma
 
 ## 8. Current state (2026-11-06)
 
-- **Everything is pushed and deployed.**
-  - Live Worker version: `3a5661e7`, from commit `78d8472`.
+- **The UX/API review pass is deployed to the two temporary domains for owner review.**
+  - Live Worker version: `a050d9c5-e752-4e96-951d-2cfadd3657f4`, deployed from local uncommitted changes on top of `78d8472`.
   - Cloud D1 has migrations up to `0005_last_saracen`.
 - The last shipped work:
   - plan cards show "Phù hợp với: …" (`fee_plans.audience`), with a "Xem chi tiết gói" link to `/hoc-phi#goi-<id>`;
@@ -148,21 +148,18 @@ Astro 7 allows only **one dev server per project**. Stop it before another comma
   - Home shows only the coaches marked as featured;
   - class level badges and class notes appear on the schedule.
 - The full history is the **Status** list in `CLAUDE.md`.
+- The deployed review pass covers trial/API reliability, CMS trial pagination, mobile pricing/schedule/form UX, responsive images and removal of bare decorative number labels. Later audit fixes are awaiting deployment; seven visible test content rows in cloud D1 were replaced with labeled examples.
 
 **Waiting on the club owner** (content entered in the CMS, no code needed):
-- delete the test testimonials and test diary posts;
 - upload a real hero photo;
 - decide the extra club policies (card freeze, referral, family discount);
 - send the schedule image for location 2 and the coach achievements;
 - say which coach leads which class;
 - explain the "Fighter class" and the Kudo Kids schedule.
 
-**Open question:** remove the remaining decorative numbers (outline "01, 02…" on discipline cards and on the contact page)?
-
 **Proposed next work, not started:**
 - trial-form fields "goal" and "trained before?";
 - Cloudflare Turnstile on the trial form;
-- `srcset` on diary, gallery and achievement tiles;
 - a Zalo/SMS reminder before a trial session.
 
 ## 9. How to work here

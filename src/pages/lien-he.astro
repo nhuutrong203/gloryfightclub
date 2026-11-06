@@ -3,10 +3,12 @@ import PublicLayout from '../layouts/PublicLayout.astro';
 import PageHero from '../components/public/PageHero.astro';
 import Icon from '../components/public/Icon.astro';
 import { telHref } from '../lib/site';
+import { publicClasses } from '../lib/public';
 import { t, tr, href, type Lang } from '../i18n';
 
 const lang: Lang = Astro.locals.lang;
 const { club, locations } = Astro.locals.site;
+const classes = await publicClasses();
 Astro.response.headers.set('cache-control', 'public, max-age=60');
 ---
 <PublicLayout path="/lien-he" title={t(lang, 'contact_title')} description={t(lang, 'contact_sub')}>
@@ -36,13 +38,14 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
     <section class:list={['py-12 sm:py-16', i % 2 === 1 && 'bg-coal']}>
       <div class="container-x grid gap-8 lg:grid-cols-[2fr_3fr] lg:items-center">
         <div>
-          <p class="font-display text-8xl text-outline-white leading-none" aria-hidden="true">0{i + 1}</p>
-          <h2 class="mt-2 text-4xl sm:text-5xl">{tr(l, 'name', lang)}</h2>
+          <h2 class="text-4xl sm:text-5xl">{tr(l, 'name', lang)}</h2>
           <p class="mt-4 flex gap-3 text-lg text-white/85"><Icon name="map-pin" class="size-6 shrink-0 text-glory mt-0.5" />{l.address}</p>
           {l.phone && <a href={telHref(l.phone)} class="mt-2 inline-flex min-h-11 items-center gap-3 text-lg hover:text-glory"><Icon name="phone" class="size-5 text-glory" />{l.phone}</a>}
           <div class="mt-6 flex flex-col gap-3 sm:flex-row">
             {l.mapUrl && <a href={l.mapUrl} target="_blank" rel="noopener" class="btn-red"><Icon name="map-pin" />{t(lang, 'directions')}</a>}
-            <a href={`${href('/lich-hoc', lang)}?co-so=${l.id}`} class="btn-ghost"><Icon name="calendar" />{t(lang, 'nav_schedule')}</a>
+            {classes.some((c) => c.locationId === l.id) || l.scheduleImageKey
+              ? <a href={`${href('/lich-hoc', lang)}?co-so=${l.id}`} class="btn-ghost"><Icon name="calendar" />{t(lang, 'nav_schedule')}</a>
+              : <a href={`https://zalo.me/${club.zalo}`} target="_blank" rel="noopener" class="btn-ghost"><Icon name="message" />{t(lang, 'ask_schedule')}</a>}
           </div>
         </div>
         <!-- Bản đồ màu thật (trước lọc xám + đảo màu nhìn u ám): khung đỏ, sọc đỏ chéo ở góc cho hợp tông web. -->

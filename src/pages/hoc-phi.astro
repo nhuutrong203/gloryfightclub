@@ -5,7 +5,7 @@ import PlanCard from '../components/public/PlanCard.astro';
 import Icon from '../components/public/Icon.astro';
 import CtaBand from '../components/public/CtaBand.astro';
 import { publicPlans, publicFaqs, richText } from '../lib/public';
-import { t, tr, href, type Lang } from '../i18n';
+import { t, tr, href, formatVnd, type Lang } from '../i18n';
 
 const lang: Lang = Astro.locals.lang;
 const [plans, faqs] = await Promise.all([publicPlans(), publicFaqs()]);
@@ -15,8 +15,17 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
   <PageHero eyebrow={t(lang, 'eb_fees')} title={t(lang, 'fees_title')} subtitle={t(lang, 'fees_sub')} />
   <section class="container-x pt-16 pb-12">
     <h2 class="sr-only">{t(lang, 'fees_title')}</h2>
+    <nav class="mb-10 border border-white/15 sm:hidden" aria-label={t(lang, 'fees_compare')}>
+      <p class="border-b border-white/15 bg-coal px-4 py-3 font-display text-xl uppercase">{t(lang, 'fees_compare')}</p>
+      {plans.map((p) => (
+        <a href={`#goi-${p.id}`} class="flex min-h-16 items-center justify-between gap-3 border-b border-white/15 px-4 py-3 last:border-0 hover:bg-coal">
+          <span class="min-w-0"><strong class="block font-display text-xl uppercase">{tr(p, 'name', lang)}</strong>{p.audience && <span class="block text-xs text-ash line-clamp-2">{tr(p, 'audience', lang)}</span>}</span>
+          <span class="shrink-0 text-right font-display text-xl leading-none">{formatVnd(p.pricePerMonth)}<small class="mt-1 block text-xs text-ash">{t(lang, 'per_month')}</small></span>
+        </a>
+      ))}
+    </nav>
     <div class="grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
-      {plans.map((p, i) => <PlanCard plan={p} lang={lang} i={i} />)}
+      {plans.map((p) => <PlanCard plan={p} lang={lang} />)}
     </div>
     {Astro.locals.site.policy?.fees && (
       <a href={`${href('/quy-dinh', lang)}#hoc-phi`} class="mt-10 inline-flex min-h-11 items-center gap-2 font-display uppercase tracking-wider text-white/85 hover:text-glory">

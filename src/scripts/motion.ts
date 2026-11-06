@@ -3,29 +3,14 @@
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const finePointer = matchMedia('(hover: hover) and (pointer: fine)').matches;
 
-// ── Hiện dần khi cuộn tới: .reveal (khối), .reveal-title (mọi h2 trong <main>), [data-count] (số đếm lên) ──
+// ── Hiện dần khi cuộn tới: .reveal (khối), .reveal-title (mọi h2 trong <main>) ──
 document.querySelectorAll<HTMLElement>('main h2').forEach((h) => {
   if (!h.closest('.reveal, dialog, [data-no-reveal]')) h.classList.add('reveal-title');
 });
-const countUp = (el: HTMLElement) => {
-  const to = Number(el.dataset.count);
-  const fmt = (n: number) => n.toLocaleString('vi-VN'); // giống formatVnd: 1.500.000
-  if (reduced || !to) { el.textContent = fmt(to); return; }
-  const t0 = performance.now() + 250;
-  const tick = (t: number) => {
-    const p = Math.min(1, Math.max(0, (t - t0) / 1000));
-    el.textContent = fmt(Math.round(to * (1 - (1 - p) ** 3)));
-    if (p < 1) requestAnimationFrame(tick);
-  };
-  el.textContent = fmt(0);
-  requestAnimationFrame(tick);
-  setTimeout(() => { el.textContent = fmt(to); }, 1600); // tab chạy nền (rAF dừng) vẫn ra đúng số
-};
 const pending = new Set<HTMLElement>();
 const show = (el: HTMLElement) => {
   if (!pending.delete(el)) return;
   io.unobserve(el);
-  if (el.dataset.count != null) { countUp(el); return; }
   el.classList.add('is-in');
   // Hết lượt hiện thì bỏ độ trễ lần lượt, để hiệu ứng rê chuột sau đó không bị chậm theo thứ tự thẻ.
   setTimeout(() => el.style.setProperty('--i', '0'), 1300);
@@ -33,7 +18,7 @@ const show = (el: HTMLElement) => {
 const io = new IntersectionObserver((entries) => {
   for (const e of entries) if (e.isIntersecting) show(e.target as HTMLElement);
 }, { rootMargin: '0px 0px -8% 0px' });
-document.querySelectorAll<HTMLElement>('.reveal, .reveal-title, [data-count]').forEach((el) => { pending.add(el); io.observe(el); });
+document.querySelectorAll<HTMLElement>('.reveal, .reveal-title').forEach((el) => { pending.add(el); io.observe(el); });
 // Vuốt thật nhanh / bấm link #neo có thể nhảy qua cả khối giữa hai khung hình (observer không kịp thấy):
 // cuộn xong thì hiện luôn mọi khối đã ở phía trên mép dưới màn hình, không để khối nào tàng hình.
 let settle = 0;

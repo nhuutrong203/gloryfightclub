@@ -17,7 +17,7 @@ const [{ club, locations, policy }, disciplines, plans, classes, coaches] = awai
 const preselect = disciplines.find((d) => d.slug === Astro.url.searchParams.get('mon'))?.id;
 // ?goi=<id> từ nút "Đăng ký học thử" trên thẻ gói (trang Học phí) → chọn sẵn gói đó.
 const planPre = plans.find((p) => String(p.id) === Astro.url.searchParams.get('goi'))?.id;
-const keys = ['f_ok', 'f_err', 'f_too_many', 'f_phone_err', 'f_sending', 'f_submit', 'f_birth_err', 'f_age_hint', 'f_kid_hint', 'f_today', 'f_tomorrow',
+const keys = ['f_ok', 'f_err', 'f_too_many', 'f_phone_err', 'f_sending', 'f_submit', 'f_birth_err', 'f_slot_expired', 'f_age_hint', 'f_kid_hint', 'f_today', 'f_tomorrow',
   'f_ok_hi', 'f_ok_title', 'trial_title', 'f_agree_err', 'level_kids', 'level_beginner', 'level_intermediate', 'level_advanced'] as const;
 // Dữ liệu cho script gợi ý buổi học (chỉ thông tin public). "<" thoát thành < để chữ trong CMS không đóng được thẻ <script>.
 const data = {
@@ -53,7 +53,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
           <p id="f-phone-err" class="mt-2 hidden text-sm font-semibold text-glory-bright" role="alert">{t(lang, 'f_phone_err')}</p>
         </div>
         <!-- Ngày sinh: 3 ô chọn (gõ / cuộn lịch tìm năm sinh trên điện thoại rất mệt; ô ngày của trình duyệt hiện kiểu Mỹ trên máy tiếng Anh). -->
-        <fieldset aria-describedby="f-birth-hint">
+        <fieldset aria-describedby="f-birth-why f-birth-hint">
           <legend class={label}>{t(lang, 'f_birth')}</legend>
           <div class="grid grid-cols-[1fr_1fr_1.4fr] gap-2">
             <select name="bday" aria-label={t(lang, 'f_day')} autocomplete="bday-day" class={`${field} !px-3`}>
@@ -69,6 +69,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
               {Array.from({ length: 88 }, (_, i) => <option value={year - 3 - i}>{year - 3 - i}</option>)}
             </select>
           </div>
+          <p id="f-birth-why" class="mt-2 text-sm text-ash">{t(lang, 'f_birth_why')}</p>
           <p id="f-birth-hint" class="mt-2 min-h-5 text-sm text-ash" aria-live="polite"></p>
         </fieldset>
         <div>
@@ -119,7 +120,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
             </select>
           </div>
         )}
-        <div class="sm:col-span-2">
+        <div id="preferred-time" class="sm:col-span-2">
           <label for="f-time" class={label}>{t(lang, 'f_time')}</label>
           <input id="f-time" name="preferredTime" maxlength="100" placeholder={t(lang, 'f_time_ph')} class={field} />
         </div>
@@ -226,7 +227,8 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
     // ── Ngày sinh → tuổi (null khi chưa chọn đủ; NaN khi ngày không có thật như 31/02) ──
     const birth = () => {
       const [d, m, y] = ['bday', 'bmonth', 'byear'].map((n) => Number(pick(n).value));
-      if (!d || !m || !y) return null;
+      if (!d && !m && !y) return null;
+      if (!d || !m || !y) return { iso: '', age: NaN };
       const iso = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const real = new Date(Date.UTC(y, m - 1, d)).getUTCDate() === d;
       return { iso, age: real ? ageOn(iso, vnNow().date) : NaN };
@@ -292,15 +294,17 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
       // Buổi đang chọn biến khỏi danh sách (đổi môn / cơ sở) → về "Giờ khác".
       if (!form.querySelector('input[name=slot]:checked')) (form.querySelector('input[name=slot][value=""]') as HTMLInputElement).checked = true;
       none.classList.toggle('hidden', slots.length > 0);
+      el('preferred-time').classList.toggle('hidden', !!(form.querySelector('input[name=slot]:checked') as HTMLInputElement | null)?.value);
     };
     for (const n of ['disciplineId', 'locationId']) pick(n).addEventListener('change', renderSlots);
     for (const n of ['bday', 'bmonth', 'byear']) pick(n).addEventListener('change', () => { showBirth(); renderSlots(); });
     // Chọn một buổi khi chưa chọn cơ sở → điền cơ sở của buổi đó (CMS thấy ngay khách tới đâu).
-    list.addEventListener('change', (e) => {
+    box.addEventListener('change', (e) => {
       const [id] = (e.target as HTMLInputElement).value.split('|');
       const cls = D.classes.find((c) => c.id === Number(id));
       const loc = pick('locationId') as HTMLSelectElement;
       if (cls && !loc.value) loc.value = String(cls.locationId);
+      el('preferred-time').classList.toggle('hidden', !!id);
     });
     renderSlots();
 
@@ -352,6 +356,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
         (form.querySelector(':invalid') as HTMLElement | null)?.focus();
         if (!phone.value || !phone.checkValidity()) phoneErr.classList.remove('hidden');
         if (agree && !agree.checked) agreeErr?.classList.remove('hidden');
+        if (b && Number.isNaN(b.age)) pick('bday').focus();
         return;
       }
       const fd = new FormData(form);
@@ -363,7 +368,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
         fullName: str('fullName'), phone: str('phone'), birthDate: b?.iso,
         disciplineId: num('disciplineId'), locationId: num('locationId'), feePlanId: num('feePlanId'),
         classId: slot?.cls.id, trialDate: slot?.date,
-        preferredTime: str('preferredTime'), note: str('note'), website: String(fd.get('website') ?? ''),
+        preferredTime: slot ? undefined : str('preferredTime'), note: str('note'), website: String(fd.get('website') ?? ''),
         agree: agree ? agree.checked : undefined,
       };
       btn.disabled = true;
@@ -372,7 +377,10 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
         const res = await fetch('/api/public/trial', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
         const data = (await res.json().catch(() => ({}))) as { ok?: boolean; code?: string };
         // Câu báo lỗi lấy theo ngôn ngữ của trang (server chỉ trả code).
-        if (!res.ok || !data.ok) throw new Error(({ too_many: M.f_too_many, phone: M.f_phone_err, birth: M.f_birth_err, agree: M.f_agree_err } as Record<string, string>)[data.code ?? ''] ?? M.f_err);
+        if (!res.ok || !data.ok) {
+          if (data.code === 'slot') renderSlots();
+          throw new Error(({ too_many: M.f_too_many, phone: M.f_phone_err, birth: M.f_birth_err, agree: M.f_agree_err, slot: M.f_slot_expired } as Record<string, string>)[data.code ?? ''] ?? M.f_err);
+        }
         showThanks(body.fullName ?? '', slot);
       } catch (ex) {
         // Mất mạng: fetch báo "Failed to fetch" (tiếng Anh thô) → câu lỗi chung của trang.

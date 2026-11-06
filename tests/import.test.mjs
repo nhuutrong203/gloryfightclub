@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { STATUS_IN, byName, fixPhone, fold, parseDate, updatableColumns } from '../src/lib/import.ts';
-import { normalizePhone, pageList, vnNow, vnRange, youtubeId } from '../src/lib/util.ts';
+import { normalizePhone, pageList, policyVersionText, vnNow, vnRange, youtubeId } from '../src/lib/util.ts';
 import { textToHtml, toText } from '../src/lib/html.ts';
 import { RESOURCES } from '../src/admin/resources.ts';
 
@@ -42,6 +42,12 @@ test('nhập Excel cập nhật học viên: chỉ ghi cột có trong file, ô 
 test('vnNow: thứ theo giờ Việt Nam (8 = Chủ nhật)', () => {
   assert.equal(vnNow(new Date('2026-11-08T05:00:00Z')).weekday, '8'); // CN 12h trưa VN
   assert.equal(vnNow(new Date('2026-11-08T17:30:00Z')).weekday, '2'); // đã sang 0h30 thứ 2 ở VN
+});
+
+test('phiên bản quy định: bản cũ chỉ có ngày, bản mới phân biệt hai lần sửa cùng ngày', () => {
+  assert.equal(policyVersionText('2026-11-06'), '06/11/2026');
+  assert.match(policyVersionText('2026-11-06T08:00:00.000Z'), /06\/11\/2026.*15:00/);
+  assert.notEqual(policyVersionText('2026-11-06T08:00:00.000Z'), policyVersionText('2026-11-06T08:01:00.000Z'));
 });
 
 test('fixPhone thêm lại số 0 Excel làm mất', () => {

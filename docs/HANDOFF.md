@@ -4,7 +4,12 @@ Read `CLAUDE.md` first: it holds every rule and convention. This file only says 
 
 ## 1. Deploy state
 
-Everything up to `78d8472` is pushed and live (deployed 2026-11-06, Worker version `3a5661e7`; cloud D1 migrated to `0005_last_saracen`). Checked on the live site: `/lich-hoc` legend reads "246 · 357 · 7·CN · CN"; Home shows the 4 featured coaches + "Xem tất cả"; plan cards show "Phù hợp với: …" and link to `/hoc-phi#goi-<id>`. Nothing is waiting.
+The UX/API pass was deployed on 2026-11-06 to the two temporary domains as Worker version `a050d9c5-e752-4e96-951d-2cfadd3657f4`. Cloud D1 remains at migration `0005_last_saracen`; the subsequent audit fixes need no migration. The deployed pass changes trial slot validation, atomic conversion/diary creation, trial pagination, policy version timestamps, mobile schedule/pricing/form UX, responsive images and decorative number labels. Audit fixes in source are awaiting deployment.
+
+The audit fixes cover the collapsed mobile menu, thumbnail overwrite permission, trial class discipline/location validation, translated skip link, removal of unused animation code and dangerous remote-seed instructions. `npm run test:api` now covers key writes against a disposable D1 and runs in CI. Seven visible test testimonials/posts/FAQ rows in cloud D1 were replaced by clearly labeled example content at the owner's request; no student or fee rows were changed. English fields are empty and correctly fall back to Vietnamese examples.
+
+Verification: `npm run check` had 0 errors, `npm test` passed 19/19, and `npm run build` succeeded. Viewed Home, Fees, Schedule and the trial form at 375px and 1600px with no horizontal overflow; partial birth date and slot-dependent preferred time behaved as intended. On a separate disposable local D1, API conversion returned 201 then 409 on retry, diary creation retained its media, an expired trial slot returned 400 and a future slot returned 200. The disposable database was removed after the check.
+After deployment, the public home, fees and English pages and the CMS login page returned HTTP 200 on their configured domains.
 
 Other coding agents (Codex…) start from `AGENTS.md` at the repo root — a one-file briefing that points back here and to `CLAUDE.md`.
 
@@ -12,20 +17,19 @@ CI (`.github/workflows/deploy.yml`) still fails at the first step on every push 
 
 ## 2. Waiting on the owner (content, done in the CMS — no code)
 
-- Delete test data on the live site: testimonials "Nhi Thao" (supercalifragilistic…), "test tên học viên", "test tên người 1" (maybe also "Trung Trực"); diary posts "Test Nhật kí" and "Test ngày quá khứ". Deleting in the CMS also removes their images (+ 800px copies).
 - Upload a real hero photo (CMS → Trang chủ).
 - Decide the "GỢI Ý THÊM" club policies (card freeze 15 days, referral, family 5–10% discount, renewal price, martial-arts culture) — not published; once decided, add them in CMS → Quy định CLB.
 - Still open from `CLAUDE.md`: schedule image for location 2, coach achievements/photos, which coach leads each class, the "Fighter class", Kudo Kids schedule, Kudo belt stripes.
+- Read-only check of remote D1 on 2026-11-06 confirmed `hero.image_key` is null, there are no public gallery photos, location 2 has neither a schedule image nor public classes, and no class is named Fighter or Kids. Seven public coach records have photos; these are portraits, not a class/hero photo. No remote data was changed.
 
 ## 3. Open questions to ask the owner
 
-- Remove the remaining decorative numbers too? (big outline "01, 02…" on discipline cards and the contact page; small grey numbers in the phone menu). The bare "01/02/03" labels on `/gioi-thieu` are already gone.
+- The owner requested removal of bare decorative number labels (deployed). The large day number on text-only diary cards remains because it communicates the post date.
 
 ## 4. Possible next work (proposed, not started)
 
 - Trial form: "Mục tiêu tập" + "Đã từng tập chưa?" fields (2 DB columns); parent name/phone fields that appear under 16; preselect the Kids plan by age (needs an age field on fee plans).
 - Cloudflare Turnstile on the trial form (honeypot + rate limit only today).
-- `srcset` (800px copy + original) for diary covers / gallery / achievement tiles like CoachCard has, if they look soft on retina screens.
 - Zalo OA / SMS reminder the day before a trial session (paid service).
 
 ## 5. Session notes worth keeping

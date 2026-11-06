@@ -10,6 +10,16 @@ export function vnNow(d = new Date()) {
   return { date: `${p.year}-${p.month}-${p.day}`, month: `${p.year}-${p.month}`, weekday: dow === 0 ? '8' : String(dow + 1) };
 }
 
+/** Old policy versions were dates; new versions include the exact save time. */
+export function policyVersionText(version: string, lang: 'vi' | 'en' = 'vi') {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(version)) return version.split('-').reverse().join('/');
+  const date = new Date(version);
+  if (Number.isNaN(date.getTime())) return version;
+  const day = new Intl.DateTimeFormat(lang === 'vi' ? 'vi-VN' : 'en-GB', { timeZone: TZ, day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
+  const time = new Intl.DateTimeFormat('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hour12: false }).format(date);
+  return `${day} ${time}`;
+}
+
 /** "Lê Thành Trung" → "le-thanh-trung" */
 export function slugify(s: string) {
   return s

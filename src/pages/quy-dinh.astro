@@ -4,6 +4,7 @@ import PageHero from '../components/public/PageHero.astro';
 import PolicyText from '../components/public/PolicyText.astro';
 import CtaBand from '../components/public/CtaBand.astro';
 import { t, href, type Lang } from '../i18n';
+import { policyVersionText } from '../lib/util';
 
 // Quy định CLB (sửa trong CMS → Quy định CLB): 2 phần, mỗi phần có neo (#hoc-phi, #an-toan) để form học thử / trang Học phí link thẳng tới.
 const lang: Lang = Astro.locals.lang;
@@ -14,7 +15,7 @@ const parts = [
   { id: 'hoc-phi', title: t(lang, 'policy_fees'), text: pick(policy.fees, policy.fees_en) },
   { id: 'an-toan', title: t(lang, 'policy_safety'), text: pick(policy.safety, policy.safety_en) },
 ].filter((p) => p.text);
-const updated = policy.updated?.split('-').reverse().join('/');
+const updated = policy.updated ? policyVersionText(policy.updated, lang) : null;
 Astro.response.headers.set('cache-control', 'public, max-age=60');
 ---
 <PublicLayout path="/quy-dinh" title={t(lang, 'policy_title')} description={t(lang, 'policy_sub')}>
@@ -30,10 +31,9 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
 
   <div class="container-x py-12 sm:py-16">
     <div class="mx-auto max-w-3xl space-y-16">
-      {parts.map((p, i) => (
+      {parts.map((p) => (
         <section id={p.id} class="scroll-mt-36">
-          <p class="font-display text-7xl leading-none text-outline-white" aria-hidden="true">0{i + 1}</p>
-          <h2 class="mt-2 mb-8 text-4xl sm:text-5xl">{p.title}</h2>
+          <h2 class="mb-8 text-4xl sm:text-5xl">{p.title}</h2>
           <PolicyText text={p.text} />
         </section>
       ))}

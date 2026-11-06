@@ -16,8 +16,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
   <section class="container-x py-12 sm:py-16">
     <div class="divide-y divide-white/10 border-y border-white/10">
       {disciplines.map((d, i) => (
-        <a href={href(`/mon-hoc/${d.slug}`, lang)} class="reveal group grid gap-4 py-8 sm:py-10 md:grid-cols-[8rem_1fr_auto] md:items-center transition-colors hover:bg-coal md:px-6" style={`--i:${i}`}>
-          <span class="font-display text-7xl sm:text-8xl text-outline-white leading-none group-hover:text-glory group-hover:[-webkit-text-stroke:0]" aria-hidden="true">0{i + 1}</span>
+        <a href={href(`/mon-hoc/${d.slug}`, lang)} class="reveal group grid gap-4 py-8 sm:py-10 md:grid-cols-[1fr_auto] md:items-center transition-colors hover:bg-coal md:px-6" style={`--i:${i}`}>
           <div>
             <h2 class="text-5xl sm:text-6xl group-hover:text-glory transition-colors">{tr(d, 'name', lang)}</h2>
             <p class="mt-3 max-w-2xl text-white/75">{tr(d, 'summary', lang)}</p>

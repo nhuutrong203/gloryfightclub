@@ -4,7 +4,7 @@ import { tr, href, t, dayLong, type Lang } from '../../i18n';
 import { richText, postHtml, youtubeEmbed, type PostMedia } from '../../lib/public';
 import { toText } from '../../lib/html';
 import { vnNow, youtubeId } from '../../lib/util';
-import { thumbUrl } from '../../lib/site';
+import { thumbSrcset, thumbUrl } from '../../lib/site';
 
 // Một trang nhật ký lớp: ô ngày (như tờ lịch), chữ, ảnh / video / YouTube.
 // Thẻ (trang chủ): đoạn trích + lưới 1–4 ô, ">4" hiện "+N". full (trang chi tiết): nội dung đủ, video phát được.
@@ -43,7 +43,7 @@ const cover = p.media[0];
       <div class="relative min-h-28 w-28 shrink-0 overflow-hidden bg-ink sm:aspect-[16/10] sm:min-h-0 sm:w-auto">
         {cover.type === 'video'
           ? <video src={`${src(cover)}#t=0.1`} muted playsinline preload="metadata" class="absolute inset-0 size-full object-cover"></video>
-          : <img src={cover.type === 'image' ? thumb(cover) : ytThumb(cover).replace('hqdefault', 'mqdefault')} alt="" loading="lazy" decoding="async" class="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105" />}
+          : <img src={cover.type === 'image' ? thumb(cover) : ytThumb(cover).replace('hqdefault', 'mqdefault')} srcset={cover.type === 'image' ? thumbSrcset(cover.key) : undefined} sizes="(max-width: 639px) 112px, (max-width: 1023px) 50vw, 33vw" alt="" loading="lazy" decoding="async" class="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105" />}
         {cover.type !== 'image' && <span class="absolute inset-0 grid place-items-center" aria-hidden="true"><span class="grid size-9 place-items-center bg-glory/90 text-white sm:size-12"><Icon name="play" class="size-4 sm:size-5" /></span></span>}
         {p.media.length > 1 && <span class="absolute bottom-2 right-2 bg-ink/80 px-2 py-1 font-display text-sm tracking-wider text-white">+{p.media.length - 1}</span>}
       </div>
@@ -100,7 +100,7 @@ const cover = p.media[0];
         <div class:list={['relative overflow-hidden', shown.length === 1 ? 'aspect-[4/3]' : 'aspect-square', shown.length === 3 && idx === 0 && 'row-span-2 !aspect-auto']}>
           {m.type === 'video'
             ? <video src={`${src(m)}#t=0.1`} muted playsinline preload="metadata" class="absolute inset-0 size-full object-cover"></video>
-            : <img src={m.type === 'image' ? thumb(m) : ytThumb(m)} alt="" loading="lazy" decoding="async" class="absolute inset-0 size-full object-cover" />}
+            : <img src={m.type === 'image' ? thumb(m) : ytThumb(m)} srcset={m.type === 'image' ? thumbSrcset(m.key) : undefined} sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 33vw" alt="" loading="lazy" decoding="async" class="absolute inset-0 size-full object-cover" />}
           {m.type !== 'image' && <span class="absolute inset-0 grid place-items-center" aria-hidden="true"><span class="grid size-14 place-items-center bg-glory/90 text-white"><Icon name="play" class="size-6" /></span></span>}
           {idx === 3 && extra > 0 && <span class="absolute inset-0 grid place-items-center bg-ink/70 font-display text-5xl">+{extra}</span>}
         </div>

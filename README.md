@@ -34,9 +34,10 @@ On the real domain the CMS runs at `cms-gloryfightclub.huutrong203.id.vn`.
 | `npm run build` / `npm run preview` | Production build / run the build locally |
 | `npm run check` | TypeScript check |
 | `npm test` | Quick tests (`tests/*.test.mjs`, Node's built-in test runner) |
+| `npm run test:api` | Build and test key API writes against a disposable local D1 |
 
 Seed data:
-- `seed/seed.sql` — **real data** (2 locations, disciplines, coaches, location 1 schedule, fee plans, achievements). Safe to load to the cloud.
+- `seed/seed.sql` — initial club data for the **local** database. It deletes existing rows; never run it against the cloud after the CMS has been used.
 - `seed/sample.sql` — **demo data** (news, testimonials, FAQ, students…, marked "mẫu"). **Local only.**
 
 ## 2. First deploy to Cloudflare (DONE on 2026-11-02, kept for reference)
@@ -48,10 +49,9 @@ npx wrangler r2 bucket create glory-media
 ```
 
 1. Copy the printed `database_id` into **both places** in `wrangler.jsonc` (top level and `env.remote`).
-2. Create the tables + load the real data in the cloud:
+2. Create the tables in the cloud. Enter club content through the CMS; use targeted SQL only when a specific existing row needs a correction:
    ```bash
    npm run db:migrate:remote
-   npm run db:seed:remote
    ```
 3. Create the **real** owner account in the cloud (never use the demo accounts):
    ```bash
@@ -84,7 +84,7 @@ Updating the site after code changes: `npm run deploy`. If the database schema c
 ## Auto deploy (GitHub Actions)
 
 Every **push to `main`** runs `.github/workflows/deploy.yml`:
-TypeScript check → tests → apply new D1 migrations (if any) → build + deploy to Cloudflare. Follow progress in the repo's **Actions** tab.
+TypeScript check → unit and API smoke tests → apply new D1 migrations (if any) → build + deploy to Cloudflare. Follow progress in the repo's **Actions** tab.
 If the TypeScript check or a test fails, it stops and does **not** deploy — the running site is unaffected.
 
 > **Not active yet:** the `CLOUDFLARE_API_TOKEN` secret has not been added, so runs fail at the first step. Until then, deploy manually with `npm run deploy`.

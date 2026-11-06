@@ -68,8 +68,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
       <ul class="mt-10 grid gap-px bg-white/10 border border-white/10 sm:grid-cols-2 lg:grid-cols-3">
         {values.map((v, i) => (
           <li class="reveal bg-ink p-6 sm:p-8" style={`--i:${i}`}>
-            <span class="font-display text-5xl text-outline-white" aria-hidden="true">0{i + 1}</span>
-            <p class="mt-3 font-display text-3xl uppercase">{v}</p>
+            <p class="font-display text-3xl uppercase">{v}</p>
           </li>
         ))}
       </ul>

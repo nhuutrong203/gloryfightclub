@@ -92,7 +92,7 @@ const clubSchema = z.looseObject({
 // policy: quy định CLB (trang /quy-dinh + ô đồng ý ở form học thử). updated do server đặt mỗi lần lưu = "phiên bản" khách đã đồng ý.
 const policyText = z.string().max(20000).nullish().transform((v) => v?.trim() || null);
 const policySchema = z.object({ fees: policyText, fees_en: policyText, safety: policyText, safety_en: policyText })
-  .transform((v) => ({ ...v, updated: vnNow().date }));
+  .transform((v) => ({ ...v, updated: new Date().toISOString() }));
 adminRoutes.get('/settings', need('content'), async (c) => {
   const rows = await db.select().from(schema.settings).where(inArray(schema.settings.key, [...SETTING_KEYS]));
   return c.json(Object.fromEntries(rows.map((r) => [r.key, r.value])));
@@ -116,18 +116,24 @@ adminRoutes.post('/upload', need('posts', 'content'), async (c) => {
   const form = await c.req.formData().catch(() => null);
   const file = form?.get('file');
   if (!(file instanceof File)) return c.json({ error: 'Không có file' }, 400);
+  if (form?.has('variantOf')) return c.json({ error: 'Không thể ghi đè ảnh đã tải lên' }, 400);
   const ext = TYPES[file.type];
   if (!ext) return c.json({ error: 'Chỉ nhận ảnh JPG, PNG, WebP' }, 400);
   if (file.size > 8 * 1024 * 1024) return c.json({ error: 'Ảnh quá lớn (tối đa 8MB)' }, 400);
   const bytes = new Uint8Array(await file.arrayBuffer());
   if (!isImage(bytes, ext)) return c.json({ error: 'File không phải ảnh hợp lệ' }, 400);
-  // variantOf = key ảnh gốc vừa upload → đây là bản nhỏ 800px của nó (CMS gửi ngay sau ảnh gốc), lưu ở `<key>.w800`.
-  const variantOf = form?.get('variantOf');
-  if (variantOf != null && (typeof variantOf !== 'string' || !/^public\/[\w\-/.]+$/.test(variantOf) || variantOf.endsWith(THUMB) || file.size > 400_000)) {
+  const small = form?.get('thumbnail');
+  if (small != null && (!(small instanceof File) || !TYPES[small.type] || small.size > 400_000)) {
     return c.json({ error: 'Bản ảnh nhỏ không hợp lệ' }, 400);
   }
-  const key = variantOf ? variantOf + THUMB : `public/${vnNow().month}/${crypto.randomUUID()}.${ext}`;
+  const smallBytes = small instanceof File ? new Uint8Array(await small.arrayBuffer()) : null;
+  if (small instanceof File && smallBytes && !isImage(smallBytes, TYPES[small.type])) return c.json({ error: 'Bản ảnh nhỏ không hợp lệ' }, 400);
+  const key = `public/${vnNow().month}/${crypto.randomUUID()}.${ext}`;
   await env.MEDIA.put(key, bytes, { httpMetadata: { contentType: file.type } });
+  if (smallBytes) {
+    try { await env.MEDIA.put(key + THUMB, smallBytes, { httpMetadata: { contentType: (small as File).type } }); }
+    catch (e) { console.error('Không lưu được ảnh nhỏ', key, e); } // ảnh gốc vẫn dùng được
+  }
   return c.json({ key }, 201);
 });
 

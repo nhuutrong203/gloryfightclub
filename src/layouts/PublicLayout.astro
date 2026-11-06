@@ -86,8 +86,8 @@ const onTrialPage = path === '/dang-ky-hoc-thu';
     {jsonLd && <script type="application/ld+json" set:html={JSON.stringify({ '@context': 'https://schema.org', ...jsonLd }).replace(/</g, '\\u003c')} />}
   </head>
   <body class="min-h-dvh flex flex-col overflow-x-clip pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
-    <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] btn-red">Skip</a>
-    <header id="site-header" class="sticky top-0 z-40 border-b border-white/10 bg-ink/80 backdrop-blur-md data-[scrolled]:bg-ink/95 data-[scrolled]:shadow-[0_8px_30px_rgb(0_0_0/0.5)]">
+    <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] btn-red">{t(lang, 'skip_to_content')}</a>
+    <header id="site-header" class="sticky top-0 z-40 border-b border-white/10 bg-ink/95 data-[scrolled]:shadow-[0_8px_30px_rgb(0_0_0/0.5)]">
       <span class="scroll-progress" aria-hidden="true"></span>
       <div class="container-x flex h-16 items-center justify-between gap-4">
         <a href={href('/', lang)} class="flex min-h-11 min-w-11 items-center gap-3 shrink-0" aria-label={`${club.name} — ${t(lang, 'home')}`}>
@@ -113,9 +113,9 @@ const onTrialPage = path === '/dang-ky-hoc-thu';
             <div class="fixed inset-x-0 top-16 bottom-0 overflow-y-auto bg-ink border-t border-white/10">
               <nav class="container-x py-6" aria-label="Mobile">
                 <ul class="divide-y divide-white/10 border-y border-white/10">
-                  {main.map(([p, k], i) => (
+                  {main.map(([p, k]) => (
                     <li><a href={href(p, lang)} class:list={['flex items-center justify-between py-4 font-display text-4xl uppercase', current(p) ? 'text-glory' : 'hover:text-glory']}>
-                      <span><span class="mr-4 text-base text-ash align-middle">0{i + 1}</span>{t(lang, k)}</span><Icon name="arrow-up-right" class="size-6 text-ash" />
+                      <span>{t(lang, k)}</span><Icon name="arrow-up-right" class="size-6 text-ash" />
                     </a></li>
                   ))}
                 </ul>

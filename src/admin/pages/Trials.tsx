@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api, can, fmtDate, navigate, todayVN, toast, useApi, type Me } from '../lib';
 import { ageOn, weekdayOf } from '../../lib/schedule';
+import { policyVersionText } from '../../lib/util';
 import { Badge, Button, Empty, ErrorBox, Icon, Loading, Page, confirmDanger } from '../ui';
 import type { Lookups } from './Students';
 
@@ -17,7 +18,8 @@ const ageNow = (t: { birthDate: string | null; age: number | null }) => (t.birth
 
 export function Trials({ me }: { me: Me }) {
   const [filter, setFilter] = useState('');
-  const { data, error, reload } = useApi<any[]>(`/admin/trials${filter ? `?status=${filter}` : ''}`);
+  const [page, setPage] = useState(1);
+  const { data, error, reload } = useApi<{ rows: any[]; hasMore: boolean; page: number }>(`/admin/trials?page=${page}${filter ? `&status=${filter}` : ''}`);
   const lk = useApi<Lookups>('/admin/lookups').data;
   const [busy, setBusy] = useState<number | null>(null);
   const name = (list: { id: number; name: string }[] | undefined, id: number | null) => list?.find((x) => x.id === id)?.name;
@@ -31,22 +33,23 @@ export function Trials({ me }: { me: Me }) {
     <Page title="Đăng ký học thử">
       <div className="mb-4 flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Lọc trạng thái">
         {[['', 'Tất cả'], ...Object.entries(ST).map(([k, v]) => [k, v.label])].map(([v, label]) => (
-          <button key={v} role="tab" aria-selected={filter === v} onClick={() => setFilter(v)} className={`min-h-11 shrink-0 border px-4 font-semibold cursor-pointer ${filter === v ? 'border-ink bg-ink text-white' : 'border-neutral-300 bg-white'}`}>{label}</button>
+          <button key={v} role="tab" aria-selected={filter === v} onClick={() => { setFilter(v); setPage(1); }} className={`min-h-11 shrink-0 border px-4 font-semibold cursor-pointer ${filter === v ? 'border-ink bg-ink text-white' : 'border-neutral-300 bg-white'}`}>{label}</button>
         ))}
       </div>
-      {error ? <ErrorBox message={error} retry={reload} /> : !data ? <Loading /> : data.length === 0 ? <Empty>Chưa có đăng ký nào.</Empty> : (
+      {error ? <ErrorBox message={error} retry={reload} /> : !data ? <Loading /> : data.rows.length === 0 && page === 1 ? <Empty>Chưa có đăng ký nào.</Empty> : (
+        <>
         <ul className="space-y-3">
-          {data.map((t) => (
+          {data.rows.map((t) => (
             <li key={t.id} className={`border bg-white p-4 ${t.status === 'new' ? 'border-glory border-l-4' : 'border-neutral-200'}`}>
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <b className="text-lg">{t.fullName}</b>{ageNow(t) != null && <span className="text-neutral-500"> · {ageNow(t)} tuổi</span>}
                   {t.birthDate && <span className="text-sm text-neutral-500"> (sinh {t.birthDate.split('-').reverse().join('/')})</span>}
                   <p className="text-sm text-neutral-500">Gửi {fmtDate(t.createdAt)}</p>
-                  {/* Đồng ý Quy định CLB lúc đăng ký (bản = ngày lưu quy định). Đăng ký cũ (trước khi có ô đồng ý) không có dòng này. */}
+                  {/* Đăng ký cũ (trước khi có ô đồng ý) không có dòng này. */}
                   {t.agreedAt && (
                     <p className="mt-0.5 flex items-center gap-1 text-sm text-green-700">
-                      <Icon name="check" className="size-4" />Đã đồng ý Quy định CLB{t.policyVersion ? ` (bản ${t.policyVersion.split('-').reverse().join('/')})` : ''}
+                      <Icon name="check" className="size-4" />Đã đồng ý Quy định CLB{t.policyVersion ? ` (bản ${policyVersionText(t.policyVersion)})` : ''}
                       {t.age != null && t.age < 18 && ' — phụ huynh xác nhận'}
                     </p>
                   )}
@@ -99,6 +102,12 @@ export function Trials({ me }: { me: Me }) {
             </li>
           ))}
         </ul>
+        <nav className="mt-5 flex items-center justify-between gap-3" aria-label="Trang đăng ký học thử">
+          <Button variant="ghost" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>Trang trước</Button>
+          <span className="font-semibold">Trang {page}</span>
+          <Button variant="ghost" disabled={!data.hasMore} onClick={() => setPage((p) => p + 1)}>Trang sau</Button>
+        </nav>
+        </>
       )}
     </Page>
   );

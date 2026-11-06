@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, siteUrl, toast, useApi, useDirty, useUploading } from '../lib';
 import { Button, ErrorBox, ImageInput, Loading, Page, TextArea, TextInput, ViewOnSite } from '../ui';
+import { policyVersionText } from '../../lib/util';
 
 type S = Record<string, any>;
 // Nhóm chưa có trong DB (vd. "about" chưa lưu lần nào): dùng 1 object cố định. `?? {}` tạo object mới mỗi lần vẽ
@@ -35,9 +36,9 @@ export function Settings() {
           ['philosophy', 'Triết lý', 'textarea'], ['philosophy_en', 'Philosophy (English)', 'textarea'],
           ['values', 'Giá trị (mỗi dòng một ý)', 'lines'], ['values_en', 'Values (English, one per line)', 'lines'],
         ]} />
-        {/* Quy định CLB: trang /quy-dinh + ô "Tôi đồng ý" ở form học thử. Lưu = phiên bản mới (ngày lưu), đăng ký sau đó ghi nhận bản này. */}
+        {/* Quy định CLB: trang /quy-dinh + ô "Tôi đồng ý" ở form học thử. Mỗi lần lưu có phiên bản theo thời điểm. */}
         <Group title="Quy định CLB" k="policy" view="/quy-dinh" onDirty={onDirty} initial={data.policy ?? NONE}
-          note={`Mỗi dòng một ý; dòng bắt đầu bằng số và dấu chấm ("1. Quy định học phí") là tiêu đề mục. Khách đăng ký học thử phải đánh dấu đồng ý (dưới 18 tuổi: phụ huynh xác nhận). Để trống cả hai phần thì ẩn trang và ô đồng ý.${data.policy?.updated ? ` Bản hiện tại: ${data.policy.updated.split('-').reverse().join('/')}.` : ''}`} fields={[
+          note={`Mỗi dòng một ý; dòng bắt đầu bằng số và dấu chấm ("1. Quy định học phí") là tiêu đề mục. Khách đăng ký học thử phải đánh dấu đồng ý (dưới 18 tuổi: phụ huynh xác nhận). Để trống cả hai phần thì ẩn trang và ô đồng ý.${data.policy?.updated ? ` Bản hiện tại: ${policyVersionText(data.policy.updated)}.` : ''}`} fields={[
           ['fees', 'Quy định học phí & bảo lưu', 'long'], ['fees_en', 'Fees & membership freeze (English)', 'long'],
           ['safety', 'An toàn tập luyện & nhận thức rủi ro', 'long'], ['safety_en', 'Training safety & risk acknowledgement (English)', 'long'],
         ]} />

@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { db, schema } from '../db';
 import { slugify, youtubeId } from '../lib/util';
@@ -67,8 +67,11 @@ postRoutes.post('/', need('posts'), async (c) => {
   const { media, values } = await clean(data);
   if (!toText(values.content) && !media.length) return c.json({ error: 'Viết vài dòng hoặc thêm ảnh / video' }, 400);
   const slug = `${slugify(values.title || toText(values.content).slice(0, 60) || 'nhat-ky')}-${crypto.randomUUID().slice(0, 6)}`;
-  const [row] = await db.insert(p).values({ ...values, slug, createdBy: c.get('user').id }).returning();
-  if (media.length) await db.insert(img).values(mediaRows(row.id, media));
+  const insert = db.insert(p).values({ ...values, slug, createdBy: c.get('user').id }).returning();
+  const [rows] = media.length
+    ? await db.batch([insert, db.insert(img).values(media.map((m, sort) => ({ postId: sql`(select id from posts where slug = ${slug})`, type: m.type, key: m.key, sort })))])
+    : [await insert];
+  const [row] = rows;
   return c.json(row, 201);
 });
 
