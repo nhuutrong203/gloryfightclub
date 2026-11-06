@@ -6,3 +6,4 @@ dist/
 .env*
 worker-configuration.d.ts
 .DS_Store
+.playwright-mcp/

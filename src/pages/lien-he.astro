@@ -45,9 +45,13 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
             <a href={`${href('/lich-hoc', lang)}?co-so=${l.id}`} class="btn-ghost"><Icon name="calendar" />{t(lang, 'nav_schedule')}</a>
           </div>
         </div>
-        <div class="aspect-[4/3] sm:aspect-[16/9] bg-coal border border-white/10">
-          <iframe src={`https://www.google.com/maps?q=${encodeURIComponent(l.address)}&output=embed`} title={`${t(lang, 'map_title')} — ${tr(l, 'name', lang)}`}
-            loading="lazy" referrerpolicy="no-referrer-when-downgrade" class="size-full grayscale invert-[0.9] hue-rotate-180 contrast-90"></iframe>
+        <!-- Bản đồ màu thật (trước lọc xám + đảo màu nhìn u ám): khung đỏ, sọc đỏ chéo ở góc cho hợp tông web. -->
+        <div class="reveal relative isolate">
+          <div class="pointer-events-none absolute -right-3 -top-3 -z-10 h-1/2 w-1/2 bg-glory/80 sm:-right-4 sm:-top-4" aria-hidden="true"></div>
+          <div class="aspect-[4/3] overflow-hidden border-2 border-glory bg-coal shadow-[0_30px_60px_-30px_rgb(225_6_0/0.55)] sm:aspect-[16/9]">
+            <iframe src={`https://www.google.com/maps?q=${encodeURIComponent(l.address)}&output=embed`} title={`${t(lang, 'map_title')} — ${tr(l, 'name', lang)}`}
+              loading="lazy" referrerpolicy="no-referrer-when-downgrade" class="size-full saturate-[1.15]"></iframe>
+          </div>
         </div>
       </div>
     </section>

@@ -177,6 +177,52 @@
 /* Nút nam châm ([data-magnetic]): nhích theo con trỏ — chỉ 1–2 nút chính mỗi màn hình. */
 [data-magnetic] { translate: var(--tx, 0) var(--ty, 0); transition: translate .5s cubic-bezier(.2,.7,.2,1), background-color .2s, color .2s, scale .2s; }
 
+/* Chữ lộ ra sau một khối trắng quét ngang (dòng "NO GLORY" ở hero): khối phóng ra, chữ hiện, khối rút đi. */
+.block-reveal { position: relative; display: inline-block; animation: br-text 1ms step-end calc(var(--d, 0ms) + .45s) both; }
+.block-reveal::after { content: ''; position: absolute; inset: .1em -.06em .06em; background: #fff; scale: 0 1; transform-origin: left;
+  animation: br-block .9s cubic-bezier(.7,0,.2,1) var(--d, 0ms) both; }
+@keyframes br-text { from { color: transparent; } }
+@keyframes br-block { 0% { scale: 0 1; transform-origin: left; } 50% { scale: 1 1; transform-origin: left; } 50.01% { transform-origin: right; } 100% { scale: 0 1; transform-origin: right; } }
+
+/* Hero: hạt phim nhẹ (chất "phòng tập") + quầng đỏ đi theo con trỏ (máy có chuột; máy khác đứng yên ở góc phải). */
+.spot::before { content: ''; position: absolute; inset: 0; z-index: -5; pointer-events: none;
+  background: radial-gradient(640px circle at var(--sx, 72%) var(--sy, 28%), rgb(225 6 0 / .22), transparent 62%); transition: background .2s; }
+.grain::after { content: ''; position: absolute; inset: -50%; z-index: 1; pointer-events: none; opacity: .07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain .9s steps(4) infinite; }
+@keyframes grain { 0% { translate: 0 0; } 25% { translate: -4% 3%; } 50% { translate: 3% -5%; } 75% { translate: -2% 6%; } 100% { translate: 0 0; } }
+
+/* Chữ chìm khổng lồ trôi ngang theo cuộn trang (CSS scroll-driven, trình duyệt chưa hỗ trợ thì đứng yên). */
+@supports (animation-timeline: view()) {
+  .drift-x { animation: drift-x linear both; animation-timeline: view(); }
+  @keyframes drift-x { from { translate: 12% 0; } to { translate: -22% 0; } }
+}
+
+/* Link menu máy tính: chữ cuộn lên, bản đỏ trồi từ dưới (bản sao là chữ trang trí: "/ ''" để trình đọc màn hình không đọc 2 lần). */
+.roll { position: relative; display: inline-block; overflow: hidden; vertical-align: top; }
+.roll > span { display: inline-block; transition: translate .4s cubic-bezier(.7,0,.2,1); }
+.roll::before { content: attr(data-text); content: attr(data-text) / ''; position: absolute; inset: 0; translate: 0 100%; color: var(--color-glory);
+  transition: translate .4s cubic-bezier(.7,0,.2,1); }
+a:hover .roll > span, a:focus-visible .roll > span { translate: 0 -100%; }
+a:hover .roll::before, a:focus-visible .roll::before { translate: 0 0; }
+
+/* Gói nổi bật: viền đỏ có vệt sáng chạy vòng quanh thẻ. */
+@property --spin { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.premium-glow { border-color: transparent;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--color-glory) 20%, var(--color-ink)), var(--color-ink)) padding-box,
+    conic-gradient(from var(--spin), var(--color-glory) 0 55%, #fff 70%, var(--color-glory) 85%) border-box;
+  animation: spin-border 5s linear infinite; }
+@keyframes spin-border { to { --spin: 360deg; } }
+
+/* Vòng con trỏ (chỉ máy có chuột; con trỏ thật vẫn hiện): to + đỏ khi trỏ vào thứ bấm được. Script tạo và di chuyển. */
+.cursor-ring { position: fixed; left: 0; top: 0; z-index: 70; width: 36px; height: 36px; margin: -18px 0 0 -18px; pointer-events: none;
+  border: 2px solid var(--color-glory-bright); border-radius: 9999px; opacity: 0;
+  transition: scale .25s cubic-bezier(.2,.7,.2,1), opacity .25s, background-color .25s, border-color .25s; }
+.cursor-ring.is-on { opacity: 1; }
+.cursor-ring.is-link { scale: 1.7; background: rgb(225 6 0 / .18); }
+.cursor-ring.is-text { scale: .45; }
+.cursor-ring.is-down { scale: .75; }
+
 @media (hover: hover) and (pointer: fine) {
   .btn-red:hover::after { translate: 400% 0; transition: translate .7s cubic-bezier(.2,.7,.2,1); }
 }
@@ -190,5 +236,8 @@
   [data-tilt], [data-magnetic] { transform: none; translate: none; }
   [data-tilt]::after, .btn-red::after { display: none; }
   .wipe::before { transition: none; }
+  .block-reveal, .block-reveal::after, .grain::after, .drift-x, .premium-glow { animation: none; }
+  .block-reveal::after, .cursor-ring { display: none; }
+  .roll > span, .roll::before { transition: none; }
   ::view-transition-old(root), ::view-transition-new(root), .hero-in, .hero-line, .stripe-in, #mnav[open] > div, #mnav[open] li { animation: none; }
 }
