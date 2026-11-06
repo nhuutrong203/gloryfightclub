@@ -33,4 +33,5 @@ export const mediaUrl = (key: string | null | undefined) => (key ? `/media/${key
 /** Bản nhỏ 480px của ảnh (lưu cạnh ảnh gốc: `<key>.w480`, CMS tạo khi upload) cho thẻ / lưới ảnh.
  *  Chưa có bản nhỏ (ảnh cũ) thì /media tự trả ảnh gốc → không bao giờ vỡ ảnh. Ảnh lớn / mở lightbox vẫn dùng mediaUrl. */
 export const THUMB = '.w480';
-export const thumbUrl = (key: string | null | undefined) => (key ? `/media/${key}?w=480` : null);
+// v=2: bản đầu (chưa có "không cache khi trả ảnh gốc thay bản nhỏ") có thể đã giữ ảnh gốc ở edge dưới địa chỉ ?w=480 → đổi địa chỉ.
+export const thumbUrl = (key: string | null | undefined) => (key ? `/media/${key}?w=480&v=2` : null);

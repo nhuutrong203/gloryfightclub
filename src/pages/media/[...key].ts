@@ -27,12 +27,16 @@ export const GET: APIRoute = async ({ params, request, locals }) => {
   const hit = await cache.match(request);
   if (hit) return hit;
   // ?w=480: bản nhỏ (thẻ, lưới ảnh); chưa có thì trả ảnh gốc.
-  const small = new URL(request.url).searchParams.get('w') === '480' ? await env.MEDIA.get(params.key + THUMB) : null;
+  const wantSmall = new URL(request.url).searchParams.get('w') === '480';
+  const small = wantSmall ? await env.MEDIA.get(params.key + THUMB) : null;
   const obj = small ?? (await env.MEDIA.get(params.key));
   if (!obj) return new Response('Not found', { status: 404 });
   obj.writeHttpMetadata(headers);
   headers.set('etag', obj.httpEtag);
+  // Xin bản nhỏ mà chưa có (ảnh cũ / bản nhỏ đang upload ngay sau ảnh gốc): trả ảnh gốc nhưng KHÔNG cache, kẻo bản gốc bị giữ 1 ngày dưới địa chỉ ?w=480.
+  const fallback = wantSmall && !small;
+  if (fallback) headers.set('cache-control', 'public, max-age=300');
   const res = new Response(obj.body, { headers });
-  locals.cfContext?.waitUntil(cache.put(request, res.clone()));
+  if (!fallback) locals.cfContext?.waitUntil(cache.put(request, res.clone()));
   return res;
 };
