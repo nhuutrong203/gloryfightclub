@@ -57,7 +57,8 @@ trialRoutes.post('/:id/convert', need('students.edit'), async (c) => {
     feePlanId: trial.feePlanId, // gói khách chọn ở form → gợi ý số tiền khi thu học phí
     joinedAt: date,
     status: 'active',
-    note: [trial.birthDate && `Ngày sinh: ${trial.birthDate.split('-').reverse().join('/')}`, trial.preferredTime && `Giờ mong muốn: ${trial.preferredTime}`, trial.note]
+    note: [trial.birthDate && `Ngày sinh: ${trial.birthDate.split('-').reverse().join('/')}`, trial.preferredTime && `Giờ mong muốn: ${trial.preferredTime}`,
+      trial.agreedAt && `Đã đồng ý Quy định CLB${trial.policyVersion ? ` (bản ${trial.policyVersion.split('-').reverse().join('/')})` : ''} khi đăng ký học thử${trial.age != null && trial.age < 18 ? ' — phụ huynh xác nhận' : ''}`, trial.note]
       .filter(Boolean).join('\n') || null,
   }, trial.classId ? [trial.classId] : []).catch(async (e) => { // buổi học thử đã chọn → gán luôn lớp đó
     await db.update(t).set({ status: trial.status }).where(eq(t.id, id)); // tạo lỗi → trả lại trạng thái cũ

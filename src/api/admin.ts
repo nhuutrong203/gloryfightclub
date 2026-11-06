@@ -74,7 +74,7 @@ adminRoutes.get('/dashboard', async (c) => {
 });
 
 // ── Cài đặt chung (key/value JSON) ──
-const SETTING_KEYS = ['club', 'hero', 'about', 'texts'] as const;
+const SETTING_KEYS = ['club', 'hero', 'about', 'texts', 'policy'] as const;
 // texts = { vi: { key: 'chữ' }, en: {...} } — chỉ chuỗi, để trang public render an toàn.
 const textsSchema = z.object({ vi: z.record(z.string().max(64), z.string().max(1000)), en: z.record(z.string().max(64), z.string().max(1000)) });
 // club: mọi trang public dùng name/slogan/hotlines → thiếu là sập cả web, nên bắt buộc ở đây.
@@ -88,6 +88,10 @@ const clubSchema = z.looseObject({
   facebook: link,
   instagram: link,
 });
+// policy: quy định CLB (trang /quy-dinh + ô đồng ý ở form học thử). updated do server đặt mỗi lần lưu = "phiên bản" khách đã đồng ý.
+const policyText = z.string().max(20000).nullish().transform((v) => v?.trim() || null);
+const policySchema = z.object({ fees: policyText, fees_en: policyText, safety: policyText, safety_en: policyText })
+  .transform((v) => ({ ...v, updated: vnNow().date }));
 adminRoutes.get('/settings', need('content'), async (c) => {
   const rows = await db.select().from(schema.settings).where(inArray(schema.settings.key, [...SETTING_KEYS]));
   return c.json(Object.fromEntries(rows.map((r) => [r.key, r.value])));
@@ -95,8 +99,8 @@ adminRoutes.get('/settings', need('content'), async (c) => {
 adminRoutes.put('/settings/:key', need('content'), async (c) => {
   const key = c.req.param('key') ?? '';
   if (!SETTING_KEYS.includes(key as any)) return c.notFound();
-  const [value, err] = await body(c, key === 'texts' ? textsSchema : key === 'club' ? clubSchema : z.record(z.string(), z.unknown()),
-    { name: 'Tên CLB', slogan: 'Slogan', hotlines: 'Hotline', zalo: 'Số Zalo', facebook: 'Link Facebook', instagram: 'Link Instagram' });
+  const [value, err] = await body(c, key === 'texts' ? textsSchema : key === 'club' ? clubSchema : key === 'policy' ? policySchema : z.record(z.string(), z.unknown()),
+    { name: 'Tên CLB', slogan: 'Slogan', hotlines: 'Hotline', zalo: 'Số Zalo', facebook: 'Link Facebook', instagram: 'Link Instagram', fees: 'Quy định học phí', safety: 'Quy định an toàn' });
   if (err) return err;
   if (JSON.stringify(value).length > 50_000) return c.json({ error: 'Nội dung quá dài' }, 400);
   const old = key === 'hero' ? await db.select({ value: schema.settings.value }).from(schema.settings).where(eq(schema.settings.key, 'hero')).get() : undefined;

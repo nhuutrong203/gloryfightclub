@@ -1,0 +1,45 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+import PageHero from '../components/public/PageHero.astro';
+import PolicyText from '../components/public/PolicyText.astro';
+import CtaBand from '../components/public/CtaBand.astro';
+import { t, href, type Lang } from '../i18n';
+
+// Quy định CLB (sửa trong CMS → Quy định CLB): 2 phần, mỗi phần có neo (#hoc-phi, #an-toan) để form học thử / trang Học phí link thẳng tới.
+const lang: Lang = Astro.locals.lang;
+const { policy } = Astro.locals.site;
+if (!policy) return Astro.rewrite('/404');
+const pick = (vi: string | null, en?: string | null) => (lang === 'en' ? en || vi : vi);
+const parts = [
+  { id: 'hoc-phi', title: t(lang, 'policy_fees'), text: pick(policy.fees, policy.fees_en) },
+  { id: 'an-toan', title: t(lang, 'policy_safety'), text: pick(policy.safety, policy.safety_en) },
+].filter((p) => p.text);
+const updated = policy.updated?.split('-').reverse().join('/');
+Astro.response.headers.set('cache-control', 'public, max-age=60');
+---
+<PublicLayout path="/quy-dinh" title={t(lang, 'policy_title')} description={t(lang, 'policy_sub')}>
+  <PageHero eyebrow={t(lang, 'policy_title')} title={t(lang, 'policy_title')} subtitle={t(lang, 'policy_sub')} />
+
+  {parts.length > 1 && (
+    <nav class="stick-under-header sticky top-16 z-20 border-b border-white/10 bg-ink/90 backdrop-blur-md" aria-label={t(lang, 'policy_title')}>
+      <div class="container-x flex gap-2 overflow-x-auto py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {parts.map((p) => <a href={`#${p.id}`} class="shrink-0 inline-flex min-h-11 items-center border border-white/20 px-4 font-display text-sm uppercase tracking-wider hover:border-glory hover:text-glory">{p.title}</a>)}
+      </div>
+    </nav>
+  )}
+
+  <div class="container-x py-12 sm:py-16">
+    <div class="mx-auto max-w-3xl space-y-16">
+      {parts.map((p, i) => (
+        <section id={p.id} class="scroll-mt-36">
+          <p class="font-display text-7xl leading-none text-outline-white" aria-hidden="true">0{i + 1}</p>
+          <h2 class="mt-2 mb-8 text-4xl sm:text-5xl">{p.title}</h2>
+          <PolicyText text={p.text} />
+        </section>
+      ))}
+      {updated && <p class="border-t border-white/10 pt-6 text-sm text-ash">{t(lang, 'policy_updated').replace('{d}', updated)}</p>}
+      <a href={href('/dang-ky-hoc-thu', lang)} class="btn-red">{t(lang, 'cta_trial')}</a>
+    </div>
+  </div>
+  <CtaBand lang={lang} />
+</PublicLayout>

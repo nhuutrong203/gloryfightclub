@@ -6,6 +6,8 @@ import { normalizePhone, vnNow } from '../lib/util';
 import { parseDate } from '../lib/import';
 import { ageOn, weekdayOf } from '../lib/schedule';
 import { body } from './guard';
+import { eq } from 'drizzle-orm';
+import type { Policy } from '../lib/site';
 
 export const publicRoutes = new Hono();
 
@@ -16,6 +18,7 @@ const trialSchema = z.object({
   birthDate: z.string().max(10).nullish(),
   classId: z.coerce.number().int().positive().nullish(), // buổi học thử chọn trong danh sách gợi ý
   trialDate: z.string().max(10).nullish(),
+  agree: z.boolean().optional(), // đã đánh dấu đồng ý Quy định CLB
   disciplineId: z.coerce.number().int().positive().nullish(),
   locationId: z.coerce.number().int().positive().nullish(),
   feePlanId: z.coerce.number().int().positive().nullish(),
@@ -39,6 +42,11 @@ publicRoutes.post('/trial', async (c) => {
   const birthDate = data.birthDate ? parseDate(data.birthDate) : null;
   const age = birthDate ? ageOn(birthDate, today) : (data.age ?? null);
   if ((data.birthDate && !birthDate) || (age != null && (age < 3 || age > 90))) return c.json({ ok: false, code: 'birth' }, 400);
+  // Có Quy định CLB thì bắt buộc đồng ý; ghi lại lúc nào + bản nào (ngày lưu quy định) để đối chiếu khi cần.
+  const policyRow = await db.select({ value: schema.settings.value }).from(schema.settings).where(eq(schema.settings.key, 'policy')).get();
+  const policy = policyRow?.value as Policy | undefined;
+  const hasPolicy = !!(policy?.fees || policy?.safety);
+  if (hasPolicy && data.agree !== true) return c.json({ ok: false, code: 'agree' }, 400);
 
   // Bỏ id không tồn tại thay vì báo lỗi khóa ngoại.
   const [d, l, p, k] = await Promise.all([
@@ -62,6 +70,8 @@ publicRoutes.post('/trial', async (c) => {
     classId: slot?.classId ?? null,
     trialDate: slot?.trialDate ?? null,
     feePlanId: p?.id ?? null,
+    agreedAt: hasPolicy ? Date.now() : null,
+    policyVersion: hasPolicy ? (policy?.updated ?? null) : null,
     preferredTime: data.preferredTime || null,
     note: data.note || null,
   });

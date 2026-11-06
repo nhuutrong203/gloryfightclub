@@ -35,14 +35,20 @@ export function Settings() {
           ['philosophy', 'Triết lý', 'textarea'], ['philosophy_en', 'Philosophy (English)', 'textarea'],
           ['values', 'Giá trị (mỗi dòng một ý)', 'lines'], ['values_en', 'Values (English, one per line)', 'lines'],
         ]} />
+        {/* Quy định CLB: trang /quy-dinh + ô "Tôi đồng ý" ở form học thử. Lưu = phiên bản mới (ngày lưu), đăng ký sau đó ghi nhận bản này. */}
+        <Group title="Quy định CLB" k="policy" view="/quy-dinh" onDirty={onDirty} initial={data.policy ?? NONE}
+          note={`Mỗi dòng một ý; dòng bắt đầu bằng số và dấu chấm ("1. Quy định học phí") là tiêu đề mục. Khách đăng ký học thử phải đánh dấu đồng ý (dưới 18 tuổi: phụ huynh xác nhận). Để trống cả hai phần thì ẩn trang và ô đồng ý.${data.policy?.updated ? ` Bản hiện tại: ${data.policy.updated.split('-').reverse().join('/')}.` : ''}`} fields={[
+          ['fees', 'Quy định học phí & bảo lưu', 'long'], ['fees_en', 'Fees & membership freeze (English)', 'long'],
+          ['safety', 'An toàn tập luyện & nhận thức rủi ro', 'long'], ['safety_en', 'Training safety & risk acknowledgement (English)', 'long'],
+        ]} />
       </div>
     </Page>
   );
 }
 
-type FieldDef = [key: string, label: string, kind?: 'textarea' | 'image' | 'list' | 'lines'];
+type FieldDef = [key: string, label: string, kind?: 'textarea' | 'image' | 'list' | 'lines' | 'long'];
 
-function Group({ title, k, view, initial, fields, onDirty }: { title: string; k: string; view: string; initial: S; fields: FieldDef[]; onDirty: (k: string, on: boolean) => void }) {
+function Group({ title, k, view, initial, fields, onDirty, note }: { title: string; k: string; view: string; initial: S; fields: FieldDef[]; onDirty: (k: string, on: boolean) => void; note?: string }) {
   const toForm = (s: S) => Object.fromEntries(fields.map(([key, , kind]) => [key,
     kind === 'list' ? (s[key] ?? []).join(', ') : kind === 'lines' ? (s[key] ?? []).join('\n') : s[key] ?? '']));
   const [form, setForm] = useState<S>(() => toForm(initial));
@@ -67,10 +73,11 @@ function Group({ title, k, view, initial, fields, onDirty }: { title: string; k:
       try { await api(`/admin/settings/${k}`, { method: 'PUT', body: value }); onDirty(k, false); toast('Đã lưu'); } catch (err: any) { toast(err.message, 'err'); } finally { setBusy(false); }
     }}>
       <div className="flex items-center justify-between gap-3"><h2 className="font-display text-2xl uppercase">{title}</h2><ViewOnSite href={siteUrl(view)} label="Xem" /></div>
+      {note && <p className="-mt-2 text-sm text-neutral-600">{note}</p>}
       {fields.map(([key, label, kind]) => (
         <div key={key}>
           {kind === 'image' ? <ImageInput label={label} value={form[key] || null} onChange={set(key)} />
-            : kind === 'textarea' || kind === 'lines' ? <TextArea label={label} value={form[key]} onChange={set(key)} rows={kind === 'lines' ? 4 : 3} />
+            : kind === 'textarea' || kind === 'lines' || kind === 'long' ? <TextArea label={label} value={form[key]} onChange={set(key)} rows={kind === 'long' ? 14 : kind === 'lines' ? 4 : 3} />
             : <TextInput label={label} value={form[key]} onChange={(e) => set(key)(e.target.value)} />}
         </div>
       ))}

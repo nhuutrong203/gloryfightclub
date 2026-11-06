@@ -58,3 +58,17 @@ export function textToHtml(text: string) {
   const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   return text.split(/\n{2,}/).map((p) => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`).join('');
 }
+
+/** Văn bản quy định CLB (ô chữ trong CMS) → các mục: dòng bắt đầu bằng số ("1. Quy định học phí") là tiêu đề mục,
+ *  mọi dòng khác là một ý trong mục đó; dòng trống bỏ qua. Ý trước tiêu đề đầu tiên thuộc mục không tên. */
+export function policySections(text: string | null | undefined) {
+  const out: { title: string | null; items: string[] }[] = [];
+  for (const raw of (text ?? '').split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line) continue;
+    if (/^\d+\.\s/.test(line)) { out.push({ title: line, items: [] }); continue; }
+    if (!out.length) out.push({ title: null, items: [] });
+    out[out.length - 1].items.push(line);
+  }
+  return out;
+}

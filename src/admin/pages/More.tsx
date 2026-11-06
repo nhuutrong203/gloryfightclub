@@ -41,6 +41,7 @@ export function menuGroups(me: Me): { title: string; items: Item[] }[] {
         res('gallery', 'image', 'Ảnh & video CLB'),
         res('testimonials', 'edit', 'Học viên, phụ huynh nói gì'),
         res('faqs', 'edit', 'Câu hỏi thường gặp (hiện cả ở trang Học phí)'),
+        { to: '/admin/cai-dat#policy', label: 'Quy định CLB', icon: 'edit', sub: 'Học phí, bảo lưu, an toàn — khách đồng ý khi đăng ký học thử' },
         { to: '/admin/chu-website', label: 'Chữ trên website', icon: 'edit', sub: 'Nút bấm, tiêu đề, câu cố định' },
       ] : [],
     },

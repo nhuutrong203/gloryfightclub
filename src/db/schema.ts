@@ -254,6 +254,9 @@ export const trialRegistrations = sqliteTable('trial_registrations', {
   // Buổi học thử khách chọn trong danh sách gợi ý: lớp + ngày ('YYYY-MM-DD'). Chuyển thành học viên thì lớp này được gán luôn.
   classId: integer('class_id').references(() => classes.id, { onDelete: 'set null' }),
   trialDate: text('trial_date'),
+  // Đồng ý Quy định CLB ở form học thử: lúc nào (ms) và bản nào (ngày lưu quy định trong CMS). Dưới 18 tuổi = phụ huynh xác nhận.
+  agreedAt: integer('agreed_at'),
+  policyVersion: text('policy_version'),
   note: text('note'),
   status: text('status', { enum: ['new', 'contacted', 'enrolled', 'rejected'] }).notNull().default('new'),
   studentId: integer('student_id').references(() => students.id, { onDelete: 'set null' }),

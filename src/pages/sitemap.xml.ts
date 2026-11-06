@@ -6,10 +6,11 @@ const STATIC = ['/', '/gioi-thieu', '/mon-hoc', '/lich-hoc', '/huan-luyen-vien',
   '/cap-dai', '/thanh-tich', '/cam-nhan', '/hoi-dap', '/lien-he', '/dang-ky-hoc-thu'];
 
 // shortcut: lấy tối đa 1000 bài mới nhất; đủ cho nhiều năm đăng hằng ngày, tách sitemap index khi vượt.
-export const GET: APIRoute = async ({ site }) => {
+export const GET: APIRoute = async ({ site, locals }) => {
   const [disciplines, coaches, posts] = await Promise.all([publicDisciplines(), publicCoaches(), publishedSlugs(1000)]);
   const paths = [
     ...STATIC,
+    ...(locals.site?.policy ? ['/quy-dinh'] : []),
     ...disciplines.map((d) => `/mon-hoc/${d.slug}`),
     ...coaches.map((c) => `/huan-luyen-vien/${c.slug}`),
     ...posts.map((p) => `/nhat-ky/${p.slug}`),

@@ -18,6 +18,11 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
     <div class="grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
       {plans.map((p, i) => <PlanCard plan={p} lang={lang} i={i} />)}
     </div>
+    {Astro.locals.site.policy?.fees && (
+      <a href={`${href('/quy-dinh', lang)}#hoc-phi`} class="mt-10 inline-flex min-h-11 items-center gap-2 font-display uppercase tracking-wider text-white/85 hover:text-glory">
+        <Icon name="check-circle" class="size-5 text-glory" />{t(lang, 'policy_link')}<Icon name="arrow-right" class="size-4" />
+      </a>
+    )}
   </section>
 
   <section class="container-x pb-16">

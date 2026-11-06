@@ -2,22 +2,23 @@
 import PublicLayout from '../layouts/PublicLayout.astro';
 import PageHero from '../components/public/PageHero.astro';
 import Icon from '../components/public/Icon.astro';
+import PolicyText from '../components/public/PolicyText.astro';
 import { telHref } from '../lib/site';
 import { publicClasses, publicCoaches, publicDisciplines, publicPlans } from '../lib/public';
-import { t, tr, formatVnd, dayLong, DAYS, type Lang } from '../i18n';
+import { t, tr, href, formatVnd, dayLong, DAYS, type Lang } from '../i18n';
 
 // Đăng ký học thử, cá nhân hoá: ngày sinh (3 ô chọn) → biết tuổi để ưu tiên lớp trẻ em / người lớn; chọn môn (+ cơ sở) →
 // 2 buổi học thử có sẵn gần nhất (tính ngay trên trình duyệt theo giờ VN vì trang được cache); cảm ơn có tên, buổi đã chọn,
 // nút Google Calendar + chỉ đường. Logic gợi ý dùng chung với server và test: src/lib/schedule.ts.
 const lang: Lang = Astro.locals.lang;
-const [{ club, locations }, disciplines, plans, classes, coaches] = await Promise.all([
+const [{ club, locations, policy }, disciplines, plans, classes, coaches] = await Promise.all([
   Astro.locals.site, publicDisciplines(), publicPlans(), publicClasses(), publicCoaches(),
 ]);
 const preselect = disciplines.find((d) => d.slug === Astro.url.searchParams.get('mon'))?.id;
 // ?goi=<id> từ nút "Đăng ký học thử" trên thẻ gói (trang Học phí) → chọn sẵn gói đó.
 const planPre = plans.find((p) => String(p.id) === Astro.url.searchParams.get('goi'))?.id;
 const keys = ['f_ok', 'f_err', 'f_too_many', 'f_phone_err', 'f_sending', 'f_submit', 'f_birth_err', 'f_age_hint', 'f_kid_hint', 'f_today', 'f_tomorrow',
-  'f_ok_hi', 'f_ok_title', 'trial_title', 'level_kids', 'level_beginner', 'level_intermediate', 'level_advanced'] as const;
+  'f_ok_hi', 'f_ok_title', 'trial_title', 'f_agree_err', 'level_kids', 'level_beginner', 'level_intermediate', 'level_advanced'] as const;
 // Dữ liệu cho script gợi ý buổi học (chỉ thông tin public). "<" thoát thành < để chữ trong CMS không đóng được thẻ <script>.
 const data = {
   lang,
@@ -32,6 +33,7 @@ const data = {
 };
 const json = JSON.stringify(data).replace(/</g, '\\u003c');
 const year = new Date().getFullYear();
+const pol = (vi: string | null | undefined, en?: string | null) => (lang === 'en' ? en || vi : vi);
 const field = 'block w-full min-h-12 bg-ink border-2 border-white/20 px-4 py-3 text-base text-white placeholder:text-white/40 focus:border-glory focus:outline-none';
 const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
 ---
@@ -129,9 +131,40 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
         <div class="absolute -left-[9999px]" aria-hidden="true">
           <label for="f-web">Website</label><input id="f-web" name="website" tabindex="-1" autocomplete="off" />
         </div>
+        <!-- Đồng ý Quy định CLB: tóm tắt 1 dòng (đọc lướt được) + nút mở toàn văn trong hộp thoại (không rời form, không mất chữ đã gõ).
+             Dưới 18 tuổi (theo ngày sinh) câu đồng ý đổi thành lời của phụ huynh (mục 6 quy định an toàn). -->
+        {policy && (
+          <div class="sm:col-span-2 border-l-4 border-glory bg-coal p-4 sm:p-5">
+            <p class="text-sm leading-relaxed text-white/80">{t(lang, 'f_policy_summary')}</p>
+            <button type="button" id="policy-open" class="mt-1 inline-flex min-h-11 items-center gap-1 font-display text-sm uppercase tracking-wider text-glory-bright hover:text-white">{t(lang, 'f_policy_read')}<Icon name="arrow-right" class="size-4" /></button>
+            <label class="mt-1 flex cursor-pointer items-start gap-3 border-t border-white/10 pt-3">
+              <input type="checkbox" name="agree" required class="mt-0.5 size-5 shrink-0 accent-[#e10600]" aria-describedby="f-agree-err" />
+              <span id="agree-self">{t(lang, 'f_agree')}</span>
+              <span id="agree-guardian" class="hidden">{t(lang, 'f_agree_guardian')}</span>
+            </label>
+            <p id="f-agree-err" class="mt-2 hidden text-sm font-semibold text-glory-bright" role="alert">{t(lang, 'f_agree_err')}</p>
+          </div>
+        )}
         <p id="f-err" class="sm:col-span-2 hidden border-l-4 border-glory bg-glory/10 p-4 font-semibold" role="alert"></p>
         <button type="submit" class="btn-red sm:col-span-2 !text-xl disabled:opacity-60 disabled:cursor-wait">{t(lang, 'f_submit')}<Icon name="arrow-right" /></button>
       </form>
+
+      {policy && (
+        <dialog id="policy-dlg" class="m-auto max-h-[88dvh] w-[min(48rem,calc(100vw-1.5rem))] overflow-y-auto bg-coal p-0 text-white backdrop:bg-black/80" aria-labelledby="policy-dlg-title">
+          <div class="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-white/10 bg-coal px-5 py-3">
+            <h2 id="policy-dlg-title" class="text-2xl">{t(lang, 'policy_title')}</h2>
+            <form method="dialog"><button class="grid size-11 place-items-center hover:bg-white/10" aria-label={t(lang, 'close')}><Icon name="x" /></button></form>
+          </div>
+          <div class="space-y-10 px-5 py-6">
+            {pol(policy.fees, policy.fees_en) && <section><h3 class="mb-4 text-3xl text-glory">{t(lang, 'policy_fees')}</h3><PolicyText text={pol(policy.fees, policy.fees_en)} tone="dialog" /></section>}
+            {pol(policy.safety, policy.safety_en) && <section><h3 class="mb-4 text-3xl text-glory">{t(lang, 'policy_safety')}</h3><PolicyText text={pol(policy.safety, policy.safety_en)} tone="dialog" /></section>}
+          </div>
+          <div class="sticky bottom-0 flex flex-col-reverse gap-2 border-t border-white/10 bg-coal p-4 sm:flex-row sm:items-center sm:justify-between">
+            <a href={href('/quy-dinh', lang)} target="_blank" rel="noopener" class="inline-flex min-h-11 items-center justify-center gap-1 text-sm font-semibold text-white/75 underline-offset-4 hover:text-white hover:underline">{t(lang, 'f_policy_full')}<Icon name="arrow-up-right" class="size-4" /></a>
+            <button type="button" id="policy-agree" class="btn-red !min-h-12 !text-base"><Icon name="check" />{t(lang, 'f_policy_agree_btn')}</button>
+          </div>
+        </dialog>
+      )}
 
       <!-- Cảm ơn: gọi tên, nhắc buổi học thử đã chọn (thêm vào lịch, chỉ đường), dặn mang gì. -->
       <div id="trial-ok" class="hidden border-2 border-glory bg-glory/10 p-8 sm:p-12" role="status" tabindex="-1">
@@ -198,8 +231,25 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
       const real = new Date(Date.UTC(y, m - 1, d)).getUTCDate() === d;
       return { iso, age: real ? ageOn(iso, vnNow().date) : NaN };
     };
+    // ── Quy định CLB: hộp thoại toàn văn, nút "Tôi đã đọc và đồng ý" đánh dấu luôn ô đồng ý ──
+    const agree = form.elements.namedItem('agree') as HTMLInputElement | null;
+    const agreeErr = document.getElementById('f-agree-err');
+    const dlg = document.getElementById('policy-dlg') as HTMLDialogElement | null;
+    document.getElementById('policy-open')?.addEventListener('click', () => dlg?.showModal());
+    document.getElementById('policy-agree')?.addEventListener('click', () => {
+      if (agree) { agree.checked = true; agreeErr?.classList.add('hidden'); }
+      dlg?.close();
+      agree?.focus();
+    });
+    dlg?.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); }); // bấm ra ngoài để đóng
+    agree?.addEventListener('change', () => { if (agree.checked) agreeErr?.classList.add('hidden'); });
+
     const showBirth = () => {
       const b = birth();
+      // Dưới 18 tuổi: câu đồng ý là lời của cha mẹ / người giám hộ.
+      const minor = !!b && !Number.isNaN(b.age) && b.age < 18;
+      document.getElementById('agree-self')?.classList.toggle('hidden', minor);
+      document.getElementById('agree-guardian')?.classList.toggle('hidden', !minor);
       hint.classList.toggle('text-glory-bright', !!b && Number.isNaN(b.age));
       hint.textContent = !b ? '' : Number.isNaN(b.age) ? M.f_birth_err : (b.age < 16 ? M.f_kid_hint : M.f_age_hint).replace('{n}', String(b.age));
     };
@@ -301,6 +351,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
         showBirth();
         (form.querySelector(':invalid') as HTMLElement | null)?.focus();
         if (!phone.value || !phone.checkValidity()) phoneErr.classList.remove('hidden');
+        if (agree && !agree.checked) agreeErr?.classList.remove('hidden');
         return;
       }
       const fd = new FormData(form);
@@ -313,6 +364,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
         disciplineId: num('disciplineId'), locationId: num('locationId'), feePlanId: num('feePlanId'),
         classId: slot?.cls.id, trialDate: slot?.date,
         preferredTime: str('preferredTime'), note: str('note'), website: String(fd.get('website') ?? ''),
+        agree: agree ? agree.checked : undefined,
       };
       btn.disabled = true;
       btn.textContent = M.f_sending;
@@ -320,7 +372,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
         const res = await fetch('/api/public/trial', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
         const data = (await res.json().catch(() => ({}))) as { ok?: boolean; code?: string };
         // Câu báo lỗi lấy theo ngôn ngữ của trang (server chỉ trả code).
-        if (!res.ok || !data.ok) throw new Error(({ too_many: M.f_too_many, phone: M.f_phone_err, birth: M.f_birth_err } as Record<string, string>)[data.code ?? ''] ?? M.f_err);
+        if (!res.ok || !data.ok) throw new Error(({ too_many: M.f_too_many, phone: M.f_phone_err, birth: M.f_birth_err, agree: M.f_agree_err } as Record<string, string>)[data.code ?? ''] ?? M.f_err);
         showThanks(body.fullName ?? '', slot);
       } catch (ex) {
         // Mất mạng: fetch báo "Failed to fetch" (tiếng Anh thô) → câu lỗi chung của trang.

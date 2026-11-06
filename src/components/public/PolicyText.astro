@@ -1,0 +1,22 @@
+---
+import { policySections } from '../../lib/html';
+
+// Một phần quy định CLB (chữ thường trong CMS): "1. …" là tiêu đề mục, mỗi dòng khác là một ý. Dùng ở /quy-dinh và hộp thoại ở form học thử.
+interface Props { text: string | null | undefined; tone?: 'page' | 'dialog' }
+const { text, tone = 'page' } = Astro.props;
+const sections = policySections(text);
+---
+<div class="space-y-8">
+  {sections.map((s) => (
+    <section>
+      {s.title && <h3 class:list={['mb-3', tone === 'page' ? 'text-2xl sm:text-3xl' : 'text-xl']}>{s.title}</h3>}
+      <ul class="space-y-2.5">
+        {s.items.map((it) => (
+          <li class="flex gap-3 text-white/85 leading-relaxed">
+            <span class="mt-2.5 size-1.5 shrink-0 bg-glory" aria-hidden="true"></span><span>{it}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  ))}
+</div>

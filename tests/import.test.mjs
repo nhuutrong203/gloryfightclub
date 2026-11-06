@@ -208,3 +208,15 @@ test('đăng ký học thử: tuổi từ ngày sinh và buổi học thử gợ
   assert.ok(upcomingSessions(C, now, { locationId: 2 }).every((s) => s.cls.locationId === 2));
   assert.ok(upcomingSessions(C, new Date('2026-11-06T23:50:00+07:00')).every((s) => s.date > '2026-11-06'));
 });
+
+test('quy định CLB: văn bản trong CMS → mục + ý', async () => {
+  const { policySections } = await import('../src/lib/html.ts');
+  assert.deepEqual(policySections(['Mở đầu', '', '1. Học phí', 'Đóng trước khi tập.', '  Không hoàn trả.  ', '2. Bảo lưu', 'Tối đa 1 tháng.'].join('\r\n')), [
+    { title: null, items: ['Mở đầu'] },
+    { title: '1. Học phí', items: ['Đóng trước khi tập.', 'Không hoàn trả.'] },
+    { title: '2. Bảo lưu', items: ['Tối đa 1 tháng.'] },
+  ]);
+  assert.deepEqual(policySections(''), []);
+  assert.deepEqual(policySections(null), []);
+  assert.equal(policySections('1.5 triệu là học phí')[0].title, null); // "1.5" không phải tiêu đề (cần "1. " có dấu cách)
+});

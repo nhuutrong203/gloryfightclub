@@ -43,6 +43,13 @@ export function Trials({ me }: { me: Me }) {
                   <b className="text-lg">{t.fullName}</b>{ageNow(t) != null && <span className="text-neutral-500"> · {ageNow(t)} tuổi</span>}
                   {t.birthDate && <span className="text-sm text-neutral-500"> (sinh {t.birthDate.split('-').reverse().join('/')})</span>}
                   <p className="text-sm text-neutral-500">Gửi {fmtDate(t.createdAt)}</p>
+                  {/* Đồng ý Quy định CLB lúc đăng ký (bản = ngày lưu quy định). Đăng ký cũ (trước khi có ô đồng ý) không có dòng này. */}
+                  {t.agreedAt && (
+                    <p className="mt-0.5 flex items-center gap-1 text-sm text-green-700">
+                      <Icon name="check" className="size-4" />Đã đồng ý Quy định CLB{t.policyVersion ? ` (bản ${t.policyVersion.split('-').reverse().join('/')})` : ''}
+                      {t.age != null && t.age < 18 && ' — phụ huynh xác nhận'}
+                    </p>
+                  )}
                 </div>
                 <Badge tone={ST[t.status].tone}>{ST[t.status].label}</Badge>
               </div>

@@ -19,6 +19,7 @@ const GROUPS: [string, RegExp][] = [
   ['Giới thiệu', /^about_/],
   ['Liên hệ', /^(contact_|hotline|social|map_)/],
   ['Form đăng ký học thử', /^(trial_|f_)/],
+  ['Quy định CLB', /^policy_/],
   ['Trang không tìm thấy (404)', /^notfound_|^home$/],
 ];
 const groupOf = (k: string) => GROUPS.find(([, re]) => re.test(k))?.[0] ?? 'Phân trang, chân trang';

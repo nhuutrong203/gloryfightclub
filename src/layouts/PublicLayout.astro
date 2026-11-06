@@ -144,6 +144,7 @@ const onTrialPage = path === '/dang-ky-hoc-thu';
         <!-- Link cao ≥44px trên điện thoại (dễ bấm bằng ngón tay); máy tính gọn lại như cũ. -->
         <nav class="md:col-span-3 grid grid-cols-2 gap-x-4 content-start md:gap-y-2" aria-label="Footer">
           {[...main, ...more].map(([p, k]) => <a href={href(p, lang)} class="flex min-h-11 items-center text-white/75 hover:text-glory md:min-h-0 md:py-1">{t(lang, k)}</a>)}
+          {Astro.locals.site.policy && <a href={href('/quy-dinh', lang)} class="flex min-h-11 items-center text-white/75 hover:text-glory md:min-h-0 md:py-1">{t(lang, 'policy_title')}</a>}
         </nav>
         <div class="md:col-span-5 grid gap-6 sm:grid-cols-2">
           {locations.map((l) => (

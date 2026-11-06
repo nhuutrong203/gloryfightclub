@@ -2,6 +2,8 @@ import { asc } from 'drizzle-orm';
 import { db, schema } from '../db';
 import type { TextOverrides } from '../i18n';
 
+export type Policy = { fees: string | null; fees_en?: string | null; safety: string | null; safety_en?: string | null; updated?: string };
+
 export type Club = {
   name: string;
   slogan: string;
@@ -21,7 +23,9 @@ export async function getSite() {
     db.select().from(schema.locations).orderBy(asc(schema.locations.sort)),
   ]);
   const settings = Object.fromEntries(rows.map((r) => [r.key, r.value])) as Record<string, any>;
-  return { club: settings.club as Club, hero: settings.hero ?? {}, texts: settings.texts as TextOverrides | undefined, locations };
+  // policy: null khi chưa có chữ nào → trang /quy-dinh, link chân trang và ô đồng ý ở form học thử cùng ẩn.
+  const policy = settings.policy as Policy | undefined;
+  return { club: settings.club as Club, hero: settings.hero ?? {}, texts: settings.texts as TextOverrides | undefined, policy: policy?.fees || policy?.safety ? policy : null, locations };
 }
 
 export const telHref = (phone: string) => `tel:${phone.replace(/\D/g, '')}`;
