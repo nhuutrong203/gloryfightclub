@@ -4,54 +4,119 @@ import PageHero from '../../components/public/PageHero.astro';
 import PostCard from '../../components/public/PostCard.astro';
 import Icon from '../../components/public/Icon.astro';
 import CtaBand from '../../components/public/CtaBand.astro';
-import { publishedPosts, countPublishedPosts } from '../../lib/public';
+import { postArchive, publishedPosts } from '../../lib/public';
+import { pageList, vnNow, vnRange } from '../../lib/util';
 import { t, href, type Lang } from '../../i18n';
 
-// Nhật ký lớp học: dòng thời gian, mỗi tháng một chặng, mỗi buổi tập một trang.
-const PER_PAGE = 10;
+// Nhật ký lớp học, làm cho nhiều năm bài: thanh mục lục Năm → Tháng (có số bài) để nhảy thẳng tới tháng cần xem,
+// lưới thẻ gọn 1/2/3 cột (mỗi thẻ 1 ảnh bìa), 12 bài mỗi trang, phân trang có số. Lọc bằng ?nam=2026 hoặc ?thang=2026-11.
+const PER_PAGE = 12;
 const lang: Lang = Astro.locals.lang;
-const page = Math.max(1, Number.parseInt(Astro.url.searchParams.get('trang') ?? '1', 10) || 1);
-const [posts, total] = await Promise.all([publishedPosts(PER_PAGE, (page - 1) * PER_PAGE), countPublishedPosts()]);
+const q = Astro.url.searchParams;
+const archive = await postArchive(); // [{ month: '2026-11', n }] mới nhất trước
+const years = [...new Set(archive.map((a) => a.month.slice(0, 4)))];
+const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(q.get('thang') ?? '') ? q.get('thang')! : null;
+const year = month ? month.slice(0, 4) : /^\d{4}$/.test(q.get('nam') ?? '') ? q.get('nam')! : null;
+const period = month ?? year; // null = tất cả
+const countOf = (prefix: string | null) => archive.filter((a) => !prefix || a.month.startsWith(prefix)).reduce((s, a) => s + a.n, 0);
+const total = countOf(period);
 const pages = Math.max(1, Math.ceil(total / PER_PAGE));
-const pageLink = (n: number) => (n === 1 ? href('/nhat-ky', lang) : `${href('/nhat-ky', lang)}?trang=${n}`);
-const monthOf = (ms: number) => new Date(ms).toLocaleDateString(lang === 'en' ? 'en-GB' : 'vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', month: 'long', year: 'numeric' });
-const months: { label: string; items: typeof posts }[] = [];
+const page = Math.max(1, Number.parseInt(q.get('trang') ?? '1', 10) || 1);
+const posts = total && page <= pages ? await publishedPosts(PER_PAGE, (page - 1) * PER_PAGE, period ? vnRange(period) : undefined) : [];
+
+const loc = lang === 'en' ? 'en-GB' : 'vi-VN';
+const monthName = (ym: string) => new Date(Date.UTC(+ym.slice(0, 4), +ym.slice(5) - 1, 15)).toLocaleDateString(loc, { timeZone: 'UTC', month: 'long', year: 'numeric' });
+const monthChip = (ym: string) => (lang === 'en' ? new Date(Date.UTC(2000, +ym.slice(5) - 1, 15)).toLocaleDateString('en-GB', { timeZone: 'UTC', month: 'short' }) : `Th ${+ym.slice(5)}`);
+const count = (n: number) => t(lang, 'news_count').replace('{n}', String(n));
+const link = (o: { nam?: string | null; thang?: string | null; trang?: number }) => {
+  const u = new URLSearchParams();
+  if (o.thang) u.set('thang', o.thang);
+  else if (o.nam) u.set('nam', o.nam);
+  if (o.trang && o.trang > 1) u.set('trang', String(o.trang));
+  const qs = u.toString();
+  return `${href('/nhat-ky', lang)}${qs ? `?${qs}` : ''}`;
+};
+const pageLink = (n: number) => link({ nam: year, thang: month, trang: n });
+// Hàng tháng: của năm đang chọn; đang xem "Tất cả" thì của năm mới nhất.
+const chipYear = year ?? years[0];
+const yearMonths = archive.filter((a) => a.month.startsWith(chipYear ?? '-'));
+
+// Gom bài theo tháng (giờ VN) để chèn tiêu đề tháng giữa lưới; đang lọc 1 tháng thì không cần.
+const groups: { month: string; items: typeof posts }[] = [];
 for (const p of posts) {
-  const label = monthOf(p.publishedAt);
-  if (months.at(-1)?.label === label) months.at(-1)!.items.push(p);
-  else months.push({ label, items: [p] });
+  const m = vnNow(new Date(p.publishedAt)).month;
+  if (groups.at(-1)?.month === m) groups.at(-1)!.items.push(p);
+  else groups.push({ month: m, items: [p] });
 }
+const chip = 'shrink-0 inline-flex min-h-11 items-center gap-2 border px-4 font-display uppercase tracking-wider text-sm transition-colors';
+const on = 'border-glory bg-glory text-white';
+const off = 'border-white/20 hover:border-white';
 Astro.response.headers.set('cache-control', 'public, max-age=60');
 ---
-<PublicLayout path="/nhat-ky" title={t(lang, 'news_title')} description={t(lang, 'news_sub')} noindex={page > pages}>
+<PublicLayout path="/nhat-ky" title={t(lang, 'news_title')} description={t(lang, 'news_sub')} noindex={page > pages || (!!period && total === 0)}>
   <PageHero eyebrow={t(lang, 'nav_news')} title={t(lang, 'news_title')} subtitle={t(lang, 'news_sub')} />
-  <section class="container-x py-12 sm:py-16">
-    <div class="mx-auto max-w-2xl">
-      {posts.length === 0 && <p class="py-16 text-center text-white/75">{t(lang, 'news_empty')}</p>}
-      {months.map((m) => (
-        <section class="relative mb-12 last:mb-0">
-          <h2 class="sticky top-16 z-10 -mx-4 mb-6 flex items-center gap-3 bg-ink/90 px-4 py-2 text-2xl backdrop-blur sm:text-3xl">
-            <span class="h-0.5 w-8 shrink-0 bg-glory" aria-hidden="true"></span>{m.label}
-          </h2>
-          <!-- Đường dọc của cuốn nhật ký; mỗi trang có một chấm đỏ. -->
-          <ol class="space-y-8 border-l-2 border-white/10 pl-5 sm:pl-8">
-            {m.items.map((p, i) => (
-              <li class="relative">
-                <span class="absolute -left-[27px] top-8 size-3 bg-glory sm:-left-[39px]" aria-hidden="true"></span>
-                <PostCard post={p} lang={lang} i={i % 3} />
-              </li>
+
+  {archive.length === 0
+    ? <p class="container-x py-20 text-center text-white/75">{t(lang, 'news_empty')}</p>
+    : (
+    <>
+      <!-- Mục lục: dính dưới header khi cuộn (header ẩn thì dính sát mép trên). Vuốt ngang trên điện thoại. -->
+      <nav class="stick-under-header sticky top-16 z-20 border-b border-white/10 bg-ink/90 backdrop-blur-md" aria-label={t(lang, 'news_browse')}>
+        <div class="container-x space-y-2 py-3">
+          <div class="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <a href={link({})} aria-current={!period ? 'page' : undefined} class:list={[chip, !period ? on : off]}>{t(lang, 'news_all')}<span class="font-sans text-xs opacity-75">{countOf(null)}</span></a>
+            {years.map((y) => (
+              <a href={link({ nam: y })} aria-current={year === y && !month ? 'page' : undefined} class:list={[chip, year === y ? on : off]}>{y}<span class="font-sans text-xs opacity-75">{countOf(y)}</span></a>
             ))}
-          </ol>
-        </section>
-      ))}
-    </div>
-    {pages > 1 && (
-      <nav class="mx-auto mt-12 flex max-w-2xl items-center justify-between gap-4" aria-label={t(lang, 'page')}>
-        {page > 1 ? <a href={pageLink(page - 1)} class="btn-ghost !text-base"><Icon name="chevron-left" />{t(lang, 'prev')}</a> : <span></span>}
-        <span class="font-display tracking-wider text-ash">{t(lang, 'page')} {page}/{pages}</span>
-        {page < pages ? <a href={pageLink(page + 1)} class="btn-ghost !text-base">{t(lang, 'next')}<Icon name="chevron-right" /></a> : <span></span>}
+          </div>
+          {yearMonths.length > 0 && (
+            <div class="-mx-4 flex gap-1.5 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {yearMonths.map((a) => (
+                <a href={link({ thang: a.month })} aria-current={month === a.month ? 'page' : undefined} aria-label={`${monthName(a.month)} — ${count(a.n)}`}
+                  class:list={['shrink-0 inline-flex min-h-11 items-center gap-1.5 px-3 text-sm font-semibold transition-colors', month === a.month ? 'bg-white text-ink' : 'text-white/75 hover:bg-white/10 hover:text-white']}>
+                  {monthChip(a.month)}<span class:list={['grid min-w-5 place-items-center px-1 text-[11px] leading-5', month === a.month ? 'bg-glory text-white' : 'bg-white/10']}>{a.n}</span>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
       </nav>
-    )}
-  </section>
+
+      <section class="container-x py-10 sm:py-14">
+        {period && (
+          <div class="mb-8 flex flex-wrap items-end justify-between gap-3">
+            <h2 class="text-4xl sm:text-5xl">{month ? monthName(month) : year}</h2>
+            <p class="font-display tracking-wider text-ash">{count(total)}</p>
+          </div>
+        )}
+        {posts.length === 0 && <p class="py-16 text-center text-white/75">{t(lang, 'news_none_period')}</p>}
+        {groups.map((g) => (
+          <section class="mb-12 last:mb-0">
+            {!month && (
+              <h3 class="mb-5 flex flex-wrap items-baseline gap-x-3">
+                <span class="h-0.5 w-8 shrink-0 self-center bg-glory" aria-hidden="true"></span>
+                <a href={link({ thang: g.month })} class="text-2xl transition-colors hover:text-glory sm:text-3xl">{monthName(g.month)}</a>
+                <span class="font-sans text-sm normal-case tracking-normal text-ash">{count(archive.find((a) => a.month === g.month)?.n ?? g.items.length)}</span>
+              </h3>
+            )}
+            <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {g.items.map((p, i) => <PostCard post={p} lang={lang} i={i % 3} compact />)}
+            </div>
+          </section>
+        ))}
+
+        {pages > 1 && page <= pages && (
+          <nav class="mt-12 flex flex-wrap items-center justify-center gap-2" aria-label={t(lang, 'page')}>
+            {page > 1 && <a href={pageLink(page - 1)} class="grid size-12 place-items-center border-2 border-white/20 transition-colors hover:border-glory hover:bg-glory" aria-label={t(lang, 'prev')}><Icon name="chevron-left" /></a>}
+            {pageList(page, pages).map((n) => n === null
+              ? <span class="grid size-12 place-items-center text-ash" aria-hidden="true">…</span>
+              : <a href={pageLink(n)} aria-current={n === page ? 'page' : undefined} aria-label={`${t(lang, 'page')} ${n}`}
+                  class:list={['grid size-12 place-items-center border-2 font-display text-lg transition-colors', n === page ? 'border-glory bg-glory text-white' : 'border-white/20 hover:border-white']}>{n}</a>)}
+            {page < pages && <a href={pageLink(page + 1)} class="grid size-12 place-items-center border-2 border-white/20 transition-colors hover:border-glory hover:bg-glory" aria-label={t(lang, 'next')}><Icon name="chevron-right" /></a>}
+          </nav>
+        )}
+      </section>
+    </>
+  )}
   <CtaBand lang={lang} />
 </PublicLayout>

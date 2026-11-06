@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { STATUS_IN, byName, fixPhone, fold, parseDate, updatableColumns } from '../src/lib/import.ts';
-import { normalizePhone, vnNow, youtubeId } from '../src/lib/util.ts';
+import { normalizePhone, pageList, vnNow, vnRange, youtubeId } from '../src/lib/util.ts';
 import { textToHtml, toText } from '../src/lib/html.ts';
 import { RESOURCES } from '../src/admin/resources.ts';
 
@@ -160,4 +160,22 @@ test('lọc HTML nhật ký: chỉ giữ thẻ an toàn, bỏ mã chạy đượ
   for (const t of ['font', 'table', 'section', 'h1']) assert.equal(tagAction(t), 'unwrap', t);
   assert.equal(safeHref('https://glory.vn/a?b=1'), 'https://glory.vn/a?b=1');
   for (const h of ['javascript:alert(1)', ' JavaScript:alert(1)', 'data:text/html,x', '//evil.com', 'https://x"onmouseover=1', "https://x'y", 'https://a b', '', null]) assert.equal(safeHref(h), null, String(h));
+});
+
+test('nhật ký: khoảng tháng / năm theo giờ VN và thanh số trang', () => {
+  // 00:00 ngày 1/11/2026 giờ VN = 17:00 ngày 31/10 giờ UTC; bài đăng 23:30 ngày 31/10 giờ VN thuộc tháng 10.
+  const [from, to] = vnRange('2026-11');
+  assert.equal(new Date(from).toISOString(), '2026-10-31T17:00:00.000Z');
+  assert.equal(new Date(to).toISOString(), '2026-11-30T17:00:00.000Z');
+  assert.ok(Date.parse('2026-10-31T16:30:00Z') < from);
+  const [y0, y1] = vnRange('2026');
+  assert.equal(new Date(y0).toISOString(), '2025-12-31T17:00:00.000Z');
+  assert.equal(new Date(y1).toISOString(), '2026-12-31T17:00:00.000Z');
+  assert.equal(vnRange('2026-12')[1], y1); // tháng 12 kết thúc đúng lúc năm kết thúc
+
+  assert.deepEqual(pageList(1, 1), [1]);
+  assert.deepEqual(pageList(1, 3), [1, 2, 3]);
+  assert.deepEqual(pageList(6, 20), [1, null, 5, 6, 7, null, 20]);
+  assert.deepEqual(pageList(3, 20), [1, 2, 3, 4, null, 20]); // 1 2 3 4, không có "1 … 2"
+  assert.deepEqual(pageList(20, 20), [1, null, 19, 20]);
 });

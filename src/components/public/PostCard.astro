@@ -6,14 +6,16 @@ import { toText } from '../../lib/html';
 import { vnNow, youtubeId } from '../../lib/util';
 
 // Một trang nhật ký lớp: ô ngày (như tờ lịch), chữ, ảnh / video / YouTube.
-// Thẻ (trang chủ, danh sách): đoạn trích + lưới 1–4 ô, ">4" hiện "+N". full (trang chi tiết): nội dung đủ, video phát được.
+// Thẻ (trang chủ): đoạn trích + lưới 1–4 ô, ">4" hiện "+N". full (trang chi tiết): nội dung đủ, video phát được.
+// compact (lưới trang Nhật ký): 1 ảnh bìa + "+N", trích 3 dòng — thẻ thấp, nhiều bài vẫn lướt nhanh.
 interface Props {
   post: { slug: string; title: string | null; titleEn: string | null; content: string; contentEn: string | null; format: 'text' | 'html'; publishedAt: number; media: PostMedia[] };
   lang: Lang;
   full?: boolean;
+  compact?: boolean;
   i?: number;
 }
-const { post: p, lang, full = false, i = 0 } = Astro.props;
+const { post: p, lang, full = false, compact = false, i = 0 } = Astro.props;
 const title = tr(p, 'title', lang);
 const body = tr(p, 'content', lang);
 const excerpt = p.format === 'html' ? toText(body) : body;
@@ -24,7 +26,41 @@ const shown = p.media.slice(0, 4);
 const extra = p.media.length - shown.length;
 const src = (m: PostMedia) => `/media/${m.key}`;
 const ytThumb = (m: PostMedia) => `https://i.ytimg.com/vi/${youtubeId(m.key)}/hqdefault.jpg`;
+const cover = p.media[0];
 ---
+<!-- compact trên điện thoại: 1 hàng ngang (ảnh vuông bên trái) cho 12 bài vẫn ngắn; từ sm: thẻ đứng, ảnh bìa trên. -->
+{compact ? (
+  <article class="reveal group relative flex border border-white/10 bg-coal transition-colors duration-300 hover:border-glory sm:flex-col" style={`--i:${i}`}>
+    {/* Bài chỉ có chữ: bìa thay thế (ngày to chữ viền) để lưới thẻ đều nhau. */}
+    {!cover && (
+      <div class="relative w-28 shrink-0 overflow-hidden bg-[radial-gradient(circle_at_80%_20%,#3a0d0b,#0a0a0a_70%)] sm:aspect-[16/10] sm:w-auto" aria-hidden="true">
+        <span class="absolute -bottom-2 right-2 font-display text-6xl leading-none sm:-bottom-4 sm:right-3 sm:text-[7rem] text-outline-white transition-colors duration-300 group-hover:[-webkit-text-stroke-color:var(--color-glory)]">{part({ day: '2-digit' })}</span>
+      </div>
+    )}
+    {cover && (
+      <div class="relative min-h-28 w-28 shrink-0 overflow-hidden bg-ink sm:aspect-[16/10] sm:min-h-0 sm:w-auto">
+        {cover.type === 'video'
+          ? <video src={`${src(cover)}#t=0.1`} muted playsinline preload="metadata" class="absolute inset-0 size-full object-cover"></video>
+          : <img src={cover.type === 'image' ? src(cover) : ytThumb(cover).replace('hqdefault', 'mqdefault')} alt="" loading="lazy" decoding="async" class="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105" />}
+        {cover.type !== 'image' && <span class="absolute inset-0 grid place-items-center" aria-hidden="true"><span class="grid size-9 place-items-center bg-glory/90 text-white sm:size-12"><Icon name="play" class="size-4 sm:size-5" /></span></span>}
+        {p.media.length > 1 && <span class="absolute bottom-2 right-2 bg-ink/80 px-2 py-1 font-display text-sm tracking-wider text-white">+{p.media.length - 1}</span>}
+      </div>
+    )}
+    <div class="flex min-w-0 flex-1 flex-col p-3 sm:p-5">
+      <div class="flex items-center gap-3">
+        <time datetime={date.toISOString()} class="hidden w-12 shrink-0 flex-col items-center bg-glory py-1 text-white sm:flex">
+          <span class="font-display text-2xl leading-none">{part({ day: 'numeric' })}</span>
+          <span class="text-[11px] font-semibold uppercase tracking-wider">{lang === 'en' ? part({ month: 'short' }) : `Th ${part({ month: 'numeric' })}`}</span>
+        </time>
+        <p class="text-xs font-semibold uppercase tracking-wider text-ash sm:text-sm">{dayLong(vnNow(date).weekday, lang)}<span class="sm:hidden"> · {part({ day: 'numeric', month: 'numeric' })}</span></p>
+      </div>
+      {title && <h3 class="mt-1 line-clamp-2 text-xl sm:mt-3 sm:line-clamp-none sm:text-2xl"><a href={link} class="after:absolute after:inset-0 hover:text-glory transition-colors">{title}</a></h3>}
+      {excerpt && <p class="mt-1 line-clamp-2 whitespace-pre-line text-sm text-white/80 sm:mt-2 sm:line-clamp-3 sm:text-base" set:html={richText(excerpt)} />}
+      <span class="mt-auto hidden min-h-11 items-center gap-1 pt-2 font-display sm:inline-flex text-sm uppercase tracking-wider text-glory-bright transition-[gap] group-hover:gap-2">{t(lang, 'read_more')}<Icon name="arrow-right" class="size-4" /></span>
+      {!title && <a href={link} class="absolute inset-0" aria-label={t(lang, 'read_more')}></a>}
+    </div>
+  </article>
+) : (
 <article class="reveal border border-white/10 bg-coal" style={`--i:${i}`}>
   <header class="flex items-center gap-4 p-4 sm:p-5">
     <time datetime={date.toISOString()} class="flex w-16 shrink-0 flex-col items-center bg-glory py-2 text-white">
@@ -70,3 +106,4 @@ const ytThumb = (m: PostMedia) => `https://i.ytimg.com/vi/${youtubeId(m.key)}/hq
     </a>
   ))}
 </article>
+)}

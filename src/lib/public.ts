@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, inArray, lte } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, lt, lte, sql } from 'drizzle-orm';
 import { db, schema } from '../db';
 import { youtubeId } from './util';
 
@@ -54,12 +54,21 @@ export const publicFaqs = () =>
 
 const postVisible = () => and(eq(schema.posts.isPublic, true), lte(schema.posts.publishedAt, Date.now()));
 
-/** Bài đã đăng (mới nhất trước) kèm ảnh. */
-export async function publishedPosts(limit: number, offset = 0) {
-  const posts = await db.select().from(schema.posts).where(postVisible())
-    .orderBy(desc(schema.posts.publishedAt)).limit(limit).offset(offset);
+/** Bài đã đăng (mới nhất trước) kèm ảnh. range = [từ, đến) theo ms (lọc theo tháng / năm ở trang Nhật ký). */
+export async function publishedPosts(limit: number, offset = 0, range?: [number, number]) {
+  const p = schema.posts;
+  const posts = await db.select().from(p)
+    .where(range ? and(postVisible(), gte(p.publishedAt, range[0]), lt(p.publishedAt, range[1])) : postVisible())
+    .orderBy(desc(p.publishedAt), desc(p.id)).limit(limit).offset(offset);
   return withMedia(posts);
 }
+
+/** Mục lục nhật ký: số bài đã đăng theo từng tháng (giờ VN, mới nhất trước), vd. [{ month: '2026-11', n: 8 }].
+ *  Một câu GROUP BY cho cả trang: thanh chọn năm / tháng và tổng số trang đều tính từ đây, không đếm lại.
+ *  VN không đổi giờ mùa hè → cộng cứng 7 giờ là đúng. */
+export const postArchive = () =>
+  db.all<{ month: string; n: number }>(sql`select strftime('%Y-%m', published_at / 1000, 'unixepoch', '+7 hours') as month, count(*) as n
+    from posts where is_public = 1 and published_at <= ${Date.now()} group by month order by month desc`);
 
 /** Slug bài đã đăng cho sitemap (không lấy ảnh: danh sách id dài vượt giới hạn 100 tham số của D1). */
 export const publishedSlugs = (limit: number) =>
@@ -69,11 +78,6 @@ export async function postBySlug(slug: string) {
   const [post] = await db.select().from(schema.posts)
     .where(and(eq(schema.posts.slug, slug), postVisible())).limit(1);
   return post ? (await withMedia([post]))[0] : null;
-}
-
-export async function countPublishedPosts() {
-  const [row] = await db.select({ n: count() }).from(schema.posts).where(postVisible());
-  return row.n;
 }
 
 export type PostMedia = { type: 'image' | 'video' | 'youtube'; key: string };

@@ -142,6 +142,9 @@
 /* Header: cuộn xuống thì ẩn cho rộng chỗ đọc, cuộn lên thì hiện lại. */
 #site-header { transition: translate .35s cubic-bezier(.2,.7,.2,1), background-color .3s, box-shadow .3s; }
 #site-header[data-hidden] { translate: 0 -100%; }
+/* Thanh dính dưới header (mục lục Nhật ký): header ẩn thì trượt lên sát mép trên, không để hở 64px. */
+.stick-under-header { transition: top .35s cubic-bezier(.2,.7,.2,1); }
+#site-header[data-hidden] ~ main .stick-under-header { top: 0; }
 
 /* Ảnh hero trang chủ: zoom chậm (Ken Burns) + trôi chậm hơn trang khi cuộn (parallax, chỉ khi trình duyệt hỗ trợ). */
 .hero-media { animation: kenburns 24s ease-in-out infinite alternate; }

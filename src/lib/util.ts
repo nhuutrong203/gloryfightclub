@@ -41,3 +41,25 @@ export function rerank(rows: { id: number; rank: number }[], editedId = 0, oldRa
   const sorted = [...rows].sort((a, b) => a.rank - b.rank || tie(a) - tie(b) || a.id - b.id);
   return sorted.flatMap((r, i): [number, number][] => (r.rank === i + 1 ? [] : [[r.id, i + 1]]));
 }
+
+/** Khoảng thời gian [đầu, cuối) theo giờ VN của 'YYYY' hoặc 'YYYY-MM' → ms, để lọc published_at. */
+export function vnRange(period: string): [number, number] {
+  const [y, m] = period.split('-').map(Number);
+  const H7 = 7 * 3600_000;
+  return m ? [Date.UTC(y, m - 1, 1) - H7, Date.UTC(y, m, 1) - H7] : [Date.UTC(y, 0, 1) - H7, Date.UTC(y + 1, 0, 1) - H7];
+}
+
+/** Số trang cần hiện ở thanh phân trang: trang đầu, trang cuối, trang đang xem ±1; chỗ bỏ qua là null ("…").
+ *  Khoảng bỏ qua chỉ có 1 trang thì hiện luôn số đó (1 2 3 thay vì 1 … 3). Vd. (6, 20) → [1, null, 5, 6, 7, null, 20]. */
+export function pageList(page: number, pages: number): (number | null)[] {
+  const keep = [...new Set([1, page - 1, page, page + 1, pages])].filter((n) => n >= 1 && n <= pages).sort((a, b) => a - b);
+  const out: (number | null)[] = [];
+  let prev = 0;
+  for (const n of keep) {
+    if (n - prev === 2) out.push(n - 1);
+    else if (n - prev > 2) out.push(null);
+    out.push(n);
+    prev = n;
+  }
+  return out;
+}
