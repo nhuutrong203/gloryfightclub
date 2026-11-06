@@ -1,17 +1,35 @@
 import { Hono } from 'hono';
-import { and, asc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
+import { and, asc, eq, gte, inArray, lte, ne, sql } from 'drizzle-orm';
+import { getCookie } from 'hono/cookie';
 import { env } from 'cloudflare:workers';
 import { z } from 'zod';
 import { db, schema } from '../db';
-import { DEFAULT_COACH_PERMISSIONS, PERMISSIONS, can, hashPassword } from '../lib/auth';
+import { DEFAULT_COACH_PERMISSIONS, PERMISSIONS, SESSION_COOKIE, can, hashPassword, sha256Hex, verifyPassword } from '../lib/auth';
 import { vnNow } from '../lib/util';
 import { body, idParam, need, ownerOnly } from './guard';
 import { deleteMedia } from './media';
+import { owesIn } from './fees';
 import type { Env } from '.';
 
 export const adminRoutes = new Hono<Env>();
 
 adminRoutes.get('/me', (c) => c.json(c.get('user')));
+
+/** Đổi mật khẩu của chính mình (cần mật khẩu cũ). Đăng xuất các thiết bị khác.
+ *  Nằm sau middleware đăng nhập: phiên hết hạn / tài khoản bị khoá thì không đổi được. */
+adminRoutes.post('/password', async (c) => {
+  const [data, err] = await body(c, z.object({ current: z.string().min(1), next: z.string().min(8, 'Mật khẩu mới tối thiểu 8 ký tự').max(200) }));
+  if (err) return err;
+  const me = c.get('user');
+  const row = await db.select({ hash: schema.users.passwordHash }).from(schema.users).where(eq(schema.users.id, me.id)).get();
+  if (!row || !(await verifyPassword(data.current, row.hash))) return c.json({ error: 'Mật khẩu hiện tại không đúng' }, 400);
+  const sid = await sha256Hex(getCookie(c, SESSION_COOKIE)!);
+  await db.batch([
+    db.update(schema.users).set({ passwordHash: await hashPassword(data.next) }).where(eq(schema.users.id, me.id)),
+    db.delete(schema.sessions).where(and(eq(schema.sessions.userId, me.id), ne(schema.sessions.id, sid))),
+  ]);
+  return c.json({ ok: true });
+});
 
 /** Danh mục nhỏ dùng cho các ô chọn trong CMS (ai đăng nhập cũng xem được). */
 adminRoutes.get('/lookups', async (c) => {
@@ -30,21 +48,19 @@ adminRoutes.get('/dashboard', async (c) => {
   const u = c.get('user');
   const { date, month, weekday } = vnNow();
   const st = schema.students;
-  // Cùng quy tắc với trang Học phí: người nhập trước với ngày vào học tháng sau chưa tính (so chuỗi YYYY-MM-DD, '-31' đủ cho mọi tháng).
-  const joinedBy = lte(st.joinedAt, `${month}-31`);
-  const [byLocation, newThisMonth, trialsNew, todayClasses, unpaid] = await Promise.all([
+  const fees = can(u, 'fees.view');
+  const [byLocation, newThisMonth, trialsNew, todayClasses, unpaid, revenue] = await Promise.all([
     db.select({ locationId: st.locationId, n: sql<number>`count(*)` }).from(st).where(eq(st.status, 'active')).groupBy(st.locationId),
-    db.select({ n: sql<number>`count(*)` }).from(st).where(and(gte(st.joinedAt, `${month}-01`), joinedBy)).get(),
+    db.select({ n: sql<number>`count(*)` }).from(st).where(and(gte(st.joinedAt, `${month}-01`), lte(st.joinedAt, `${month}-31`))).get(),
     db.select({ n: sql<number>`count(*)` }).from(schema.trialRegistrations).where(eq(schema.trialRegistrations.status, 'new')).get(),
     db.select().from(schema.classes).where(and(eq(schema.classes.isActive, true), sql`instr(${schema.classes.days}, ${weekday}) > 0`)).orderBy(asc(schema.classes.startTime)),
-    can(u, 'fees.view')
+    // Cùng quy tắc với trang Học phí (owesIn).
+    fees
       ? db.select({ n: sql<number>`count(*)` }).from(st)
-          .where(and(eq(st.status, 'active'), joinedBy, sql`not exists (select 1 from payments p where p.student_id = ${st.id} and p.month = ${month})`)).get()
+          .where(and(owesIn(month), sql`not exists (select 1 from payments p where p.student_id = ${st.id} and p.month = ${month})`)).get()
       : null,
+    fees ? db.select({ sum: sql<number>`coalesce(sum(amount), 0)`, n: sql<number>`count(*)` }).from(schema.payments).where(eq(schema.payments.month, month)).get() : null,
   ]);
-  const revenue = can(u, 'fees.view')
-    ? await db.select({ sum: sql<number>`coalesce(sum(amount), 0)`, n: sql<number>`count(*)` }).from(schema.payments).where(eq(schema.payments.month, month)).get()
-    : null;
   return c.json({
     date, month,
     activeTotal: byLocation.reduce((a, r) => a + r.n, 0),
@@ -52,7 +68,7 @@ adminRoutes.get('/dashboard', async (c) => {
     newThisMonth: newThisMonth?.n ?? 0,
     trialsNew: trialsNew?.n ?? 0,
     unpaid: unpaid?.n ?? null,
-    revenue,
+    revenue: revenue ?? null,
     todayClasses,
   });
 });

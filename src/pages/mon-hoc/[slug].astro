@@ -6,13 +6,12 @@ import ClassList from '../../components/public/ClassList.astro';
 import CoachCard from '../../components/public/CoachCard.astro';
 import PlanCard from '../../components/public/PlanCard.astro';
 import CtaBand from '../../components/public/CtaBand.astro';
-import { getSite, mediaUrl } from '../../lib/site';
+import { mediaUrl } from '../../lib/site';
 import { publicDisciplines, publicCoaches, publicClasses, publicPlans, richText } from '../../lib/public';
 import { t, tr, href, type Lang } from '../../i18n';
 
 const lang: Lang = Astro.locals.lang;
-const [{ locations }, disciplines, coaches, allClasses, plans] = await Promise.all([
-  getSite(), publicDisciplines(), publicCoaches(), publicClasses(), publicPlans(),
+const [{ locations }, disciplines, coaches, allClasses, plans] = await Promise.all([Astro.locals.site, publicDisciplines(), publicCoaches(), publicClasses(), publicPlans(),
 ]);
 const idx = disciplines.findIndex((d) => d.slug === Astro.params.slug);
 if (idx < 0) return Astro.rewrite('/404');

@@ -5,7 +5,9 @@ import { z } from 'zod';
 import { db, schema } from '../db';
 import { normalizePhone, vnNow } from '../lib/util';
 import { STATUS_IN, byName, fixPhone, fold, parseDate, updatableColumns } from '../lib/import';
+import { can } from '../lib/auth';
 import { body, csv, idParam, issueText, need } from './guard';
+import { owesIn } from './fees';
 import type { Env } from '.';
 
 const s = schema.students;
@@ -92,17 +94,22 @@ studentRoutes.get('/', need('students.view'), async (c) => {
   const rows = all.slice((page - 1) * 50, page * 50);
   const { month } = vnNow();
   const ids = rows.map((r) => r.id);
-  const [links, paid] = ids.length
+  const fees = can(c.get('user'), 'fees.view');
+  const [links, due] = ids.length
     ? await Promise.all([
         db.select().from(schema.studentClasses).where(inArray(schema.studentClasses.studentId, ids)),
-        db.select({ studentId: schema.payments.studentId }).from(schema.payments).where(and(eq(schema.payments.month, month), inArray(schema.payments.studentId, ids))),
+        // Badge "Đã đóng / Chưa đóng" chỉ cho người phải đóng tháng này (owesIn) và chỉ khi có quyền xem học phí.
+        fees
+          ? db.select({ id: s.id, paid: sql<number>`exists (select 1 from payments p where p.student_id = students.id and p.month = ${month})` }) // ghi rõ students.id: ${s.id} trong cột select ra "id" trơn → trùng p.id
+              .from(s).where(and(inArray(s.id, ids), owesIn(month)))
+          : [],
       ])
     : [[], []];
-  const paidSet = new Set(paid.map((p) => p.studentId));
+  const fee = new Map(due.map((d) => [d.id, d.paid ? 'paid' : 'unpaid']));
   return c.json({
     total: all.length,
     page,
-    rows: rows.map((r) => ({ ...r, classIds: links.filter((l) => l.studentId === r.id).map((l) => l.classId), paidThisMonth: paidSet.has(r.id) })),
+    rows: rows.map((r) => ({ ...r, classIds: links.filter((l) => l.studentId === r.id).map((l) => l.classId), fee: fee.get(r.id) ?? null })),
   });
 });
 
@@ -171,6 +178,8 @@ studentRoutes.post('/import', need('students.edit'), async (c) => {
     }
     const { classIds: cls, ...values } = parsed.data;
     const id = r.code ? codes.get(r.code.toUpperCase()) : undefined;
+    // Mã có ghi mà không thấy (đã xoá / tự đặt) → báo lỗi; thêm mới với mã khác thì mỗi lần nhập lại sẽ sinh thêm học viên trùng.
+    if (r.code && !id) { errors.push({ row: rowNo, error: `không thấy mã học viên "${r.code}" — học viên mới thì để trống ô Mã` }); continue; }
     if (id) {
       // Cập nhật: chỉ đổi cột có trong file (quy tắc + test ở updatableColumns). Cột Lớp có mà ô trống = bỏ hết lớp.
       const stmts: BatchItem<'sqlite'>[] = [db.update(s).set({ ...updatableColumns(values, r), updatedAt: Date.now() }).where(eq(s.id, id))];
@@ -228,7 +237,8 @@ studentRoutes.get('/:id', need('students.view'), async (c) => {
   if (!row) return c.notFound();
   const [links, payments] = await Promise.all([
     db.select().from(schema.studentClasses).where(eq(schema.studentClasses.studentId, id)),
-    db.select().from(schema.payments).where(eq(schema.payments.studentId, id)).orderBy(desc(schema.payments.month)),
+    // Lịch sử học phí chỉ trả cho người có quyền xem học phí (quyền chặn ở API, không chỉ ẩn ở giao diện).
+    can(c.get('user'), 'fees.view') ? db.select().from(schema.payments).where(eq(schema.payments.studentId, id)).orderBy(desc(schema.payments.month)) : [],
   ]);
   return c.json({ ...row, classIds: links.map((l) => l.classId), payments });
 });

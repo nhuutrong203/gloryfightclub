@@ -104,9 +104,6 @@ export function Page({ title, back, actions, children }: { title: string; back?:
   );
 }
 
-export const Card = ({ children, className = '' }: { children: ReactNode; className?: string }) => (
-  <div className={`border border-neutral-200 bg-white ${className}`}>{children}</div>
-);
 
 export const Loading = () => (
   <div className="grid place-items-center py-16 text-neutral-500" role="status">

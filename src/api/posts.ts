@@ -1,9 +1,10 @@
 import { Hono } from 'hono';
-import { asc, desc, eq, inArray } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db, schema } from '../db';
 import { slugify, youtubeId } from '../lib/util';
 import { sanitizeHtml, toText } from '../lib/html';
+import { withMedia } from '../lib/public';
 import { body, idParam, need } from './guard';
 import { deleteMedia } from './media';
 import type { Env } from '.';
@@ -45,11 +46,7 @@ const fileKeys = async (postId: number) =>
 
 const mediaRows = (postId: number, media: z.infer<typeof mediaItem>[]) => media.map((m, sort) => ({ postId, type: m.type, key: m.key, sort }));
 
-const PER_PAGE = 50; // ≤ 100: danh sách id bài đi vào inArray (giới hạn tham số D1)
-const withMedia = async (rows: (typeof p.$inferSelect)[]) => {
-  const items = rows.length ? await db.select().from(img).where(inArray(img.postId, rows.map((r) => r.id))).orderBy(asc(img.sort)) : [];
-  return rows.map((r) => ({ ...r, media: items.filter((i) => i.postId === r.id).map((i) => ({ type: i.type, key: i.key })) }));
-};
+const PER_PAGE = 50; // ≤ 100: danh sách id bài đi vào inArray của withMedia (giới hạn tham số D1)
 
 postRoutes.get('/', need('posts'), async (c) => {
   const page = Math.max(1, Number(c.req.query('page')) || 1);

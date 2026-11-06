@@ -78,7 +78,8 @@ export async function countPublishedPosts() {
 
 export type PostMedia = { type: 'image' | 'video' | 'youtube'; key: string };
 
-async function withMedia<T extends { id: number }>(posts: T[]) {
+/** Gắn ảnh / video của từng bài (dùng cả ở trang public lẫn API CMS). ≤ 100 bài mỗi lần: id đi vào inArray (giới hạn tham số D1). */
+export async function withMedia<T extends { id: number }>(posts: T[]) {
   if (!posts.length) return [];
   const items = await db.select().from(schema.postImages)
     .where(inArray(schema.postImages.postId, posts.map((p) => p.id))).orderBy(asc(schema.postImages.sort));

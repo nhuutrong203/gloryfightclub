@@ -4,7 +4,7 @@ import Logo from '../components/Logo.astro';
 import Icon from '../components/public/Icon.astro';
 import { sql } from 'drizzle-orm';
 import { db } from '../db';
-import { getSite, telHref } from '../lib/site';
+import { telHref } from '../lib/site';
 import { t, href, type Lang, type DictKey } from '../i18n';
 
 interface Props {
@@ -19,7 +19,7 @@ interface Props {
 }
 
 const lang: Lang = Astro.locals.lang;
-const { club, locations } = await getSite();
+const { club, locations } = Astro.locals.site;
 const { path = '/', ogType = 'website', noindex = false } = Astro.props;
 const title = Astro.props.title ? `${Astro.props.title} | ${club.name}` : `${club.name} — ${club.slogan}`;
 const description = Astro.props.description || (lang === 'en' ? club.tagline_en : club.tagline) || club.tagline;

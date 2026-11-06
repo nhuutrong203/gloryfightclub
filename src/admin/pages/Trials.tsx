@@ -50,7 +50,7 @@ export function Trials({ me }: { me: Me }) {
               <div className="mt-3 flex flex-wrap gap-2">
                 <a href={`tel:${t.phone}`} className="inline-flex min-h-12 items-center gap-2 bg-ink px-4 font-semibold text-white"><Icon name="phone" />{t.phone}</a>
                 <a href={`https://zalo.me/${t.phone}`} target="_blank" rel="noopener" className="inline-flex min-h-12 items-center border border-neutral-300 px-4 font-semibold">Zalo</a>
-                {t.status === 'new' && <Button variant="ghost" loading={busy === t.id} onClick={() => setStatus(t.id, 'contacted')}>Đã gọi</Button>}
+                {t.status === 'new' && can(me, 'students.edit') && <Button variant="ghost" loading={busy === t.id} onClick={() => setStatus(t.id, 'contacted')}>Đã gọi</Button>}
                 {t.status !== 'enrolled' && can(me, 'students.edit') && (
                   <Button icon="plus" loading={busy === t.id} onClick={async () => {
                     setBusy(t.id);
@@ -62,8 +62,8 @@ export function Trials({ me }: { me: Me }) {
                   }}>Chuyển thành học viên</Button>
                 )}
                 {t.status === 'enrolled' && t.studentId && <Button variant="ghost" onClick={() => navigate(`/admin/hoc-vien/${t.studentId}`)}>Xem học viên</Button>}
-                {(t.status === 'new' || t.status === 'contacted') && <Button variant="ghost" onClick={() => setStatus(t.id, 'rejected')}>Không học</Button>}
-                {can(me, 'delete') && (
+                {(t.status === 'new' || t.status === 'contacted') && can(me, 'students.edit') && <Button variant="ghost" onClick={() => setStatus(t.id, 'rejected')}>Không học</Button>}
+                {can(me, 'students.edit') && can(me, 'delete') && (
                   <button aria-label="Xoá đăng ký" className="ml-auto grid size-12 place-items-center text-neutral-400 hover:text-red-700 cursor-pointer" onClick={async () => {
                     if (!confirmDanger(`Xoá đăng ký của ${t.fullName}?`)) return;
                     try { await api(`/admin/trials/${t.id}`, { method: 'DELETE' }); reload(); } catch (e: any) { toast(e.message, 'err'); }

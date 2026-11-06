@@ -1,8 +1,7 @@
 import { defineMiddleware } from 'astro:middleware';
 import { env } from 'cloudflare:workers';
-import { eq } from 'drizzle-orm';
-import { db, schema } from './db';
-import { setTextOverrides, type TextOverrides } from './i18n';
+import { setTextOverrides } from './i18n';
+import { getSite } from './lib/site';
 
 // /media cũng phải chạy ở host CMS: ô xem trước ảnh trong CMS tải ảnh từ đây.
 const CMS_PATH = /^\/(admin|api|media)(\/|$)/;
@@ -14,9 +13,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
   if (host === env.CMS_HOST && !CMS_PATH.test(pathname) && !pathname.startsWith('/_')) {
     return context.redirect('/admin', 302);
   }
-  if (host === env.PUBLIC_HOST && pathname.startsWith('/admin')) {
-    return context.redirect(`https://${env.CMS_HOST}${pathname}`, 302);
-  }
+  // Cả /en/admin: nếu không, bước rewrite /en/* bên dưới sẽ mở CMS ngay trên host public.
+  const admin = host === env.PUBLIC_HOST && pathname.match(/^(?:\/en)?(\/admin(?:\/.*)?)$/);
+  if (admin) return context.redirect(`https://${env.CMS_HOST}${admin[1]}`, 302);
   // Đăng nhập + dữ liệu học viên chỉ ở host CMS (host public chỉ có /api/public).
   if (host === env.PUBLIC_HOST && /^\/api\/(admin|auth)(\/|$)/.test(pathname)) return new Response('Not found', { status: 404 });
 
@@ -24,10 +23,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const old = pathname.match(/^(\/en)?\/tin-tuc(\/.*)?$/);
   if (old) return context.redirect(`${old[1] ?? ''}/nhat-ky${old[2] ?? ''}${context.url.search}`, 301);
 
-  // Chữ giao diện thầy sửa trong CMS: nạp trước khi render trang public (không cần cho API/ảnh).
+  // Thông tin chung + chữ giao diện thầy sửa trong CMS: nạp 1 lần trước khi render trang public (không cần cho API/ảnh).
   if (!CMS_PATH.test(pathname) && !pathname.startsWith('/_')) {
-    const row = await db.select({ value: schema.settings.value }).from(schema.settings).where(eq(schema.settings.key, 'texts')).get();
-    setTextOverrides(row?.value as TextOverrides | undefined);
+    context.locals.site = await getSite();
+    setTextOverrides(context.locals.site.texts);
   }
 
   // /en/... dùng chung trang với bản tiếng Việt, chỉ đổi locals.lang.

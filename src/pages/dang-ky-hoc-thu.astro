@@ -2,12 +2,12 @@
 import PublicLayout from '../layouts/PublicLayout.astro';
 import PageHero from '../components/public/PageHero.astro';
 import Icon from '../components/public/Icon.astro';
-import { getSite, telHref } from '../lib/site';
+import { telHref } from '../lib/site';
 import { publicDisciplines, publicPlans } from '../lib/public';
 import { t, tr, formatVnd, type Lang } from '../i18n';
 
 const lang: Lang = Astro.locals.lang;
-const [{ club, locations }, disciplines, plans] = await Promise.all([getSite(), publicDisciplines(), publicPlans()]);
+const [{ club, locations }, disciplines, plans] = await Promise.all([Astro.locals.site, publicDisciplines(), publicPlans()]);
 const preselect = disciplines.find((d) => d.slug === Astro.url.searchParams.get('mon'))?.id;
 // ?goi=<id> từ nút "Đăng ký học thử" trên thẻ gói (trang Học phí) → chọn sẵn gói đó.
 const planPre = plans.find((p) => String(p.id) === Astro.url.searchParams.get('goi'))?.id;

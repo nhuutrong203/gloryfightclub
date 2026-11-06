@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
 // ───────── API ─────────
 export class ApiError extends Error {
@@ -29,10 +29,16 @@ export async function api<T = any>(path: string, opts: { method?: string; body?:
 /** Tải dữ liệu khi mount / khi path đổi; trả { data, error, loading, reload }. */
 export function useApi<T = any>(path: string | null) {
   const [state, setState] = useState<{ data?: T; error?: string; loading: boolean }>({ loading: !!path });
+  // Chỉ nhận phản hồi của lần tải mới nhất: đổi tháng / gõ tìm nhanh trên 4G thì phản hồi cũ về sau không được đè lên.
+  const latest = useRef(0);
   const load = useCallback(() => {
     if (!path) return;
+    const n = ++latest.current;
     setState((s) => ({ ...s, loading: true }));
-    api<T>(path).then((data) => setState({ data, loading: false }), (e) => setState({ error: e.message, loading: false }));
+    api<T>(path).then(
+      (data) => n === latest.current && setState({ data, loading: false }),
+      (e) => n === latest.current && setState({ error: e.message, loading: false }),
+    );
   }, [path]);
   useEffect(load, [load]);
   return { ...state, reload: load };

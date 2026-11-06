@@ -9,7 +9,7 @@ import PostCard from '../components/public/PostCard.astro';
 import CtaBand from '../components/public/CtaBand.astro';
 import TestimonialBand from '../components/public/TestimonialBand.astro';
 import AchievementIcon from '../components/public/AchievementIcon.astro';
-import { getSite, mediaUrl } from '../lib/site';
+import { mediaUrl } from '../lib/site';
 import { vnNow } from '../lib/util';
 import {
   publicDisciplines, publicCoaches, publicPlans, publicClasses,
@@ -18,7 +18,7 @@ import {
 import { t, tr, href, dayLong, type Lang } from '../i18n';
 
 const lang: Lang = Astro.locals.lang;
-const { hero, locations } = await getSite();
+const { hero, locations } = Astro.locals.site;
 const [disciplines, coaches, plans, classes, posts, testimonials, achievements] = await Promise.all([
   publicDisciplines(), publicCoaches(), publicPlans(), publicClasses(),
   publishedPosts(3), publicTestimonials(), publicAchievements(),

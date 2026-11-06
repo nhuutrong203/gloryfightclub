@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { and, asc, eq, inArray, lte, ne, or } from 'drizzle-orm';
+import { and, asc, eq, inArray, lte, or } from 'drizzle-orm';
 import { z } from 'zod';
 import { db, schema } from '../db';
 import { vnNow } from '../lib/util';
@@ -8,6 +8,10 @@ import type { Env } from '.';
 
 export const feeRoutes = new Hono<Env>();
 const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
+
+/** Ai phải đóng học phí tháng m — MỘT quy tắc cho Dashboard, trang Học phí, huy hiệu ở danh sách học viên:
+ *  đang học và đã vào học trước hết tháng đó (nhập trước với ngày vào học tháng sau thì chưa tính; '-31' đủ cho mọi tháng vì so chuỗi YYYY-MM-DD). */
+export const owesIn = (m: string) => and(eq(schema.students.status, 'active'), lte(schema.students.joinedAt, `${m}-31`));
 
 /** Học phí của 1 tháng: học viên đang học (hoặc đã đóng tháng đó) + khoản đã đóng. */
 feeRoutes.get('/', need('fees.view'), async (c) => {
@@ -18,8 +22,8 @@ feeRoutes.get('/', need('fees.view'), async (c) => {
     .select({ id: schema.students.id, code: schema.students.code, fullName: schema.students.fullName, phone: schema.students.phone, parentPhone: schema.students.parentPhone, locationId: schema.students.locationId, feePlanId: schema.students.feePlanId, status: schema.students.status })
     .from(schema.students)
     // Subquery thay vì danh sách id: D1 chỉ nhận tối đa 100 tham số mỗi câu lệnh.
-    // Người vào học sau tháng đang xem không tính "chưa đóng" ('-31' đủ cho mọi tháng vì so chuỗi YYYY-MM-DD).
-    .where(or(and(eq(schema.students.status, 'active'), lte(schema.students.joinedAt, `${m}-31`)), inArray(schema.students.id, paidThisMonth)))
+    // Ai chưa có khoản đóng trong danh sách này là "chưa đóng" (client không cần lọc lại).
+    .where(or(owesIn(m), inArray(schema.students.id, paidThisMonth)))
     .orderBy(asc(schema.students.fullName));
   return c.json({ month: m, students, payments });
 });
@@ -58,7 +62,7 @@ feeRoutes.get('/export.csv', need('fees.view'), async (c) => {
     .from(schema.payments)
     .innerJoin(schema.students, eq(schema.students.id, schema.payments.studentId))
     .leftJoin(schema.feePlans, eq(schema.feePlans.id, schema.payments.feePlanId))
-    .where(m ? eq(schema.payments.month, m) : ne(schema.payments.month, ''))
+    .where(m ? eq(schema.payments.month, m) : undefined)
     .orderBy(asc(schema.payments.month), asc(schema.students.code));
   return csv(`hoc-phi-${m ?? 'tat-ca'}.csv`,
     ['Tháng', 'Mã HV', 'Họ tên', 'Gói', 'Số tiền', 'Ngày đóng', 'Hình thức', 'Ghi chú'],

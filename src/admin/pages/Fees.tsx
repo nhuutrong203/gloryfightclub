@@ -24,7 +24,7 @@ export function Fees({ me }: { me: Me }) {
       .filter(({ s, p }) => (show === 'all' || (show === 'paid' ? p : !p)) && (!loc || s.locationId === Number(loc)) && (!term || fold(s.fullName).includes(term) || s.code.toLowerCase().includes(term)));
   }, [data, show, loc, q]);
   const total = data?.payments.reduce((a, p) => a + p.amount, 0) ?? 0;
-  const unpaidCount = data ? data.students.filter((s) => s.status === 'active' && !data.payments.some((p) => p.studentId === s.id)).length : 0;
+  const unpaidCount = data ? data.students.filter((s) => !data.payments.some((p) => p.studentId === s.id)).length : 0; // server chỉ trả người phải đóng (owesIn) + người đã đóng
   const plan = (id: number | null) => lk?.feePlans.find((p) => p.id === id);
 
   return (

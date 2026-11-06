@@ -1,13 +1,13 @@
 ---
 import Logo from '../Logo.astro';
 import Icon from './Icon.astro';
-import { getSite, telHref } from '../../lib/site';
+import { telHref } from '../../lib/site';
 import { t, href, type Lang } from '../../i18n';
 
 // Dải kêu gọi đăng ký học thử cuối trang.
 interface Props { lang: Lang }
 const { lang } = Astro.props;
-const { club } = await getSite();
+const { club } = Astro.locals.site;
 ---
 <section class="relative isolate overflow-hidden bg-glory text-white">
   <Logo class="absolute -z-10 -right-10 top-1/2 -translate-y-1/2 h-[160%] w-auto text-black/15" title="" />

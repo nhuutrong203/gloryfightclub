@@ -69,7 +69,7 @@ export function StudentList({ me }: { me: Me }) {
                       </span>
                     </span>
                     {/* Người vào học từ tháng sau chưa có học phí tháng này (cùng quy tắc trang Học phí). */}
-                    {can(me, 'fees.view') && s.status === 'active' && s.joinedAt.slice(0, 7) <= todayVN().slice(0, 7) && (s.paidThisMonth ? <Badge tone="green">Đã đóng</Badge> : <Badge tone="red">Chưa đóng</Badge>)}
+                    {s.fee && (s.fee === 'paid' ? <Badge tone="green">Đã đóng</Badge> : <Badge tone="red">Chưa đóng</Badge>)}
                   </A>
                 </li>
               ))}

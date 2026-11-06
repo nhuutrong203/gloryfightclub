@@ -2,11 +2,12 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 
 // Phục vụ ảnh/video public từ R2. Key do CMS sinh ra (không đoán được tên file gốc).
-// Key không bao giờ bị ghi đè (mỗi lần upload một uuid mới) → cache vĩnh viễn ở edge Cloudflare.
+// Key không bao giờ bị ghi đè (mỗi lần upload một uuid mới) nhưng có thể bị XOÁ (vd. phụ huynh xin gỡ ảnh)
+// → cache 1 ngày (edge + trình duyệt), không phải 1 năm, để ảnh đã xoá hết mở được trong tối đa 1 ngày.
 export const GET: APIRoute = async ({ params, request, locals }) => {
   // Chỉ phục vụ thư mục public/ của bucket.
   if (!params.key?.startsWith('public/')) return new Response('Not found', { status: 404 });
-  const headers = new Headers({ 'cache-control': 'public, max-age=31536000, immutable', 'x-content-type-options': 'nosniff', 'accept-ranges': 'bytes' });
+  const headers = new Headers({ 'cache-control': 'public, max-age=86400', 'x-content-type-options': 'nosniff', 'accept-ranges': 'bytes' });
 
   // Video: trình duyệt (nhất là iPhone) xin từng đoạn (Range) để phát và tua → trả 206 từ R2, không qua Cache API.
   if (request.headers.has('range')) {

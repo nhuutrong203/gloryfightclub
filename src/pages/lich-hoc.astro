@@ -3,14 +3,13 @@ import PublicLayout from '../layouts/PublicLayout.astro';
 import PageHero from '../components/public/PageHero.astro';
 import Icon from '../components/public/Icon.astro';
 import CtaBand from '../components/public/CtaBand.astro';
-import { getSite, mediaUrl, telHref } from '../lib/site';
+import { mediaUrl, telHref } from '../lib/site';
 import { publicClasses, publicCoaches, publicDisciplines } from '../lib/public';
 import { vnNow } from '../lib/util';
 import { t, tr, href, DAYS, dayShort, dayLong, type Lang } from '../i18n';
 
 const lang: Lang = Astro.locals.lang;
-const [{ club, locations }, allClasses, disciplines, coaches] = await Promise.all([
-  getSite(), publicClasses(), publicDisciplines(), publicCoaches(),
+const [{ club, locations }, allClasses, disciplines, coaches] = await Promise.all([Astro.locals.site, publicClasses(), publicDisciplines(), publicCoaches(),
 ]);
 const q = Astro.url.searchParams;
 const loc = locations.find((l) => String(l.id) === q.get('co-so')) ?? locations[0];

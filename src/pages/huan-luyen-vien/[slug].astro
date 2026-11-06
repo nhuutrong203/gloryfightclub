@@ -8,13 +8,13 @@ import CtaBand from '../../components/public/CtaBand.astro';
 import AchievementIcon from '../../components/public/AchievementIcon.astro';
 import MedalTally from '../../components/public/MedalTally.astro';
 import { db, schema } from '../../db';
-import { getSite, mediaUrl } from '../../lib/site';
+import { mediaUrl } from '../../lib/site';
 import { publicCoaches, publicClasses, publicDisciplines, lines, richText } from '../../lib/public';
 import { extraAwards } from '../../lib/medals';
 import { t, tr, href, type Lang } from '../../i18n';
 
 const lang: Lang = Astro.locals.lang;
-const [{ locations }, coaches, classes, disciplines] = await Promise.all([getSite(), publicCoaches(), publicClasses(), publicDisciplines()]);
+const [{ locations }, coaches, classes, disciplines] = await Promise.all([Astro.locals.site, publicCoaches(), publicClasses(), publicDisciplines()]);
 const c = coaches.find((x) => x.slug === Astro.params.slug);
 if (!c) return Astro.rewrite('/404');
 const achievementRows = await db.select().from(schema.achievements)

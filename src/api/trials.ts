@@ -25,7 +25,7 @@ trialRoutes.get('/count', need('students.view'), async (c) => {
   return c.json({ n: r?.n ?? 0 });
 });
 
-trialRoutes.put('/:id', need('students.view'), async (c) => {
+trialRoutes.put('/:id', need('students.edit'), async (c) => {
   const id = idParam(c);
   if (!id) return c.notFound();
   const [data, err] = await body(c, z.object({ status: z.enum(['new', 'contacted', 'rejected']), note: z.string().trim().max(1000).nullish() }));
@@ -64,7 +64,7 @@ trialRoutes.post('/:id/convert', need('students.edit'), async (c) => {
   return c.json({ studentId: student.id }, 201);
 });
 
-trialRoutes.delete('/:id', need('delete'), async (c) => {
+trialRoutes.delete('/:id', need('students.edit'), need('delete'), async (c) => {
   const id = idParam(c);
   if (!id) return c.notFound();
   await db.delete(t).where(eq(t.id, id));

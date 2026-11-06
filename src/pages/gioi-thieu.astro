@@ -8,15 +8,14 @@ import CoachCard from '../components/public/CoachCard.astro';
 import CtaBand from '../components/public/CtaBand.astro';
 import AchievementIcon from '../components/public/AchievementIcon.astro';
 import { db, schema } from '../db';
-import { getSite } from '../lib/site';
+
 import { publicCoaches, publicAchievements, publicDisciplines, richText } from '../lib/public';
 import { t, tr, href, type Lang } from '../i18n';
 
 type About = { history?: string; history_en?: string; philosophy?: string; philosophy_en?: string; values?: string[]; values_en?: string[] };
 
 const lang: Lang = Astro.locals.lang;
-const [{ club, locations }, coaches, achievements, disciplines, aboutRow] = await Promise.all([
-  getSite(), publicCoaches(), publicAchievements(), publicDisciplines(),
+const [{ club, locations }, coaches, achievements, disciplines, aboutRow] = await Promise.all([Astro.locals.site, publicCoaches(), publicAchievements(), publicDisciplines(),
   db.select().from(schema.settings).where(eq(schema.settings.key, 'about')).limit(1),
 ]);
 const about = (aboutRow[0]?.value ?? {}) as About;

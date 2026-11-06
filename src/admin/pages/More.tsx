@@ -119,7 +119,7 @@ export function Password() {
         if (next !== again) return toast('Hai mật khẩu mới không khớp', 'err');
         setBusy(true);
         try {
-          await api('/auth/password', { body: { current, next } });
+          await api('/admin/password', { body: { current, next } });
           toast('Đã đổi mật khẩu');
           setCurrent(''); setNext(''); setAgain('');
         } catch (err: any) { toast(err.message, 'err'); } finally { setBusy(false); }
