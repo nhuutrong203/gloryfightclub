@@ -2,7 +2,7 @@
 import Logo from '../Logo.astro';
 import Icon from './Icon.astro';
 import { tr, href, t, type Lang } from '../../i18n';
-import { thumbUrl } from '../../lib/site';
+import { thumbSrcset, thumbUrl } from '../../lib/site';
 import { lines } from '../../lib/public';
 import AchievementIcon from './AchievementIcon.astro';
 import MedalTally from './MedalTally.astro';
@@ -14,7 +14,7 @@ const { coach: c, lang, i = 0, tone = 'dark', class: className } = Astro.props;
 // Giống trang HLV: ô chữ "Thành tích" + mục Thành tích gắn HLV này mà ô chữ chưa ghi (extraAwards bỏ dòng trùng, không đếm đôi huy chương).
 const text = lines(tr(c, 'achievements', lang));
 const achievements = [...text, ...extraAwards(text, c.awards ?? [], (a) => ({ title: tr(a, 'title', lang), event: a.eventName })).map((a) => tr(a, 'title', lang))];
-const photo = thumbUrl(c.photoKey); // thẻ HLV nhỏ → bản 480px
+const photo = thumbUrl(c.photoKey); // thẻ HLV → bản 800px; màn hình nét / thẻ to thì srcset lấy ảnh gốc
 const medals = tally(achievements);
 const hasMedals = medals.gold + medals.silver + medals.bronze > 0;
 // Chưa có ảnh: hiện chữ viết tắt (vd. "LT") thay vì khung trống.
@@ -23,7 +23,7 @@ const initials = c.fullName.trim().split(/\s+/).slice(-2).map((w) => w[0]).join(
 <a href={href(`/huan-luyen-vien/${c.slug}`, lang)} class:list={['reveal group block', className]} style={`--i:${i}`}>
   <div class="relative aspect-[4/5] overflow-hidden bg-ink" data-tilt>
     {photo
-      ? <img src={photo} alt={c.fullName} loading="lazy" class="size-full object-cover" data-zoom />
+      ? <img src={photo} srcset={thumbSrcset(c.photoKey)} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 320px, 64vw" alt={c.fullName} loading="lazy" class="size-full object-cover" data-zoom />
       : (
         <div class="relative size-full overflow-hidden bg-[radial-gradient(circle_at_70%_15%,#2b0d0c,#0a0a0a_65%)]">
           <Logo class="absolute -right-[18%] -top-[8%] h-[85%] w-auto text-white/[0.06] transition-transform duration-500 group-hover:scale-105" title="" />

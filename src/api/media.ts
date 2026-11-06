@@ -19,7 +19,7 @@ export async function deleteMedia(keys: (string | null | undefined)[]) {
       or exists (select 1 from achievements where image_key = j.value)
       or exists (select 1 from settings where key = 'hero' and json_extract(value, '$.image_key') = j.value)`);
     const free = list.filter((k) => !used.some((u) => u.k === k));
-    if (free.length) await env.MEDIA.delete([...free, ...free.map((k) => k + THUMB)]); // kèm bản nhỏ 480px (không có cũng không sao)
+    if (free.length) await env.MEDIA.delete([...free, ...free.map((k) => k + THUMB)]); // kèm bản nhỏ 800px (không có cũng không sao)
   } catch (e) {
     console.error('Dọn file R2 lỗi', list, e);
   }

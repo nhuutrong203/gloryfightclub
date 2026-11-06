@@ -7,7 +7,7 @@ import type { schema } from '../../db';
 // large: ảnh to (dải cảm nhận) — ảnh là "gương mặt" của lời khen, nhỏ quá thì không ai nhìn.
 interface Props { item: typeof schema.testimonials.$inferSelect; lang: Lang; large?: boolean; class?: string }
 const { item: x, lang, large = false, class: className = 'mt-6' } = Astro.props;
-const photo = thumbUrl(x.photoKey); // ảnh 88px → bản 480px
+const photo = thumbUrl(x.photoKey); // ảnh 88px → bản nhỏ
 const initials = x.authorName.replace(/\s*\(.*\)$/, '').trim().split(/\s+/).slice(-2).map((w) => w[0]).join('').toUpperCase();
 const px = large ? 88 : 56;
 ---

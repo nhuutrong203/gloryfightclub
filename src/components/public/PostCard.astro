@@ -26,7 +26,7 @@ const part = (o: Intl.DateTimeFormatOptions) => date.toLocaleString(lang === 'en
 const shown = p.media.slice(0, 4);
 const extra = p.media.length - shown.length;
 const src = (m: PostMedia) => `/media/${m.key}`;
-const thumb = (m: PostMedia) => thumbUrl(m.key)!; // ô ảnh trên thẻ (trang chủ, danh sách) → bản 480px; trang bài dùng ảnh gốc
+const thumb = (m: PostMedia) => thumbUrl(m.key)!; // ô ảnh trên thẻ (trang chủ, danh sách) → bản 800px; trang bài dùng ảnh gốc
 const ytThumb = (m: PostMedia) => `https://i.ytimg.com/vi/${youtubeId(m.key)}/hqdefault.jpg`;
 const cover = p.media[0];
 ---

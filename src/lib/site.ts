@@ -30,8 +30,11 @@ export async function getSite() {
 
 export const telHref = (phone: string) => `tel:${phone.replace(/\D/g, '')}`;
 export const mediaUrl = (key: string | null | undefined) => (key ? `/media/${key}` : null);
-/** Bản nhỏ 480px của ảnh (lưu cạnh ảnh gốc: `<key>.w480`, CMS tạo khi upload) cho thẻ / lưới ảnh.
+/** Bản nhỏ 800px của ảnh (lưu cạnh ảnh gốc: `<key>.w800`, CMS tạo khi upload) cho thẻ / lưới ảnh.
+ *  800px (không phải 480): thẻ HLV trên máy tính rộng ~500px → 480px bị mờ; 800 vẫn nhẹ hơn ảnh gốc nhiều.
  *  Chưa có bản nhỏ (ảnh cũ) thì /media tự trả ảnh gốc → không bao giờ vỡ ảnh. Ảnh lớn / mở lightbox vẫn dùng mediaUrl. */
-export const THUMB = '.w480';
-// v=2: bản đầu (chưa có "không cache khi trả ảnh gốc thay bản nhỏ") có thể đã giữ ảnh gốc ở edge dưới địa chỉ ?w=480 → đổi địa chỉ.
-export const thumbUrl = (key: string | null | undefined) => (key ? `/media/${key}?w=480&v=2` : null);
+export const THUMB_W = 800; // đổi số này thì đổi cả shrink(file, 800) trong src/admin/lib.ts và tạo lại bản nhỏ cho ảnh cũ
+export const THUMB = `.w${THUMB_W}`;
+export const thumbUrl = (key: string | null | undefined) => (key ? `/media/${key}?w=${THUMB_W}` : null);
+/** srcset cho ảnh có thể hiện to hơn 800px điểm ảnh (màn hình nét): trình duyệt tự chọn ảnh gốc khi cần. */
+export const thumbSrcset = (key: string | null | undefined) => (key ? `/media/${key}?w=${THUMB_W} ${THUMB_W}w, /media/${key} 1600w` : undefined);

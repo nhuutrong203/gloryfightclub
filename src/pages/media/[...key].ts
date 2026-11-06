@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
-import { THUMB } from '../../lib/site';
+import { THUMB, THUMB_W } from '../../lib/site';
 
 // Phục vụ ảnh/video public từ R2. Key do CMS sinh ra (không đoán được tên file gốc).
 // Key không bao giờ bị ghi đè (mỗi lần upload một uuid mới) nhưng có thể bị XOÁ (vd. phụ huynh xin gỡ ảnh)
@@ -26,14 +26,14 @@ export const GET: APIRoute = async ({ params, request, locals }) => {
   const cache = (caches as unknown as { default: Cache }).default;
   const hit = await cache.match(request);
   if (hit) return hit;
-  // ?w=480: bản nhỏ (thẻ, lưới ảnh); chưa có thì trả ảnh gốc.
-  const wantSmall = new URL(request.url).searchParams.get('w') === '480';
+  // ?w=800: bản nhỏ (thẻ, lưới ảnh); chưa có thì trả ảnh gốc.
+  const wantSmall = new URL(request.url).searchParams.get('w') === String(THUMB_W);
   const small = wantSmall ? await env.MEDIA.get(params.key + THUMB) : null;
   const obj = small ?? (await env.MEDIA.get(params.key));
   if (!obj) return new Response('Not found', { status: 404 });
   obj.writeHttpMetadata(headers);
   headers.set('etag', obj.httpEtag);
-  // Xin bản nhỏ mà chưa có (ảnh cũ / bản nhỏ đang upload ngay sau ảnh gốc): trả ảnh gốc nhưng KHÔNG cache, kẻo bản gốc bị giữ 1 ngày dưới địa chỉ ?w=480.
+  // Xin bản nhỏ mà chưa có (ảnh cũ / bản nhỏ đang upload ngay sau ảnh gốc): trả ảnh gốc nhưng KHÔNG cache, kẻo bản gốc bị giữ 1 ngày dưới địa chỉ ?w=800.
   const fallback = wantSmall && !small;
   if (fallback) headers.set('cache-control', 'public, max-age=300');
   const res = new Response(obj.body, { headers });

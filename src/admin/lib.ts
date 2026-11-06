@@ -158,9 +158,9 @@ const asForm = (blob: Blob) => {
 
 async function send(file: File, onProgress: ((pct: number) => void) | undefined, maxSide: number): Promise<string> {
   const key = await xhrUpload('/api/admin/upload', asForm(await shrink(file, maxSide)), onProgress);
-  // Bản nhỏ 480px cho thẻ / lưới ảnh trên web (điện thoại đỡ tải ảnh 1600px). Lỗi thì bỏ qua: web tự dùng ảnh gốc.
+  // Bản nhỏ 800px (THUMB_W trong src/lib/site.ts) cho thẻ / lưới ảnh trên web. Lỗi thì bỏ qua: web tự dùng ảnh gốc.
   try {
-    const form = asForm(await shrink(file, 480, false));
+    const form = asForm(await shrink(file, 800, false));
     form.append('variantOf', key);
     await xhrUpload('/api/admin/upload', form);
   } catch (e) { console.warn('Không tạo được ảnh nhỏ', e); }
