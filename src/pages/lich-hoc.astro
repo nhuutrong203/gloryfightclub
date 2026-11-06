@@ -35,7 +35,9 @@ const weekly = locClasses.reduce((n, c) => n + c.days.length, 0);
 const discCount = new Set(locClasses.flatMap((c) => c.disciplineIds).filter((id) => disciplines.some((d) => d.id === id))).size;
 const hours = locClasses.length ? `${locClasses.map((c) => c.startTime).sort()[0]}–${locClasses.map((c) => c.endTime).sort().at(-1)}` : null;
 const todayItems = classes.filter((c) => c.days.includes(today)).sort((a, b) => a.startTime.localeCompare(b.startTime));
-// Nhóm ngày đang có ở cơ sở này (vd. 246, 357, 8) cho chú giải ở đầu trang, theo thứ tự ngày đầu tiên.
+// Nhóm ngày đang có ở cơ sở này (vd. 246, 357, 78) cho chú giải ở đầu trang, theo thứ tự ngày đầu tiên.
+// '8' chỉ là mã lưu trong DB cho Chủ nhật — CLB không gọi "8", nên hiện "CN" (vd. 78 → 7·CN, 8 → CN).
+const groupCode = (g: string) => (g === '8' ? 'CN' : g.replace('8', '·CN'));
 const dayGroups = [...new Set(locClasses.map((c) => c.days))].sort((a, b) => a[0].localeCompare(b[0]) || a.localeCompare(b));
 Astro.response.headers.set('cache-control', 'public, max-age=60');
 ---
@@ -48,8 +50,8 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
           <span class="mr-1 text-sm text-ash">{t(lang, 'schedule_legend')}</span>
           {dayGroups.map((g) => (
             <span class="inline-flex items-center gap-2.5 border border-white/15 bg-white/[0.03] px-3 py-1.5">
-              <span class="font-display text-lg leading-none tracking-wide text-glory-bright">{g}</span>
-              <span class="text-sm text-white/80">{[...g].map((d) => dayShort(d, lang)).join(' · ')}</span>
+              <span class="font-display text-lg leading-none tracking-wide text-glory-bright">{groupCode(g)}</span>
+              <span class="text-sm text-white/80">{g.length === 1 ? dayLong(g, lang) : [...g].map((d) => dayShort(d, lang)).join(' · ')}</span>
             </span>
           ))}
         </div>
