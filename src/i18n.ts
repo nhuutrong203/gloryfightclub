@@ -26,6 +26,8 @@ export const dict = {
     fees_title: 'Các gói tập',
     fees_sub: 'Đóng theo tháng. Thanh toán trực tiếp tại CLB (tiền mặt hoặc quét mã chuyển khoản).',
     per_month: 'VND / tháng',
+    fees_plan_for: 'Phù hợp với',
+    fees_plan_details: 'Xem chi tiết gói',
     open_mat: 'Open mat – Sparring miễn phí',
     open_mat_name: 'Open mat – Sparring', // đi kèm chữ "Free" đỏ (trang chủ, lịch học) → không lặp "miễn phí"
     open_mat_time: 'Chủ nhật 18:00 – 21:00',
@@ -196,6 +198,8 @@ export const dict = {
     fees_title: 'Memberships',
     fees_sub: 'Monthly memberships. Pay at the gym (cash or bank-transfer QR).',
     per_month: 'VND / month',
+    fees_plan_for: 'Best for',
+    fees_plan_details: 'See plan details',
     open_mat: 'Free Open mat – Sparring',
     open_mat_name: 'Open mat – Sparring',
     open_mat_time: 'Sunday 18:00 – 21:00',

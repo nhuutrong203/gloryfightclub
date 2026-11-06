@@ -121,6 +121,8 @@ export const feePlans = sqliteTable('fee_plans', {
   headlineEn: text('headline_en'),
   condition: text('condition'), // vd. "Trừ lớp trẻ em và lớp Fighter"
   conditionEn: text('condition_en'),
+  audience: text('audience'), // phù hợp với ai, 1–2 câu (thẻ gói ở Trang chủ + /hoc-phi)
+  audienceEn: text('audience_en'),
   pricePerMonth: integer('price_per_month').notNull(), // VND
   features: text('features'), // mỗi dòng 1 ý
   featuresEn: text('features_en'),

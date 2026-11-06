@@ -141,6 +141,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
       { name: 'pricePerMonth', label: 'Giá / tháng (VND)', type: 'money', required: true },
       { name: 'headline', label: 'Tiêu đề', type: 'text', en: true, help: 'Vd: Tập tất cả các môn' },
       { name: 'condition', label: 'Điều kiện', type: 'text', en: true, help: 'Vd: Trừ lớp trẻ em' },
+      { name: 'audience', label: 'Phù hợp với ai', type: 'textarea', en: true, help: '1–2 câu ngắn, hiện trên thẻ gói ở Trang chủ, trang môn học và Học phí. Vd: Người đi làm muốn kết hợp 2 môn' },
       { name: 'features', label: 'Quyền lợi', type: 'textarea', en: true, help: 'Mỗi dòng một ý' },
       { name: 'badge', label: 'Nhãn nổi bật', type: 'text', help: 'Vd: BEST CHOICE' },
       { name: 'isFeatured', label: 'Gói nổi bật', type: 'bool' },

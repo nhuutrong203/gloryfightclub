@@ -11,7 +11,8 @@ const { plan: p, lang, i = 0, compact = false } = Astro.props;
 const icons: IconName[] = ['crown', 'shield', 'child', 'graduation'];
 const icon = icons[(p.sort - 1) % icons.length] ?? 'star';
 ---
-<article data-tilt class:list={['@container reveal relative flex flex-col border-2', compact ? 'p-5 sm:p-6' : 'p-6 sm:p-8', ' hover:-translate-y-1.5 hover:shadow-[0_20px_50px_-20px_rgb(225_6_0/0.45)]',
+<!-- Thẻ đầy đủ (/hoc-phi) có id goi-<id>: nút "Xem chi tiết gói" ở thẻ gọn nhảy tới đây, thẻ được nhắm (:target) viền đỏ. -->
+<article id={compact ? undefined : `goi-${p.id}`} data-tilt class:list={['@container reveal relative flex flex-col border-2 scroll-mt-28', !compact && !p.isFeatured && 'target:border-glory', compact ? 'p-5 sm:p-6' : 'p-6 sm:p-8', ' hover:-translate-y-1.5 hover:shadow-[0_20px_50px_-20px_rgb(225_6_0/0.45)]',
   p.isFeatured ? 'premium-glow' : 'border-white/15 bg-coal']} style={`--i:${i}`}>
   <p class:list={['absolute -top-4 left-6 px-4 py-1 font-display text-lg uppercase tracking-widest', p.isFeatured ? 'bg-glory text-white' : 'bg-white text-ink']}>
     {tr(p, 'name', lang)}
@@ -27,6 +28,9 @@ const icon = icons[(p.sort - 1) % icons.length] ?? 'star';
     <p class="whitespace-nowrap font-display text-[clamp(2.25rem,24cqi,3.75rem)] leading-none tabular-nums" data-count={p.pricePerMonth}>{formatVnd(p.pricePerMonth)}</p>
     <p class="mt-1 font-display text-glory-bright tracking-wider">{t(lang, 'per_month')}</p>
   </div>
+  {p.audience && (
+    <p class="mt-4 text-sm leading-relaxed text-white/80"><span class="font-semibold text-white">{t(lang, 'fees_plan_for')}:</span> {tr(p, 'audience', lang)}</p>
+  )}
   {!compact && <ul class="mt-6 space-y-3 flex-1">
     {lines(tr(p, 'features', lang)).map((f) => (
       <li class="flex gap-3 text-white/85"><Icon name="check" class="size-5 shrink-0 mt-0.5 text-glory" />{f}</li>
@@ -38,8 +42,13 @@ const icon = icons[(p.sort - 1) % icons.length] ?? 'star';
       <Icon name="star" filled class="size-4 text-glory" />{p.badge}<Icon name="star" filled class="size-4 text-glory" />
     </p>
   )}
+  {compact && (
+    <a href={`${href('/hoc-phi', lang)}#goi-${p.id}`} class="mt-4 inline-flex min-h-11 items-center gap-2 self-start font-display uppercase tracking-wider text-white/85 hover:text-glory-bright">
+      {t(lang, 'fees_plan_details')}<Icon name="arrow-right" class="size-4" />
+    </a>
+  )}
   <!-- Đăng ký học thử với gói này: form chọn sẵn gói (?goi=), CLB thấy ngay khách quan tâm gói nào. -->
-  <a href={`${href('/dang-ky-hoc-thu', lang)}?goi=${p.id}`} class:list={['mt-4 w-full !text-base', p.isFeatured ? 'btn-red' : 'btn-ghost']}>
+  <a href={`${href('/dang-ky-hoc-thu', lang)}?goi=${p.id}`} class:list={[compact ? 'mt-2' : 'mt-4', 'w-full !text-base', p.isFeatured ? 'btn-red' : 'btn-ghost']}>
     {t(lang, 'cta_trial')}<Icon name="arrow-right" class="size-5" />
   </a>
 </article>

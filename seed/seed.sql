@@ -175,3 +175,8 @@ Free Open mat – Sparring
 Special student price
 Student ID required at sign-up',
  NULL, 0, 4);
+-- Phù hợp với ai (cột audience, migration 0005)
+UPDATE fee_plans SET audience = 'Người muốn tập nghiêm túc, tập nhiều môn mỗi tuần hoặc chuẩn bị thi đấu.', audience_en = 'Serious trainees who want several disciplines a week or are preparing to compete.' WHERE id = 1;
+UPDATE fee_plans SET audience = 'Người đi làm muốn kết hợp 2 môn (vd. đứng đòn + vật) với lịch tập linh hoạt.', audience_en = 'Working adults who want to combine 2 disciplines (e.g. striking + grappling) on a flexible schedule.' WHERE id = 2;
+UPDATE fee_plans SET audience = 'Bé 6–15 tuổi cần rèn thể lực, sự tự tin và tính kỷ luật trong môi trường an toàn.', audience_en = 'Kids aged 6–15 building fitness, confidence and discipline in a safe setting.' WHERE id = 3;
+UPDATE fee_plans SET audience = 'Học sinh – sinh viên mới bắt đầu, muốn tập đều một môn với chi phí vừa túi tiền.', audience_en = 'Students who are starting out and want to train one discipline regularly on a budget.' WHERE id = 4;
