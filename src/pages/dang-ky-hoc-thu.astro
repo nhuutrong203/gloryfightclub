@@ -3,15 +3,35 @@ import PublicLayout from '../layouts/PublicLayout.astro';
 import PageHero from '../components/public/PageHero.astro';
 import Icon from '../components/public/Icon.astro';
 import { telHref } from '../lib/site';
-import { publicDisciplines, publicPlans } from '../lib/public';
-import { t, tr, formatVnd, type Lang } from '../i18n';
+import { publicClasses, publicCoaches, publicDisciplines, publicPlans } from '../lib/public';
+import { t, tr, formatVnd, dayLong, DAYS, type Lang } from '../i18n';
 
+// Đăng ký học thử, cá nhân hoá: ngày sinh (3 ô chọn) → biết tuổi để gợi ý lớp trẻ em / người lớn; chọn môn + cơ sở →
+// danh sách buổi học thử sắp tới (tính ngay trên trình duyệt theo giờ VN vì trang được cache); cảm ơn có tên, buổi đã chọn,
+// nút Google Calendar + chỉ đường. Logic gợi ý dùng chung với server và test: src/lib/schedule.ts.
 const lang: Lang = Astro.locals.lang;
-const [{ club, locations }, disciplines, plans] = await Promise.all([Astro.locals.site, publicDisciplines(), publicPlans()]);
+const [{ club, locations }, disciplines, plans, classes, coaches] = await Promise.all([
+  Astro.locals.site, publicDisciplines(), publicPlans(), publicClasses(), publicCoaches(),
+]);
 const preselect = disciplines.find((d) => d.slug === Astro.url.searchParams.get('mon'))?.id;
 // ?goi=<id> từ nút "Đăng ký học thử" trên thẻ gói (trang Học phí) → chọn sẵn gói đó.
 const planPre = plans.find((p) => String(p.id) === Astro.url.searchParams.get('goi'))?.id;
-const msg = { ok: t(lang, 'f_ok'), err: t(lang, 'f_err'), tooMany: t(lang, 'f_too_many'), phone: t(lang, 'f_phone_err'), sending: t(lang, 'f_sending'), submit: t(lang, 'f_submit') };
+const keys = ['f_ok', 'f_err', 'f_too_many', 'f_phone_err', 'f_sending', 'f_submit', 'f_birth_err', 'f_age_hint', 'f_kid_hint', 'f_today', 'f_tomorrow',
+  'f_ok_hi', 'f_ok_title', 'trial_title', 'level_kids', 'level_beginner', 'level_intermediate', 'level_advanced'] as const;
+// Dữ liệu cho script gợi ý buổi học (chỉ thông tin public). "<" thoát thành < để chữ trong CMS không đóng được thẻ <script>.
+const data = {
+  lang,
+  club: club.name,
+  msg: Object.fromEntries(keys.map((k) => [k, t(lang, k)])),
+  days: Object.fromEntries(DAYS.map((d) => [d, dayLong(d, lang)])),
+  locations: locations.map((l) => ({ id: l.id, name: tr(l, 'name', lang), address: l.address, mapUrl: l.mapUrl })),
+  classes: classes.map((c) => ({
+    id: c.id, name: tr(c, 'name', lang), days: c.days, startTime: c.startTime, endTime: c.endTime,
+    disciplineIds: c.disciplineIds, locationId: c.locationId, level: c.level, coach: coaches.find((x) => x.id === c.coachId)?.fullName ?? null,
+  })),
+};
+const json = JSON.stringify(data).replace(/</g, '\\u003c');
+const year = new Date().getFullYear();
 const field = 'block w-full min-h-12 bg-ink border-2 border-white/20 px-4 py-3 text-base text-white placeholder:text-white/40 focus:border-glory focus:outline-none';
 const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
 ---
@@ -19,7 +39,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
   <PageHero eyebrow={t(lang, 'trial_title')} title={t(lang, 'cta_trial')} subtitle={t(lang, 'trial_sub')} />
   <section class="container-x py-12 sm:py-16 grid gap-12 lg:grid-cols-[3fr_2fr]">
     <div>
-      <form id="trial" class="grid gap-5 sm:grid-cols-2" novalidate data-msg={JSON.stringify(msg)}>
+      <form id="trial" class="grid gap-5 sm:grid-cols-2" novalidate>
         <div class="sm:col-span-2">
           <label for="f-name" class={label}>{t(lang, 'f_name')} <span class="text-glory" aria-hidden="true">*</span></label>
           <input id="f-name" name="fullName" required maxlength="100" autocomplete="name" class={field} />
@@ -30,10 +50,25 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
             pattern="^(\+?84|0)[\s.\-]?[35789](?:[\s.\-]?\d){8}$" aria-describedby="f-phone-err" class={field} />
           <p id="f-phone-err" class="mt-2 hidden text-sm font-semibold text-glory-bright" role="alert">{t(lang, 'f_phone_err')}</p>
         </div>
-        <div>
-          <label for="f-age" class={label}>{t(lang, 'f_age')}</label>
-          <input id="f-age" name="age" type="number" min="3" max="90" inputmode="numeric" class={field} />
-        </div>
+        <!-- Ngày sinh: 3 ô chọn (gõ / cuộn lịch tìm năm sinh trên điện thoại rất mệt; ô ngày của trình duyệt hiện kiểu Mỹ trên máy tiếng Anh). -->
+        <fieldset aria-describedby="f-birth-hint">
+          <legend class={label}>{t(lang, 'f_birth')}</legend>
+          <div class="grid grid-cols-[1fr_1fr_1.4fr] gap-2">
+            <select name="bday" aria-label={t(lang, 'f_day')} autocomplete="bday-day" class={`${field} !px-3`}>
+              <option value="">{t(lang, 'f_day')}</option>
+              {Array.from({ length: 31 }, (_, i) => <option value={i + 1}>{i + 1}</option>)}
+            </select>
+            <select name="bmonth" aria-label={t(lang, 'f_month')} autocomplete="bday-month" class={`${field} !px-3`}>
+              <option value="">{t(lang, 'f_month')}</option>
+              {Array.from({ length: 12 }, (_, i) => <option value={i + 1}>{lang === 'en' ? new Date(Date.UTC(2000, i, 15)).toLocaleDateString('en-GB', { month: 'short', timeZone: 'UTC' }) : `Th ${i + 1}`}</option>)}
+            </select>
+            <select name="byear" aria-label={t(lang, 'f_year')} autocomplete="bday-year" class={`${field} !px-3`}>
+              <option value="">{t(lang, 'f_year')}</option>
+              {Array.from({ length: 88 }, (_, i) => <option value={year - 3 - i}>{year - 3 - i}</option>)}
+            </select>
+          </div>
+          <p id="f-birth-hint" class="mt-2 min-h-5 text-sm text-ash" aria-live="polite"></p>
+        </fieldset>
         <div>
           <label for="f-disc" class={label}>{t(lang, 'f_discipline')}</label>
           <select id="f-disc" name="disciplineId" class={field}>
@@ -48,6 +83,31 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
             {locations.map((l) => <option value={l.id}>{tr(l, 'name', lang)}</option>)}
           </select>
         </div>
+
+        <!-- Buổi học thử gợi ý: script điền theo môn / cơ sở / tuổi. Không có JS thì khối này ẩn, khách ghi giờ ở ô bên dưới như cũ. -->
+        <fieldset id="slots" class="hidden sm:col-span-2 border-2 border-white/10 bg-coal p-4 sm:p-5">
+          <legend class="px-2 font-display text-lg uppercase leading-[1.12] tracking-wider sm:text-xl">{t(lang, 'f_slots')}</legend>
+          <p class="text-sm text-white/75">{t(lang, 'f_slots_sub')}</p>
+          <div id="slot-list" class="mt-4 grid gap-2 sm:grid-cols-2"></div>
+          <p id="slot-none" class="mt-4 hidden text-white/80">{t(lang, 'f_slots_none')}</p>
+          <button type="button" id="slot-more" class="mt-3 hidden min-h-11 items-center gap-1 font-display text-sm uppercase tracking-wider text-glory-bright hover:text-white [&:not(.hidden)]:inline-flex">{t(lang, 'f_more')}<Icon name="chevron-down" class="size-4" /></button>
+          <label class="mt-3 flex min-h-12 cursor-pointer items-center gap-3 border-2 border-white/15 px-4 py-2 text-white/85 has-[:checked]:border-white has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-glory">
+            <input type="radio" name="slot" value="" checked class="size-4 accent-[#e10600]" />{t(lang, 'f_slot_other')}
+          </label>
+        </fieldset>
+        <template id="slot-tpl">
+          <label class="group relative flex cursor-pointer gap-3 border-2 border-white/15 bg-ink p-3 transition-colors hover:border-white/40 has-[:checked]:border-glory has-[:checked]:bg-glory/10 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-glory">
+            <input type="radio" name="slot" class="mt-1 size-4 shrink-0 accent-[#e10600]" />
+            <span class="min-w-0 flex-1">
+              <span data-day class="block text-xs font-semibold uppercase tracking-wider text-glory-bright"></span>
+              <span data-time class="block font-display text-2xl leading-[1.12] tracking-wide"></span>
+              <span data-name class="block font-semibold"></span>
+              <span data-where class="block text-sm text-ash"></span>
+            </span>
+            <span data-level class="hidden self-start bg-white px-2 py-0.5 font-display text-xs tracking-wider text-ink"></span>
+          </label>
+        </template>
+
         {plans.length > 0 && (
           <div class="sm:col-span-2">
             <label for="f-plan" class={label}>{t(lang, 'f_plan')}</label>
@@ -73,10 +133,22 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
         <button type="submit" class="btn-red sm:col-span-2 !text-xl disabled:opacity-60 disabled:cursor-wait">{t(lang, 'f_submit')}<Icon name="arrow-right" /></button>
       </form>
 
+      <!-- Cảm ơn: gọi tên, nhắc buổi học thử đã chọn (thêm vào lịch, chỉ đường), dặn mang gì. -->
       <div id="trial-ok" class="hidden border-2 border-glory bg-glory/10 p-8 sm:p-12" role="status" tabindex="-1">
         <Icon name="check-circle" class="size-14 text-glory" />
-        <h2 class="mt-4 text-5xl">{t(lang, 'f_ok_title')}</h2>
+        <h2 id="ok-title" class="mt-4 text-5xl">{t(lang, 'f_ok_title')}</h2>
         <p class="mt-3 text-lg">{t(lang, 'f_ok')}</p>
+        <div id="ok-slot" class="mt-6 hidden border-l-4 border-glory bg-ink p-5">
+          <p class="eyebrow !mb-1">{t(lang, 'f_ok_slot')}</p>
+          <p id="ok-when" class="font-display text-3xl leading-[1.12] tracking-wide"></p>
+          <p id="ok-what" class="mt-1 font-semibold"></p>
+          <p id="ok-where" class="mt-1 text-sm text-white/75"></p>
+          <div class="mt-4 flex flex-col gap-2 sm:flex-row">
+            <a id="ok-cal" target="_blank" rel="noopener" class="btn-ghost !min-h-11 !text-base"><Icon name="calendar" />{t(lang, 'f_add_cal')}</a>
+            <a id="ok-map" target="_blank" rel="noopener" class="btn-ghost hidden !min-h-11 !text-base"><Icon name="map-pin" />{t(lang, 'directions')}</a>
+          </div>
+        </div>
+        <p class="mt-6 flex gap-3 text-white/85"><Icon name="check" class="mt-1 size-5 shrink-0 text-glory" />{t(lang, 'f_bring')}</p>
       </div>
     </div>
 
@@ -95,15 +167,97 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
     </div>
   </section>
 
+  <script type="application/json" id="trial-data" set:html={json}></script>
   <script>
+    import { ageOn, upcomingSessions } from '../lib/schedule';
+    import { vnNow } from '../lib/util';
+
+    type Cls = { id: number; name: string; days: string; startTime: string; endTime: string; disciplineIds: number[]; locationId: number; level: string; coach: string | null };
+    type Loc = { id: number; name: string; address: string; mapUrl: string | null };
+    const D = JSON.parse(document.getElementById('trial-data')!.textContent!) as {
+      lang: 'vi' | 'en'; club: string; msg: Record<string, string>; days: Record<string, string>; locations: Loc[]; classes: Cls[];
+    };
+    const M = D.msg;
     const form = document.getElementById('trial') as HTMLFormElement;
-    const msg = JSON.parse(form.dataset.msg!);
-    const err = document.getElementById('f-err')!;
-    const phone = form.elements.namedItem('phone') as HTMLInputElement;
-    const phoneErr = document.getElementById('f-phone-err')!;
+    const el = <T extends Element = HTMLElement>(id: string) => document.getElementById(id) as unknown as T;
+    const pick = (n: string) => form.elements.namedItem(n) as HTMLSelectElement | HTMLInputElement;
+    const err = el('f-err');
+    const phone = pick('phone') as HTMLInputElement;
+    const phoneErr = el('f-phone-err');
+    const hint = el('f-birth-hint');
     const btn = form.querySelector('button[type=submit]') as HTMLButtonElement;
     const btnHtml = btn.innerHTML;
+    const locName = (id: number) => D.locations.find((l) => l.id === id);
+    const dm = (date: string) => `${+date.slice(8)}/${+date.slice(5, 7)}`;
 
+    // ── Ngày sinh → tuổi (null khi chưa chọn đủ; NaN khi ngày không có thật như 31/02) ──
+    const birth = () => {
+      const [d, m, y] = ['bday', 'bmonth', 'byear'].map((n) => Number(pick(n).value));
+      if (!d || !m || !y) return null;
+      const iso = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const real = new Date(Date.UTC(y, m - 1, d)).getUTCDate() === d;
+      return { iso, age: real ? ageOn(iso, vnNow().date) : NaN };
+    };
+    const showBirth = () => {
+      const b = birth();
+      hint.classList.toggle('text-glory-bright', !!b && Number.isNaN(b.age));
+      hint.textContent = !b ? '' : Number.isNaN(b.age) ? M.f_birth_err : (b.age < 16 ? M.f_kid_hint : M.f_age_hint).replace('{n}', String(b.age));
+    };
+
+    // ── Buổi học thử gợi ý ──
+    const box = el('slots');
+    const list = el('slot-list');
+    const none = el('slot-none');
+    const more = el('slot-more');
+    const tpl = el<HTMLTemplateElement>('slot-tpl');
+    let limit = 6;
+    let slots: { cls: Cls; date: string }[] = [];
+    const dayLabel = (date: string) => {
+      const today = vnNow().date;
+      const tomorrow = vnNow(new Date(Date.now() + 86_400_000)).date;
+      const day = date === today ? M.f_today : date === tomorrow ? M.f_tomorrow : D.days[vnNow(new Date(`${date}T12:00:00+07:00`)).weekday];
+      return `${day} · ${dm(date)}`;
+    };
+    const renderSlots = () => {
+      const chosen = (form.querySelector('input[name=slot]:checked') as HTMLInputElement | null)?.value ?? '';
+      const b = birth();
+      slots = upcomingSessions(D.classes, new Date(), {
+        disciplineId: Number(pick('disciplineId').value) || null,
+        locationId: Number(pick('locationId').value) || null,
+        age: b && !Number.isNaN(b.age) ? b.age : null,
+      });
+      list.replaceChildren(...slots.slice(0, limit).map(({ cls, date }) => {
+        const node = tpl.content.firstElementChild!.cloneNode(true) as HTMLElement;
+        const input = node.querySelector('input')!;
+        input.value = `${cls.id}|${date}`;
+        input.checked = input.value === chosen;
+        node.querySelector('[data-day]')!.textContent = dayLabel(date);
+        node.querySelector('[data-time]')!.textContent = `${cls.startTime}–${cls.endTime}`;
+        node.querySelector('[data-name]')!.textContent = cls.name;
+        node.querySelector('[data-where]')!.textContent = [locName(cls.locationId)?.name, cls.coach].filter(Boolean).join(' · ');
+        const lv = M[`level_${cls.level}`];
+        if (lv && cls.level !== 'all') { const b = node.querySelector<HTMLElement>('[data-level]')!; b.textContent = lv; b.classList.remove('hidden'); }
+        return node;
+      }));
+      // Buổi đang chọn biến khỏi danh sách (đổi môn / cơ sở) → về "Giờ khác".
+      if (!form.querySelector('input[name=slot]:checked')) (form.querySelector('input[name=slot][value=""]') as HTMLInputElement).checked = true;
+      none.classList.toggle('hidden', slots.length > 0);
+      more.classList.toggle('hidden', slots.length <= limit || limit >= 12);
+    };
+    if (D.classes.length) box.classList.remove('hidden');
+    more.addEventListener('click', () => { limit = 12; renderSlots(); });
+    for (const n of ['disciplineId', 'locationId']) pick(n).addEventListener('change', () => { limit = 6; renderSlots(); });
+    for (const n of ['bday', 'bmonth', 'byear']) pick(n).addEventListener('change', () => { showBirth(); renderSlots(); });
+    // Chọn một buổi khi chưa chọn cơ sở → điền cơ sở của buổi đó (CMS thấy ngay khách tới đâu).
+    list.addEventListener('change', (e) => {
+      const [id] = (e.target as HTMLInputElement).value.split('|');
+      const cls = D.classes.find((c) => c.id === Number(id));
+      const loc = pick('locationId') as HTMLSelectElement;
+      if (cls && !loc.value) loc.value = String(cls.locationId);
+    });
+    renderSlots();
+
+    // ── Gửi form ──
     const checkPhone = () => {
       const ok = phone.checkValidity();
       phoneErr.classList.toggle('hidden', ok || !phone.value);
@@ -112,11 +266,42 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
     };
     phone.addEventListener('blur', checkPhone);
 
+    const calLink = (cls: Cls, date: string, where: Loc | undefined) => {
+      const stamp = (hm: string) => `${date.replaceAll('-', '')}T${hm.replace(':', '')}00`;
+      const q = new URLSearchParams({
+        action: 'TEMPLATE', text: `${M.trial_title}: ${cls.name} — ${D.club}`, dates: `${stamp(cls.startTime)}/${stamp(cls.endTime)}`,
+        ctz: 'Asia/Ho_Chi_Minh', location: where?.address ?? '', details: D.club,
+      });
+      return `https://calendar.google.com/calendar/render?${q}`;
+    };
+    const showThanks = (name: string, slot: { cls: Cls; date: string } | undefined) => {
+      // Gọi bằng tên (chữ cuối của họ tên VN), bỏ phần ghi chú trong ngoặc: "Nguyễn Văn An (bố bé Na)" → "An".
+      const given = name.replace(/\(.*?\)/g, '').trim().split(/\s+/).pop() || name.trim();
+      el('ok-title').textContent = M.f_ok_hi.replace('{name}', given);
+      if (slot) {
+        const where = locName(slot.cls.locationId);
+        el('ok-when').textContent = `${dayLabel(slot.date)} · ${slot.cls.startTime}–${slot.cls.endTime}`;
+        el('ok-what').textContent = [slot.cls.name, slot.cls.coach].filter(Boolean).join(' · ');
+        el('ok-where').textContent = where ? `${where.name} — ${where.address}` : '';
+        el<HTMLAnchorElement>('ok-cal').href = calLink(slot.cls, slot.date, where);
+        const map = el<HTMLAnchorElement>('ok-map');
+        if (where?.mapUrl) { map.href = where.mapUrl; map.classList.remove('hidden'); }
+        el('ok-slot').classList.remove('hidden');
+      }
+      form.classList.add('hidden');
+      const ok = el('trial-ok');
+      ok.classList.remove('hidden');
+      ok.focus();
+      ok.scrollIntoView({ block: 'start' });
+    };
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       err.classList.add('hidden');
-      if (!form.checkValidity()) {
+      const b = birth();
+      if (!form.checkValidity() || (b && Number.isNaN(b.age))) {
         checkPhone();
+        showBirth();
         (form.querySelector(':invalid') as HTMLElement | null)?.focus();
         if (!phone.value || !phone.checkValidity()) phoneErr.classList.remove('hidden');
         return;
@@ -124,24 +309,25 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
       const fd = new FormData(form);
       const num = (k: string) => (fd.get(k) ? Number(fd.get(k)) : undefined);
       const str = (k: string) => String(fd.get(k) ?? '').trim() || undefined;
+      const [slotId, slotDate] = String(fd.get('slot') ?? '').split('|');
+      const slot = slots.find((s) => s.cls.id === Number(slotId) && s.date === slotDate);
       const body = {
-        fullName: str('fullName'), phone: str('phone'), age: num('age'),
+        fullName: str('fullName'), phone: str('phone'), birthDate: b?.iso,
         disciplineId: num('disciplineId'), locationId: num('locationId'), feePlanId: num('feePlanId'),
+        classId: slot?.cls.id, trialDate: slot?.date,
         preferredTime: str('preferredTime'), note: str('note'), website: String(fd.get('website') ?? ''),
       };
       btn.disabled = true;
-      btn.textContent = msg.sending;
+      btn.textContent = M.f_sending;
       try {
         const res = await fetch('/api/public/trial', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
-        const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
-        if (res.status === 429) throw new Error(msg.tooMany);
-        if (!res.ok || !data.ok) throw new Error(data.error || msg.err);
-        form.classList.add('hidden');
-        const ok = document.getElementById('trial-ok')!;
-        ok.classList.remove('hidden');
-        ok.focus();
+        const data = (await res.json().catch(() => ({}))) as { ok?: boolean; code?: string };
+        // Câu báo lỗi lấy theo ngôn ngữ của trang (server chỉ trả code).
+        if (!res.ok || !data.ok) throw new Error(({ too_many: M.f_too_many, phone: M.f_phone_err, birth: M.f_birth_err } as Record<string, string>)[data.code ?? ''] ?? M.f_err);
+        showThanks(body.fullName ?? '', slot);
       } catch (ex) {
-        err.textContent = ex instanceof Error && ex.message ? ex.message : msg.err;
+        // Mất mạng: fetch báo "Failed to fetch" (tiếng Anh thô) → câu lỗi chung của trang.
+        err.textContent = ex instanceof TypeError || !(ex instanceof Error) || !ex.message ? M.f_err : ex.message;
         err.classList.remove('hidden');
       } finally {
         btn.disabled = false;

@@ -179,3 +179,32 @@ test('nhật ký: khoảng tháng / năm theo giờ VN và thanh số trang', ()
   assert.deepEqual(pageList(3, 20), [1, 2, 3, 4, null, 20]); // 1 2 3 4, không có "1 … 2"
   assert.deepEqual(pageList(20, 20), [1, null, 19, 20]);
 });
+
+test('đăng ký học thử: tuổi từ ngày sinh và buổi học thử gợi ý', async () => {
+  const { ageOn, weekdayOf, upcomingSessions } = await import('../src/lib/schedule.ts');
+  assert.equal(ageOn('2010-11-07', '2026-11-06'), 15); // mai mới tròn 16
+  assert.equal(ageOn('2010-11-06', '2026-11-06'), 16);
+  assert.equal(ageOn('2008-02-29', '2026-02-28'), 17);
+  assert.equal(weekdayOf('2026-11-06'), '6'); // thứ Sáu
+  assert.equal(weekdayOf('2026-11-08'), '8'); // Chủ nhật
+
+  const C = [
+    { id: 1, days: '246', startTime: '18:30', disciplineIds: [1], locationId: 1, level: 'all' }, // MMA T2-4-6
+    { id: 2, days: '357', startTime: '19:00', disciplineIds: [2], locationId: 1, level: 'all' }, // Kudo T3-5-7
+    { id: 3, days: '7', startTime: '08:00', disciplineIds: [1], locationId: 2, level: 'kids' },  // MMA trẻ em T7
+  ];
+  // Thứ Sáu 06/11/2026 17:45 giờ VN: lớp MMA 18:30 hôm nay còn 45 phút (< 60) → không kịp, buổi đầu tiên là thứ Hai 09/11.
+  const now = new Date('2026-11-06T17:45:00+07:00');
+  const mma = upcomingSessions(C, now, { disciplineId: 1, age: 25 });
+  assert.deepEqual(mma.slice(0, 2).map((s) => `${s.cls.id}@${s.date}`), ['1@2026-11-09', '1@2026-11-11']);
+  assert.ok(mma.every((s) => s.cls.level !== 'kids')); // người lớn không được gợi ý lớp trẻ em
+  // 17:00 thì còn kịp lớp 18:30 hôm nay.
+  assert.equal(upcomingSessions(C, new Date('2026-11-06T17:00:00+07:00'), { disciplineId: 1, age: 25 })[0].date, '2026-11-06');
+  // Bé 10 tuổi học MMA: chỉ gợi ý lớp trẻ em (thứ Bảy 07/11 ở cơ sở 2).
+  assert.deepEqual(upcomingSessions(C, now, { disciplineId: 1, age: 10 }).map((s) => s.cls.id), [3, 3]);
+  // Bé 10 tuổi học Kudo (môn chưa có lớp trẻ em): vẫn gợi ý lớp thường thay vì không có gì.
+  assert.equal(upcomingSessions(C, now, { disciplineId: 2, age: 10 })[0].cls.id, 2);
+  // Lọc theo cơ sở; 23:50 tối thứ Sáu → mọi buổi đều từ ngày mai trở đi.
+  assert.ok(upcomingSessions(C, now, { locationId: 2 }).every((s) => s.cls.locationId === 2));
+  assert.ok(upcomingSessions(C, new Date('2026-11-06T23:50:00+07:00')).every((s) => s.date > '2026-11-06'));
+});

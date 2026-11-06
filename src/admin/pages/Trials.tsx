@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { api, can, fmtDate, navigate, toast, useApi, type Me } from '../lib';
+import { api, can, fmtDate, navigate, todayVN, toast, useApi, type Me } from '../lib';
+import { ageOn, weekdayOf } from '../../lib/schedule';
 import { Badge, Button, Empty, ErrorBox, Icon, Loading, Page, confirmDanger } from '../ui';
 import type { Lookups } from './Students';
 
@@ -9,6 +10,10 @@ const ST: Record<string, { label: string; tone: 'red' | 'amber' | 'green' | 'gra
   enrolled: { label: 'Đã nhập học', tone: 'green' },
   rejected: { label: 'Không học', tone: 'gray' },
 };
+
+const DAY: Record<string, string> = { '2': 'Thứ 2', '3': 'Thứ 3', '4': 'Thứ 4', '5': 'Thứ 5', '6': 'Thứ 6', '7': 'Thứ 7', '8': 'Chủ nhật' };
+/** Tuổi hôm nay (có ngày sinh) hoặc tuổi lúc đăng ký (đăng ký cũ). */
+const ageNow = (t: { birthDate: string | null; age: number | null }) => (t.birthDate ? ageOn(t.birthDate, todayVN()) : t.age);
 
 export function Trials({ me }: { me: Me }) {
   const [filter, setFilter] = useState('');
@@ -35,11 +40,25 @@ export function Trials({ me }: { me: Me }) {
             <li key={t.id} className={`border bg-white p-4 ${t.status === 'new' ? 'border-glory border-l-4' : 'border-neutral-200'}`}>
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <b className="text-lg">{t.fullName}</b>{t.age != null && <span className="text-neutral-500"> · {t.age} tuổi</span>}
+                  <b className="text-lg">{t.fullName}</b>{ageNow(t) != null && <span className="text-neutral-500"> · {ageNow(t)} tuổi</span>}
+                  {t.birthDate && <span className="text-sm text-neutral-500"> (sinh {t.birthDate.split('-').reverse().join('/')})</span>}
                   <p className="text-sm text-neutral-500">Gửi {fmtDate(t.createdAt)}</p>
                 </div>
                 <Badge tone={ST[t.status].tone}>{ST[t.status].label}</Badge>
               </div>
+              {/* Buổi học thử khách đã chọn trên web: nổi bật nhất để gọi xác nhận. */}
+              {t.classId && t.trialDate && (() => {
+                const k = lk?.classes.find((c) => c.id === t.classId);
+                const past = t.trialDate < todayVN();
+                return (
+                  <p className={`mt-3 flex flex-wrap items-center gap-x-2 border-l-4 px-3 py-2 ${past ? 'border-neutral-300 bg-neutral-50 text-neutral-500' : 'border-glory bg-red-50'}`}>
+                    <Icon name="calendar" className="size-4 shrink-0" />
+                    <b>Học thử {DAY[weekdayOf(t.trialDate)]} {t.trialDate.slice(8)}/{t.trialDate.slice(5, 7)}</b>
+                    {k && <span>· {k.startTime}–{k.endTime} · {k.name} · {name(lk?.locations, k.locationId)}</span>}
+                    {past && <span className="text-xs">(đã qua)</span>}
+                  </p>
+                );
+              })()}
               <dl className="mt-2 grid gap-x-4 gap-y-1 text-sm sm:grid-cols-2">
                 {t.disciplineId && <div><dt className="inline text-neutral-500">Môn: </dt><dd className="inline font-semibold">{name(lk?.disciplines, t.disciplineId)}</dd></div>}
                 {t.locationId && <div><dt className="inline text-neutral-500">Cơ sở: </dt><dd className="inline font-semibold">{name(lk?.locations, t.locationId)}</dd></div>}
@@ -56,7 +75,7 @@ export function Trials({ me }: { me: Me }) {
                     setBusy(t.id);
                     try {
                       const r = await api<{ studentId: number }>(`/admin/trials/${t.id}/convert`, { method: 'POST' });
-                      toast(t.feePlanId ? 'Đã tạo học viên (đã gán gói khách chọn) — bổ sung lớp đang học' : 'Đã tạo học viên — bổ sung lớp & gói học phí');
+                      toast(`Đã tạo học viên${t.feePlanId || t.classId ? ` (đã gán ${[t.feePlanId && 'gói', t.classId && 'lớp học thử'].filter(Boolean).join(' + ')} khách chọn)` : ''} — kiểm tra lại lớp & gói`);
                       navigate(`/admin/hoc-vien/${r.studentId}`);
                     } catch (e: any) { toast(e.message, 'err'); setBusy(null); }
                   }}>Chuyển thành học viên</Button>

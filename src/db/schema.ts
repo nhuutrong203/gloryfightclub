@@ -245,11 +245,15 @@ export const trialRegistrations = sqliteTable('trial_registrations', {
   id: id(),
   fullName: text('full_name').notNull(),
   phone: text('phone').notNull(),
-  age: integer('age'),
+  age: integer('age'), // tính từ birth_date lúc đăng ký (đăng ký cũ chỉ có tuổi)
+  birthDate: text('birth_date'), // 'YYYY-MM-DD'
   disciplineId: integer('discipline_id').references(() => disciplines.id, { onDelete: 'set null' }),
   locationId: integer('location_id').references(() => locations.id, { onDelete: 'set null' }),
   feePlanId: integer('fee_plan_id').references(() => feePlans.id, { onDelete: 'set null' }), // gói khách quan tâm → thành gói của học viên khi chuyển
   preferredTime: text('preferred_time'),
+  // Buổi học thử khách chọn trong danh sách gợi ý: lớp + ngày ('YYYY-MM-DD'). Chuyển thành học viên thì lớp này được gán luôn.
+  classId: integer('class_id').references(() => classes.id, { onDelete: 'set null' }),
+  trialDate: text('trial_date'),
   note: text('note'),
   status: text('status', { enum: ['new', 'contacted', 'enrolled', 'rejected'] }).notNull().default('new'),
   studentId: integer('student_id').references(() => students.id, { onDelete: 'set null' }),

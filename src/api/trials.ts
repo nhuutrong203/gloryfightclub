@@ -3,6 +3,7 @@ import { and, desc, eq, ne, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { db, schema } from '../db';
 import { vnNow } from '../lib/util';
+import { ageOn } from '../lib/schedule';
 import { body, idParam, need } from './guard';
 import { createStudent } from './students';
 import type { Env } from '.';
@@ -45,18 +46,20 @@ trialRoutes.post('/:id/convert', need('students.edit'), async (c) => {
   const claimed = await db.update(t).set({ status: 'enrolled' }).where(and(eq(t.id, id), ne(t.status, 'enrolled'))).returning({ id: t.id });
   if (!claimed.length) return c.json({ error: 'Đăng ký này đang được chuyển thành học viên, tải lại trang để xem' }, 409);
   const { date } = vnNow();
-  const kid = trial.age != null && trial.age < 16;
+  const age = trial.birthDate ? ageOn(trial.birthDate, date) : trial.age; // tuổi hôm nay (đăng ký cũ chỉ có tuổi lúc đăng ký)
+  const kid = age != null && age < 16;
   const student = await createStudent({
     fullName: trial.fullName,
     phone: kid ? null : trial.phone,
     parentPhone: kid ? trial.phone : null,
-    birthYear: trial.age != null ? Number(date.slice(0, 4)) - trial.age : null,
+    birthYear: trial.birthDate ? Number(trial.birthDate.slice(0, 4)) : trial.age != null ? Number(date.slice(0, 4)) - trial.age : null,
     locationId: trial.locationId,
     feePlanId: trial.feePlanId, // gói khách chọn ở form → gợi ý số tiền khi thu học phí
     joinedAt: date,
     status: 'active',
-    note: [trial.preferredTime && `Giờ mong muốn: ${trial.preferredTime}`, trial.note].filter(Boolean).join('\n') || null,
-  }).catch(async (e) => {
+    note: [trial.birthDate && `Ngày sinh: ${trial.birthDate.split('-').reverse().join('/')}`, trial.preferredTime && `Giờ mong muốn: ${trial.preferredTime}`, trial.note]
+      .filter(Boolean).join('\n') || null,
+  }, trial.classId ? [trial.classId] : []).catch(async (e) => { // buổi học thử đã chọn → gán luôn lớp đó
     await db.update(t).set({ status: trial.status }).where(eq(t.id, id)); // tạo lỗi → trả lại trạng thái cũ
     throw e;
   });

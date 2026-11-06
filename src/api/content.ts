@@ -153,7 +153,12 @@ contentRoutes.delete('/:res/:id', need('content'), need('delete'), async (c) => 
   }
   const old = await db.select().from(TABLES[key]).where(eq(TABLES[key].id, id)).get();
   try {
-    await db.delete(TABLES[key]).where(eq(TABLES[key].id, id));
+    // Migration 0002 thêm trial_registrations.fee_plan_id thiếu "ON DELETE SET NULL" (SQLite không sửa được khoá ngoại cũ
+    // nếu không dựng lại bảng) → tự bỏ gói khỏi các đăng ký học thử trong cùng transaction, kẻo không xoá được gói nào khách từng chọn.
+    const tr = schema.trialRegistrations;
+    const del = db.delete(TABLES[key]).where(eq(TABLES[key].id, id));
+    if (key === 'feePlans') await db.batch([db.update(tr).set({ feePlanId: null }).where(eq(tr.feePlanId, id)), del]);
+    else await del;
   } catch {
     return c.json({ error: 'Không xoá được vì mục này đang được dùng ở nơi khác (vd. cơ sở đang có lớp).' }, 409);
   }
