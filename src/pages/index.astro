@@ -30,6 +30,8 @@ const todayByLoc = locations
 const heroImage = mediaUrl(hero.image_key);
 const titleParts: string[] = (lang === 'en' ? hero.title_en : hero.title)?.split('–') ?? ['NO PAIN', 'NO GLORY'];
 const coachName = (id: number | null) => coaches.find((c) => c.id === id)?.fullName;
+// Ô "Nổi bật ở trang chủ" trong CMS → HLV quyết định ai hiện ở đây; chưa tích ai thì hiện tất cả (như trước).
+const homeCoaches = coaches.some((c) => c.isFeatured) ? coaches.filter((c) => c.isFeatured) : coaches;
 // Google: CLB võ (SportsClub) + từng cơ sở có địa chỉ → dễ hiện tên, số điện thoại, bản đồ trong kết quả tìm kiếm.
 const site = Astro.site!;
 const jsonLd = {
@@ -147,9 +149,12 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
     <div class="container-x relative">
       <p class="eyebrow !text-glory-dark">{t(lang, 'coaches_label')}</p>
       <h2 class="mt-2 text-6xl sm:text-8xl">{t(lang, 'coaches_title')}</h2>
-      <p class="mt-3 text-lg text-ink/75">{t(lang, 'coaches_sub')}</p>
-      <div class="mt-12 -mx-4 px-4 sm:mx-0 sm:px-0 flex gap-5 overflow-x-auto snap-x snap-mandatory pb-6 lg:grid lg:grid-cols-3 lg:overflow-visible">
-        {coaches.map((c, i) => <CoachCard coach={c} lang={lang} i={i} tone="light" class="snap-start shrink-0 w-[64%] sm:w-80 lg:w-auto" />)}
+      <div class="mt-3 flex flex-wrap items-end justify-between gap-4">
+        <p class="text-lg text-ink/75">{t(lang, 'coaches_sub')}</p>
+        {homeCoaches.length < coaches.length && <a href={href('/huan-luyen-vien', lang)} class="inline-flex min-h-11 items-center gap-2 font-display uppercase tracking-wider text-ink hover:text-glory-dark">{t(lang, 'cta_all')}<Icon name="arrow-right" /></a>}
+      </div>
+      <div class:list={['mt-12 -mx-4 px-4 sm:mx-0 sm:px-0 flex gap-5 overflow-x-auto snap-x snap-mandatory pb-6 lg:grid lg:overflow-visible', homeCoaches.length === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3']}>
+        {homeCoaches.map((c, i) => <CoachCard coach={c} lang={lang} i={i} tone="light" class="snap-start shrink-0 w-[64%] sm:w-80 lg:w-auto" />)}
       </div>
     </div>
   </section>

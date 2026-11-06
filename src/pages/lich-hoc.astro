@@ -6,7 +6,7 @@ import CtaBand from '../components/public/CtaBand.astro';
 import { mediaUrl, telHref } from '../lib/site';
 import { publicClasses, publicCoaches, publicDisciplines } from '../lib/public';
 import { vnNow } from '../lib/util';
-import { t, tr, href, DAYS, dayShort, dayLong, type Lang } from '../i18n';
+import { t, tr, href, DAYS, dayShort, dayLong, type Lang, type DictKey } from '../i18n';
 
 const lang: Lang = Astro.locals.lang;
 const [{ club, locations }, allClasses, disciplines, coaches] = await Promise.all([Astro.locals.site, publicClasses(), publicDisciplines(), publicCoaches(),
@@ -151,7 +151,9 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
                           <Tag href={disc ? href(`/mon-hoc/${disc.slug}`, lang) : undefined} data-class-time={d === today ? `${c.startTime}-${c.endTime}` : undefined}
                             class="group/c mb-1 block border-l-2 border-transparent bg-coal px-3 py-2 transition-colors duration-200 last:mb-0 hover:border-glory hover:bg-white/[0.08] data-[state=done]:opacity-50 data-[state=live]:border-glory data-[state=live]:bg-glory/20">
                             <p class="font-display uppercase leading-[1.12] tracking-wide">{tr(c, 'name', lang)}</p>
+                            {c.level !== 'all' && <p class="mt-1"><span class="bg-white px-1.5 py-0.5 font-display text-xs tracking-wider text-ink">{t(lang, `level_${c.level}` as DictKey)}</span></p>}
                             {coachName(c.coachId) && <p class="mt-0.5 text-xs leading-snug text-ash group-hover/c:text-white/80">{coachName(c.coachId)}</p>}
+                            {tr(c, 'note', lang) && <p class="mt-0.5 text-xs leading-snug text-white/70">{tr(c, 'note', lang)}</p>}
                             <p class="mt-1 hidden items-center gap-1.5 font-display text-xs uppercase tracking-widest text-white group-data-[state=live]/c:flex">
                               <span class="size-1.5 animate-pulse rounded-full bg-glory-bright motion-reduce:animate-none" aria-hidden="true"></span>{t(lang, 'today_live')}
                             </p>
@@ -200,7 +202,9 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
                                     <span class="size-2 animate-pulse rounded-full bg-white motion-reduce:animate-none" aria-hidden="true"></span>{t(lang, 'today_live')}
                                   </span>
                                 </span>
+                                {c.level !== 'all' && <span class="mt-1 self-start bg-white px-1.5 py-0.5 font-display text-xs tracking-wider text-ink">{t(lang, `level_${c.level}` as DictKey)}</span>}
                                 {coachName(c.coachId) && <span class="text-sm text-ash">{t(lang, 'coach')} {coachName(c.coachId)}</span>}
+                                {tr(c, 'note', lang) && <span class="text-sm text-white/70">{tr(c, 'note', lang)}</span>}
                               </span>
                               {disc && <Icon name="chevron-right" class="mr-3 size-5 shrink-0 self-center text-ash" />}
                             </Tag>
