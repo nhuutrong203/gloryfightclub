@@ -4,7 +4,9 @@ Read `CLAUDE.md` first: it holds every rule and convention. This file only says 
 
 ## 1. Deploy state
 
-Everything up to `f0efb1e` is pushed and live (deployed 2026-11-06, Worker version `12022669`). Checked on the live site: `/lich-hoc` legend reads "246 · 357 · 7·CN · CN"; Home shows the 4 featured coaches + "Xem tất cả". Nothing is waiting.
+Everything up to `78d8472` is pushed and live (deployed 2026-11-06, Worker version `3a5661e7`; cloud D1 migrated to `0005_last_saracen`). Checked on the live site: `/lich-hoc` legend reads "246 · 357 · 7·CN · CN"; Home shows the 4 featured coaches + "Xem tất cả"; plan cards show "Phù hợp với: …" and link to `/hoc-phi#goi-<id>`. Nothing is waiting.
+
+Other coding agents (Codex…) start from `AGENTS.md` at the repo root — a one-file briefing that points back here and to `CLAUDE.md`.
 
 CI (`.github/workflows/deploy.yml`) still fails at the first step on every push — expected (no `CLOUDFLARE_API_TOKEN` secret, on hold until the owner's domain).
 
