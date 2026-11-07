@@ -4,6 +4,8 @@ Read `CLAUDE.md` first: it holds every rule and convention. This file only says 
 
 ## 1. Deploy state
 
+The Home discipline cards were restyled on 2026-11-07 and checked at 375px and 1600px with no horizontal overflow. This source change is awaiting deployment.
+
 The UX/API pass and subsequent audit fixes were deployed to the two temporary domains. The current Worker version is `532a5218-d933-4dda-8434-7c0a9ece4d73`, deployed on 2026-11-07 from commit `e57297a`. Cloud D1 remains at migration `0005_last_saracen`; the audit fixes needed no migration. After deployment, the public home, English home, fees and CMS login returned HTTP 200.
 
 The audit fixes cover the collapsed mobile menu, thumbnail overwrite permission, trial class discipline/location validation, translated skip link, removal of unused animation code and dangerous remote-seed instructions. `npm run test:api` now covers key writes against a disposable D1 and runs in CI. Seven visible test testimonials/posts/FAQ rows in cloud D1 were replaced by clearly labeled example content at the owner's request; no student or fee rows were changed. English fields are empty and correctly fall back to Vietnamese examples.
