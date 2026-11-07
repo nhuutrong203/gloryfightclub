@@ -3,6 +3,27 @@
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const finePointer = matchMedia('(hover: hover) and (pointer: fine)').matches;
 
+// Giá giữ nguyên trong HTML để đọc được khi JS tắt; chỉ đếm khi thẻ vào khung nhìn.
+if (!reduced) {
+  const prices = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      prices.unobserve(entry.target);
+      const el = entry.target as HTMLElement;
+      const total = Number(el.dataset.countPrice);
+      if (!Number.isFinite(total) || total <= 0) continue;
+      const start = performance.now();
+      const tick = (now: number) => {
+        const progress = Math.min((now - start) / 900, 1);
+        el.textContent = Math.round(total * (1 - (1 - progress) ** 3)).toLocaleString('vi-VN');
+        if (progress < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }
+  }, { threshold: 0.25 });
+  document.querySelectorAll<HTMLElement>('[data-count-price]').forEach((el) => prices.observe(el));
+}
+
 // ── Hiện dần khi cuộn tới: .reveal (khối), .reveal-title (mọi h2 trong <main>) ──
 document.querySelectorAll<HTMLElement>('main h2').forEach((h) => {
   if (!h.closest('.reveal, dialog, [data-no-reveal]')) h.classList.add('reveal-title');

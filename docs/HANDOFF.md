@@ -4,6 +4,8 @@ Read `CLAUDE.md` first: it holds every rule and convention. This file only says 
 
 ## 1. Deploy state
 
+Fee plan prices count up when visible again. The four amounts were checked in a browser and settled at their original values. The HTML contains final prices for reduced-motion and no-JS visitors. Awaiting deployment.
+
 The owner asked for equal visual weight across the Home disciplines. All five cards now share size and styling; the oversized red MMA tile was removed. Checked locally at 375px and 1600px, then deployed as Worker `8866448b-f3c8-4049-b39f-f174abd524fe`. The public home returned HTTP 200 with equal card markup.
 
 The old Home discipline-card wipe effect was removed after it caused low-contrast headings on hover. Deployed as Worker `8c23323e-182e-432c-8613-e904cd24d4dc`; the public home returned HTTP 200 with the new markup and no old wipe class.
