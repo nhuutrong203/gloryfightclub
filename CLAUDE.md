@@ -19,6 +19,7 @@ Promotional website + student-management CMS for **GLORY FIGHT CLUB** (MMA, Kudo
 - Schema changes: create a migration with `npm run db:generate` and commit it — CI applies it to cloud D1 before deploying. Migrations must be backward compatible (add columns/tables only), because the old code keeps running while migrating.
 
 ## Status
+- [x] 2026-11-07 — Equalized all five Home discipline cards after owner feedback: removed the oversized red MMA feature tile and restored equal-sized dark cards with the same red accent; trial CTA remains separate. Checked at 375px and 1600px without horizontal overflow. Awaiting deployment.
 - [x] 2026-11-07 — Removed the obsolete red wipe hover layer from Home discipline cards; it obscured headings after the card redesign. The featured red card now keeps white text. Deployed as Worker `8c23323e-182e-432c-8613-e904cd24d4dc`.
 - [x] 2026-11-07 — Reworked Home discipline grid after owner feedback: featured red MMA card spans two columns on larger screens, other disciplines use separate dark tiles, trial CTA stays light. Checked at 375px and 1600px without horizontal overflow. Awaiting deployment.
 - [x] 2026-11-07 — Home discipline cards redesigned with a restrained circular motif, red accent rule, clearer hover/focus states and more balanced spacing; checked at 375px and 1600px without horizontal overflow. Deployed as Worker `dec89088-5be1-4558-a5c0-be5f2e964e25`.

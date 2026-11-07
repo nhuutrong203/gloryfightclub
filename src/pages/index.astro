@@ -133,11 +133,10 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
       </div>
       <div class="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {disciplines.map((d, i) => (
-          <a href={href(`/mon-hoc/${d.slug}`, lang)} class:list={['reveal group relative isolate overflow-hidden p-6 sm:p-9 min-h-56 sm:min-h-80 flex flex-col border border-white/15 focus-visible:outline-2 focus-visible:outline-glory transition-colors duration-300', i === 0 ? 'bg-glory text-white sm:col-span-2 lg:col-span-2 hover:bg-glory-dark' : 'bg-coal hover:bg-white/10']} style={`--i:${i}`}>
-            {i === 0 && <span class="pointer-events-none absolute -right-4 top-0 font-display text-[12rem] leading-none text-white/10 sm:text-[20rem]" aria-hidden="true">MMA</span>}
-            <span class:list={['h-1 w-12', i === 0 ? 'bg-white' : 'bg-glory']} aria-hidden="true"></span>
-            <h3 class:list={['relative mt-auto pt-8 text-3xl sm:text-5xl leading-[1.12]', i === 0 && 'sm:text-7xl']}>{tr(d, 'name', lang)}</h3>
-            <p class:list={['relative mt-3 hidden max-w-lg line-clamp-3 sm:block', i === 0 ? 'text-white/90' : 'text-white/75']}>{tr(d, 'summary', lang)}</p>
+          <a href={href(`/mon-hoc/${d.slug}`, lang)} class="reveal group relative overflow-hidden bg-coal p-6 sm:p-9 min-h-56 sm:min-h-80 flex flex-col border border-white/15 hover:border-glory hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-glory transition-colors duration-300" style={`--i:${i}`}>
+            <span class="h-1 w-12 bg-glory" aria-hidden="true"></span>
+            <h3 class="relative mt-auto pt-8 text-3xl sm:text-5xl leading-[1.12]">{tr(d, 'name', lang)}</h3>
+            <p class="relative mt-3 hidden max-w-lg line-clamp-3 text-white/75 sm:block">{tr(d, 'summary', lang)}</p>
             <Icon name="arrow-up-right" class="absolute right-5 top-5 size-7 text-white transition-transform duration-200 group-hover:translate-x-1 group-hover:-translate-y-1" />
           </a>
         ))}
