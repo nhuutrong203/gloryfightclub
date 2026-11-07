@@ -4,7 +4,7 @@ Read `CLAUDE.md` first: it holds every rule and convention. This file only says 
 
 ## 1. Deploy state
 
-The old Home discipline-card wipe effect was removed after it caused low-contrast headings on hover. Source fix awaits deployment.
+The old Home discipline-card wipe effect was removed after it caused low-contrast headings on hover. Deployed as Worker `8c23323e-182e-432c-8613-e904cd24d4dc`; the public home returned HTTP 200 with the new markup and no old wipe class.
 
 The owner requested stronger visual hierarchy for Home's discipline section. A featured red MMA tile and separated dark discipline cards are implemented, checked at 375px and 1600px, and await deployment.
 
