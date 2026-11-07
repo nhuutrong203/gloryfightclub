@@ -140,7 +140,7 @@ Astro 7 allows only **one dev server per project**. Stop it before another comma
 ## 8. Current state (2026-11-06)
 
 - **The UX/API review pass and audit fixes are deployed to the two temporary domains for owner review.**
-  - Live Worker version: `8866448b-f3c8-4049-b39f-f174abd524fe`, deployed from commit `067eb89`.
+  - Live Worker version: `0bd6a00a-8a59-4467-b26b-eee29a06fc3f`, deployed from commit `e29d72d`.
   - Cloud D1 has migrations up to `0005_last_saracen`.
 - The last shipped work:
   - plan cards show "Phù hợp với: …" (`fee_plans.audience`), with a "Xem chi tiết gói" link to `/hoc-phi#goi-<id>`;

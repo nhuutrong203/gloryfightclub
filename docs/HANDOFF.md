@@ -4,7 +4,7 @@ Read `CLAUDE.md` first: it holds every rule and convention. This file only says 
 
 ## 1. Deploy state
 
-Fee plan prices count up when visible again. The four amounts were checked in a browser and settled at their original values. The HTML contains final prices for reduced-motion and no-JS visitors. Awaiting deployment.
+Fee plan prices count up when visible again. The four amounts were checked locally and on the live Fees page and settled at their original values. The HTML contains final prices for reduced-motion and no-JS visitors. Deployed as Worker `0bd6a00a-8a59-4467-b26b-eee29a06fc3f`.
 
 The owner asked for equal visual weight across the Home disciplines. All five cards now share size and styling; the oversized red MMA tile was removed. Checked locally at 375px and 1600px, then deployed as Worker `8866448b-f3c8-4049-b39f-f174abd524fe`. The public home returned HTTP 200 with equal card markup.
 
