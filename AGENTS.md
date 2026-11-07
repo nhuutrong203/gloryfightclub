@@ -139,8 +139,8 @@ Astro 7 allows only **one dev server per project**. Stop it before another comma
 
 ## 8. Current state (2026-11-06)
 
-- **The UX/API review pass is deployed to the two temporary domains for owner review.**
-  - Live Worker version: `a050d9c5-e752-4e96-951d-2cfadd3657f4`, deployed from local uncommitted changes on top of `78d8472`.
+- **The UX/API review pass and audit fixes are deployed to the two temporary domains for owner review.**
+  - Live Worker version: `532a5218-d933-4dda-8434-7c0a9ece4d73`, deployed from commit `e57297a`.
   - Cloud D1 has migrations up to `0005_last_saracen`.
 - The last shipped work:
   - plan cards show "Phù hợp với: …" (`fee_plans.audience`), with a "Xem chi tiết gói" link to `/hoc-phi#goi-<id>`;
@@ -148,7 +148,7 @@ Astro 7 allows only **one dev server per project**. Stop it before another comma
   - Home shows only the coaches marked as featured;
   - class level badges and class notes appear on the schedule.
 - The full history is the **Status** list in `CLAUDE.md`.
-- The deployed review pass covers trial/API reliability, CMS trial pagination, mobile pricing/schedule/form UX, responsive images and removal of bare decorative number labels. Later audit fixes are awaiting deployment; seven visible test content rows in cloud D1 were replaced with labeled examples.
+- The deployed review pass covers trial/API reliability, CMS trial pagination, mobile pricing/schedule/form UX, responsive images, removal of bare decorative number labels and subsequent audit fixes. Seven visible test content rows in cloud D1 were replaced with labeled examples.
 
 **Waiting on the club owner** (content entered in the CMS, no code needed):
 - upload a real hero photo;

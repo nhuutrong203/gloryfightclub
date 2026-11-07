@@ -1,10 +1,10 @@
-# Handoff — where we left off (2026-11-06)
+# Handoff — where we left off (2026-11-07)
 
 Read `CLAUDE.md` first: it holds every rule and convention. This file only says what is **in flight** and what is **next**.
 
 ## 1. Deploy state
 
-The UX/API pass was deployed on 2026-11-06 to the two temporary domains as Worker version `a050d9c5-e752-4e96-951d-2cfadd3657f4`. Cloud D1 remains at migration `0005_last_saracen`; the subsequent audit fixes need no migration. The deployed pass changes trial slot validation, atomic conversion/diary creation, trial pagination, policy version timestamps, mobile schedule/pricing/form UX, responsive images and decorative number labels. Audit fixes in source are awaiting deployment.
+The UX/API pass and subsequent audit fixes were deployed to the two temporary domains. The current Worker version is `532a5218-d933-4dda-8434-7c0a9ece4d73`, deployed on 2026-11-07 from commit `e57297a`. Cloud D1 remains at migration `0005_last_saracen`; the audit fixes needed no migration. After deployment, the public home, English home, fees and CMS login returned HTTP 200.
 
 The audit fixes cover the collapsed mobile menu, thumbnail overwrite permission, trial class discipline/location validation, translated skip link, removal of unused animation code and dangerous remote-seed instructions. `npm run test:api` now covers key writes against a disposable D1 and runs in CI. Seven visible test testimonials/posts/FAQ rows in cloud D1 were replaced by clearly labeled example content at the owner's request; no student or fee rows were changed. English fields are empty and correctly fall back to Vietnamese examples.
 
