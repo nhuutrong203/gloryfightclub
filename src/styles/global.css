@@ -161,11 +161,6 @@
 .scroll-cue { animation: cue 1.8s cubic-bezier(.6,0,.4,1) infinite; }
 @keyframes cue { 0% { translate: 0 -6px; opacity: 0; } 40% { opacity: 1; } 100% { translate: 0 10px; opacity: 0; } }
 
-/* Thẻ môn học: nền đỏ quét từ dưới lên khi rê chuột / chạm, thay vì đổi màu tức thì. */
-.wipe { isolation: isolate; }
-.wipe::before { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--color-glory); scale: 1 0; transform-origin: bottom; transition: scale .45s cubic-bezier(.7,0,.2,1); }
-.wipe:hover::before, .wipe:focus-visible::before { scale: 1 1; }
-
 /* Nghiêng 3D + quầng sáng theo con trỏ ([data-tilt]; script đặt --rx --ry --mx --my, chỉ máy có chuột). */
 /* Liệt kê từng thuộc tính để giữ độ trễ lần lượt (--i) của .reveal cho translate/opacity. */
 [data-tilt] { transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
@@ -229,7 +224,6 @@ a:hover .roll::before, a:focus-visible .roll::before { translate: 0 0; }
   #site-header[data-hidden] { translate: none; }
   [data-tilt], [data-magnetic] { transform: none; translate: none; }
   [data-tilt]::after, .btn-red::after { display: none; }
-  .wipe::before { transition: none; }
   .block-reveal, .block-reveal::after, .grain::after, .drift-x, .premium-glow { animation: none; }
   .block-reveal::after { display: none; }
   .roll > span, .roll::before { transition: none; }
