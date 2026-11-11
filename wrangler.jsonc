@@ -2,19 +2,19 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "gloryfightclub",
   // ID tài khoản Cloudflare — không bí mật; cần cho deploy tự động từ GitHub.
-  "account_id": "f98648b45817ea1db6836671f8bd969a",
+  "account_id": "a0f441c17cd276cee70894a4abcde80d",
   "main": "@astrojs/cloudflare/entrypoints/server",
   "compatibility_date": "2026-10-01",
   "observability": { "enabled": true },
   "vars": {
-    "PUBLIC_HOST": "gloryfightclub.huutrong203.id.vn",
-    "CMS_HOST": "cms-gloryfightclub.huutrong203.id.vn"
+    "PUBLIC_HOST": "gloryfightclub.vn",
+    "CMS_HOST": "cms.gloryfightclub.vn"
   },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "glory-db",
-      "database_id": "abdfce93-2cee-4e7a-8388-ee3850d794bc",
+      "database_id": "28f0d090-4285-4b66-a125-5bc0cb6f4c46",
       "migrations_dir": "migrations"
     }
   ],
@@ -26,8 +26,8 @@
   ],
   // Hai tên miền con trỏ vào cùng Worker; middleware phân luồng public / CMS.
   "routes": [
-    { "pattern": "gloryfightclub.huutrong203.id.vn", "custom_domain": true },
-    { "pattern": "cms-gloryfightclub.huutrong203.id.vn", "custom_domain": true }
+    { "pattern": "gloryfightclub.vn", "custom_domain": true },
+    { "pattern": "cms.gloryfightclub.vn", "custom_domain": true }
   ],
 
   // `npm run dev:remote` (CLOUDFLARE_ENV=remote): chạy local nhưng đọc/ghi D1 + R2 THẬT trên cloud.
@@ -35,14 +35,14 @@
   "env": {
     "remote": {
       "vars": {
-        "PUBLIC_HOST": "gloryfightclub.huutrong203.id.vn",
-        "CMS_HOST": "cms-gloryfightclub.huutrong203.id.vn"
+        "PUBLIC_HOST": "gloryfightclub.vn",
+        "CMS_HOST": "cms.gloryfightclub.vn"
       },
       "d1_databases": [
         {
           "binding": "DB",
           "database_name": "glory-db",
-          "database_id": "abdfce93-2cee-4e7a-8388-ee3850d794bc",
+          "database_id": "28f0d090-4285-4b66-a125-5bc0cb6f4c46",
           "migrations_dir": "migrations",
           "remote": true
         }

@@ -28,7 +28,7 @@ export const studentSchema = z.object({
   parentPhone: phone,
   locationId: z.number().int().positive().nullish().transform((v) => v ?? null),
   feePlanId: z.number().int().positive().nullish().transform((v) => v ?? null),
-  joinedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  joinedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((v) => parseDate(v) === v, 'Ngày không tồn tại'),
   status: z.enum(['active', 'paused', 'quit']),
   note: z.string().trim().max(2000).nullish().transform((v) => v || null),
   classIds: z.array(z.number().int().positive()).max(20).default([]),
@@ -134,7 +134,7 @@ studentRoutes.post('/import', need('students.edit'), async (c) => {
   if (err) return err;
   const [locations, plans, classes, existing] = await Promise.all([
     db.select().from(schema.locations), db.select().from(schema.feePlans), db.select().from(schema.classes),
-    db.select({ id: s.id, code: s.code }).from(s),
+    db.select({ id: s.id, code: s.code, fullName: s.fullName }).from(s),
   ]);
   // Lớp ghi giống file xuất: "MMA 246 18:30; Kudo 357 20:00"
   const classOf = (x: string) => classes.find((k) => fold(`${k.name} ${k.days} ${k.startTime}`) === fold(x))?.id;
@@ -159,7 +159,7 @@ studentRoutes.post('/import', need('students.edit'), async (c) => {
       : badClass ? `không thấy lớp "${badClass}" (ghi đúng dạng: Tên lớp + thứ + giờ, vd. "MMA 246 18:30")` : null;
     if (miss) { errors.push({ row: rowNo, error: miss }); continue; }
     const parsed = studentSchema.safeParse({
-      fullName: r.fullName ?? '',
+      fullName: r.fullName ?? (existing.find((e) => e.code.toUpperCase() === r.code?.toUpperCase())?.fullName ?? ''),
       phone: fixPhone(r.phone),
       birthYear: r.birthYear ? Number(r.birthYear) : null,
       parentName: r.parentName || null,

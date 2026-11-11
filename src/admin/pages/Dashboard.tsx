@@ -40,9 +40,9 @@ export function Dashboard({ me }: { me: Me }) {
 
           {/* Số liệu */}
           <div className="grid grid-cols-2 gap-px border border-neutral-200 bg-neutral-200 sm:grid-cols-4">
-            <Stat label="Đang học" value={data.activeTotal} />
-            <Stat label={`Mới ${monthLabel(data.month).toLowerCase()}`} value={data.newThisMonth} />
-            <Stat label="Học thử chờ gọi" value={data.trialsNew} />
+            {can(me, 'students.view') && <Stat label="Đang học" value={data.activeTotal} />}
+            {can(me, 'students.view') && <Stat label={`Mới ${monthLabel(data.month).toLowerCase()}`} value={data.newThisMonth} />}
+            {can(me, 'students.view') && <Stat label="Học thử chờ gọi" value={data.trialsNew} />}
             {data.revenue ? <Stat label={`Đã thu ${monthLabel(data.month).toLowerCase()}`} value={vnd(data.revenue.sum)} small /> : <Stat label="Ca tập hôm nay" value={data.todayClasses.length} />}
           </div>
 

@@ -1,8 +1,14 @@
 # Handoff — where we left off (2026-11-07)
 
+2026-11-11: Deployed Worker version `e8a70b00-a9a2-429e-8c1a-081b65675b43` to the owner's account with Custom Domains `gloryfightclub.vn` and `cms.gloryfightclub.vn`. The public home and CMS login both returned HTTP 200 over HTTPS after certificate activation. Cloudflare denied DNS and redirect rules access to the Wrangler credential. The `www` redirect and GitHub Actions setup remain pending. The destination holds the source D1 snapshot and 53 verified R2 objects. Changes made on the source after the snapshot have not been checked.
+
 Read `CLAUDE.md` first: it holds every rule and convention. This file only says what is **in flight** and what is **next**.
 
+The owner replaced the Google Sites CNAME with a proxied DNS record for `www`. Verified HTTP and HTTPS requests to `www` redirect with status 301 to the apex over HTTPS, preserving paths and query strings. GitHub Actions setup remains pending.
+
 ## 1. Deploy state
+
+2026-11-07: Audit fixes are local and await deployment: real date validation, partial student imports by code, dashboard permission checks, removal of the misleading Open mat callout and Vietnam date rollover refresh. Location 2 keeps its existing schedule-updating placeholder; no classes were invented. AI chatbot work is deferred until these fixes are complete.
 
 Fee plan prices count up when visible again. The four amounts were checked locally and on the live Fees page and settled at their original values. The HTML contains final prices for reduced-motion and no-JS visitors. Deployed as Worker `0bd6a00a-8a59-4467-b26b-eee29a06fc3f`.
 

@@ -49,7 +49,7 @@ async function readRows(file: File): Promise<Record<string, string>[]> {
   const [header, ...body] = grid;
   if (!header) throw new Error('File trống');
   const index = COLUMNS.map(([key, h, aliases]) => [key, header.findIndex((c) => [fold(h), ...aliases].includes(fold(cellText(c))))] as const);
-  if (!index.some(([k, i]) => k === 'fullName' && i >= 0)) throw new Error('Không thấy cột "Họ tên" ở dòng đầu tiên. Dùng file mẫu cho đúng cột.');
+  if (!index.some(([k, i]) => (k === 'fullName' || k === 'code') && i >= 0)) throw new Error('Cần cột "Họ tên" hoặc "Mã" ở dòng đầu tiên. Dùng file mẫu cho đúng cột.');
   return body.map((r) => Object.fromEntries(index.filter(([, i]) => i >= 0).map(([k, i]) => [k, cellText(r[i])])));
 }
 

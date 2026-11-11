@@ -40,6 +40,27 @@ try {
   assert.ok(cookie, 'session cookie');
   const api = (path, body) => fetch(`${base}/api/admin/${path}`, { method: 'POST', headers: { cookie, 'content-type': 'application/json' }, body: JSON.stringify(body) });
 
+  const imported = await api('students/import', { rows: [{ fullName: 'Import fixture', phone: '0900000077' }] });
+  assert.equal(imported.status, 200);
+  assert.equal((await imported.json()).created, 1);
+  const list = await fetch(`${base}/api/admin/students?q=Import%20fixture`, { headers: { cookie } });
+  const student = (await list.json()).rows[0];
+  const updated = await api('students/import', { rows: [{ code: student.code, status: 'paused' }] });
+  assert.equal((await updated.json()).updated, 1, 'import can update status without a name column');
+  const invalidFee = await api('fees', { studentId: student.id, month: '2026-02', amount: 1000000, paidAt: '2026-02-31', method: 'cash' });
+  assert.equal(invalidFee.status, 400, 'impossible payment date rejected');
+  const paid = await api('fees', { studentId: student.id, month: '2026-02', amount: 1000000, paidAt: '2026-02-28', method: 'cash' });
+  assert.equal(paid.status, 201);
+  const privateUser = await api('users', { username: 'audit-posts', fullName: 'Posts only', password: 'local-test-password', role: 'coach', permissions: ['posts'] });
+  assert.equal(privateUser.status, 201);
+  const coachLogin = await fetch(`${base}/api/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username: 'audit-posts', password: 'local-test-password' }) });
+  const coachCookie = coachLogin.headers.get('set-cookie')?.split(';')[0];
+  const dashboard = await fetch(`${base}/api/admin/dashboard`, { headers: { cookie: coachCookie } });
+  const stats = await dashboard.json();
+  assert.equal(stats.activeTotal, 0);
+  assert.equal(stats.trialsNew, 0);
+  assert.deepEqual(stats.byLocation, []);
+
   const converted = await api('trials/999999/convert', {});
   assert.equal(converted.status, 201, 'trial conversion');
   assert.ok((await converted.json()).studentId);

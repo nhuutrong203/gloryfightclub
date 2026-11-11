@@ -12,6 +12,9 @@ concurrency:
   group: deploy-production
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -34,6 +37,13 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      - name: Check destination database is configured
+        run: |
+          if grep -q 'abdfce93-2cee-4e7a-8388-ee3850d794bc' wrangler.jsonc; then
+            echo "::error::Destination D1 database ID is missing. Create and migrate glory-db in the club account before deploying."
+            exit 1
+          fi
 
       - name: Kiểm tra TypeScript
         run: |

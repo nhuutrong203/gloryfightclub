@@ -16,8 +16,8 @@ This repo has two parts, and both run as one Cloudflare Worker:
 
 | Part | URL | Who uses it |
 |---|---|---|
-| Public site (bilingual VI at `/`, EN at `/en/...`) | https://gloryfightclub.huutrong203.id.vn | Visitors. Promotion and trial-class sign-up only. No visitor accounts, likes or comments. |
-| CMS (Vietnamese only, built for phones) | https://cms-gloryfightclub.huutrong203.id.vn | Club owner (`owner`) and coaches (`coach`, with permissions the owner ticks) |
+| Public site (bilingual VI at `/`, EN at `/en/...`) | https://gloryfightclub.vn (target) | Visitors. Promotion and trial-class sign-up only. No visitor accounts, likes or comments. |
+| CMS (Vietnamese only, built for phones) | https://cms.gloryfightclub.vn (target) | Club owner (`owner`) and coaches (`coach`, with permissions the owner ticks) |
 
 The CMS manages students, monthly fees and **all** public content.
 
@@ -73,7 +73,7 @@ Astro 7 allows only **one dev server per project**. Stop it before another comma
 
 1. **Never deploy without the owner's explicit "deploy" in chat.**
    - Deploys are manual: `npm run deploy` (it builds, then runs `wrangler deploy`).
-   - The GitHub Actions deploy fails on purpose: there is no `CLOUDFLARE_API_TOKEN` secret, by decision. Ignore that red CI.
+   - The GitHub Actions workflow already deploys pushes to `main`, but cannot run until the `CLOUDFLARE_API_TOKEN` repository secret is configured. The club domain move is prepared locally, not deployed yet.
 2. **Schema change**, in this order:
    - edit `src/db/schema.ts`;
    - `npm run db:generate`, and commit the migration;

@@ -50,10 +50,11 @@ adminRoutes.get('/dashboard', async (c) => {
   const { date, month, weekday } = vnNow();
   const st = schema.students;
   const fees = can(u, 'fees.view');
+  const students = can(u, 'students.view');
   const [byLocation, newThisMonth, trialsNew, todayClasses, unpaid, revenue] = await Promise.all([
-    db.select({ locationId: st.locationId, n: sql<number>`count(*)` }).from(st).where(eq(st.status, 'active')).groupBy(st.locationId),
-    db.select({ n: sql<number>`count(*)` }).from(st).where(and(gte(st.joinedAt, `${month}-01`), lte(st.joinedAt, `${month}-31`))).get(),
-    db.select({ n: sql<number>`count(*)` }).from(schema.trialRegistrations).where(eq(schema.trialRegistrations.status, 'new')).get(),
+    students ? db.select({ locationId: st.locationId, n: sql<number>`count(*)` }).from(st).where(eq(st.status, 'active')).groupBy(st.locationId) : [],
+    students ? db.select({ n: sql<number>`count(*)` }).from(st).where(and(gte(st.joinedAt, `${month}-01`), lte(st.joinedAt, `${month}-31`))).get() : null,
+    students ? db.select({ n: sql<number>`count(*)` }).from(schema.trialRegistrations).where(eq(schema.trialRegistrations.status, 'new')).get() : null,
     db.select().from(schema.classes).where(and(eq(schema.classes.isActive, true), sql`instr(${schema.classes.days}, ${weekday}) > 0`)).orderBy(asc(schema.classes.startTime)),
     // Cùng quy tắc với trang Học phí (owesIn).
     fees

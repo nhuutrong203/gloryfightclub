@@ -220,10 +220,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
       </>
     )}
 
-    <div class="mt-10 flex flex-col gap-4 border-l-4 border-glory bg-coal p-6 sm:flex-row sm:items-center sm:justify-between">
-      <p class="font-display text-2xl uppercase">{t(lang, 'open_mat_name')} <span class="text-glory">{t(lang, 'free')}</span> · {t(lang, 'open_mat_time')}</p>
-      <a href={href('/hoc-phi', lang)} class="inline-flex min-h-11 items-center gap-2 font-display uppercase tracking-wider hover:text-glory">{t(lang, 'nav_fees')}<Icon name="arrow-right" /></a>
-    </div>
+
   </section>
   <CtaBand lang={lang} />
 </PublicLayout>

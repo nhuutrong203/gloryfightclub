@@ -4,6 +4,7 @@ import Logo from '../components/Logo.astro';
 import Icon from '../components/public/Icon.astro';
 import { sql } from 'drizzle-orm';
 import { db } from '../db';
+import { vnNow } from '../lib/util';
 import { telHref } from '../lib/site';
 import { t, href, type Lang, type DictKey } from '../i18n';
 
@@ -85,7 +86,7 @@ const onTrialPage = path === '/dang-ky-hoc-thu';
     {/* "<" thoát thành <: chữ sửa trong CMS không đóng được thẻ <script>. */}
     {jsonLd && <script type="application/ld+json" set:html={JSON.stringify({ '@context': 'https://schema.org', ...jsonLd }).replace(/</g, '\\u003c')} />}
   </head>
-  <body class="min-h-dvh flex flex-col overflow-x-clip pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
+  <body data-rendered-date={vnNow().date} class="min-h-dvh flex flex-col overflow-x-clip pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
     <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] btn-red">{t(lang, 'skip_to_content')}</a>
     <header id="site-header" class="sticky top-0 z-40 border-b border-white/10 bg-ink/95 data-[scrolled]:shadow-[0_8px_30px_rgb(0_0_0/0.5)]">
       <span class="scroll-progress" aria-hidden="true"></span>
@@ -249,7 +250,15 @@ const onTrialPage = path === '/dang-ky-hoc-thu';
 
       // Ca đang tập (trang chủ): so giờ Việt Nam ngay trên máy khách vì trang được cache.
       const hhmm = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: false });
+      const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit' });
+      const loadedDay = document.body.dataset.renderedDate;
       const markLive = () => {
+        if (day.format(new Date()) !== loadedDay) {
+          const url = new URL(location.href);
+          url.searchParams.set('ngay', day.format(new Date()));
+          location.replace(url);
+          return;
+        }
         const now = hhmm.format(new Date());
         document.querySelectorAll<HTMLElement>('[data-class-time]').forEach((el) => {
           const [start, end] = el.dataset.classTime!.split('-');

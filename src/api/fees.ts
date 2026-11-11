@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { and, asc, eq, inArray, lte, or } from 'drizzle-orm';
 import { z } from 'zod';
 import { db, schema } from '../db';
+import { parseDate } from '../lib/import';
 import { vnNow } from '../lib/util';
 import { body, csv, idParam, need } from './guard';
 import type { Env } from '.';
@@ -33,7 +34,7 @@ const paySchema = z.object({
   month,
   amount: z.number().int().min(0).max(100_000_000),
   feePlanId: z.number().int().positive().nullish().transform((v) => v ?? null),
-  paidAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  paidAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((v) => parseDate(v) === v, 'Ngày không tồn tại'),
   method: z.enum(['cash', 'transfer']),
   note: z.string().trim().max(500).nullish().transform((v) => v || null),
 });

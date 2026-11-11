@@ -1,6 +1,6 @@
 # GLORY FIGHT CLUB — Website + CMS
 
-**Live:** website https://gloryfightclub.huutrong203.id.vn · CMS https://cms-gloryfightclub.huutrong203.id.vn
+**Live domains:** website https://gloryfightclub.vn · CMS https://cms.gloryfightclub.vn
 
 A bilingual (Vietnamese–English) promotional website and a student-management system for Glory Fight Club.
 Runs on **Cloudflare Workers** · **D1** (database) · **R2** (images). Framework: Astro 7 + React + Tailwind v4 + Drizzle.
@@ -20,7 +20,7 @@ npm run dev          # open http://localhost:4321  (EN version: http://localhost
 ```
 
 **CMS:** http://localhost:4321/admin — demo accounts (local only): `admin` / `glory2026` (owner), `hlv` / `glory2026` (coach, limited permissions).
-On the real domain the CMS runs at `cms-gloryfightclub.huutrong203.id.vn`.
+On the club domain the CMS runs at `cms.gloryfightclub.vn`.
 
 > Astro 7 allows only **one** `npm run dev` per project. If you see "Another astro dev server is already running", run `npx astro dev stop`.
 
@@ -40,7 +40,11 @@ Seed data:
 - `seed/seed.sql` — initial club data for the **local** database. It deletes existing rows; never run it against the cloud after the CMS has been used.
 - `seed/sample.sql` — **demo data** (news, testimonials, FAQ, students…, marked "mẫu"). **Local only.**
 
-## 2. First deploy to Cloudflare (DONE on 2026-11-02, kept for reference)
+## 2. Cloudflare resources
+
+The old Worker, D1 database and R2 bucket are in a different Cloudflare account. Before deploying to the club account, create a new `glory-db` D1 database and `glory-media` R2 bucket there, replace **both** `database_id` values in `wrangler.jsonc`, and migrate the current cloud D1 data and R2 objects. Do not run `seed/seed.sql` or `seed/sample.sql` against the destination. Verify student, fee, content, user and media records before enabling the GitHub deployment secret. The old account remains the source until the transfer is checked.
+
+Initial resource setup commands (run while authenticated to the **club account**):
 
 ```bash
 npx wrangler login                       # log in to the Cloudflare account (opens a browser)
@@ -49,11 +53,11 @@ npx wrangler r2 bucket create glory-media
 ```
 
 1. Copy the printed `database_id` into **both places** in `wrangler.jsonc` (top level and `env.remote`).
-2. Create the tables in the cloud. Enter club content through the CMS; use targeted SQL only when a specific existing row needs a correction:
+2. Create the tables in the destination cloud database before importing the source data:
    ```bash
    npm run db:migrate:remote
    ```
-3. Create the **real** owner account in the cloud (never use the demo accounts):
+3. If starting with an empty database, create the **real** owner account in the cloud (never use the demo accounts). For this move, transfer the existing owner account instead:
    ```bash
    node scripts/create-user.mjs <username> "<StrongPassword>" "<Full name>" owner --remote
    ```
@@ -67,14 +71,13 @@ npx wrangler r2 bucket create glory-media
 
 ## 3. Attach the domains
 
-`huutrong203.id.vn` already uses Cloudflare nameservers, so:
+For `gloryfightclub.vn`, confirm that iNET delegates the domain to the nameservers shown in the club's Cloudflare zone. Preserve any existing mail and verification records when changing nameservers. Then deploy the Worker custom domains:
 
 Cloudflare Dashboard → **Workers & Pages** → `gloryfightclub` → **Settings → Domains & Routes → Add → Custom domain**, and add:
-- `gloryfightclub.huutrong203.id.vn` (website)
-- `cms-gloryfightclub.huutrong203.id.vn` (CMS)
+- `gloryfightclub.vn` (website)
+- `cms.gloryfightclub.vn` (CMS)
 
-Cloudflare creates the DNS records + HTTPS certificates for exactly these 2 subdomains; other records on the domain are not affected.
-To move to another domain (e.g. `gloryfightclub.vn`): add the new Custom domain, change `PUBLIC_HOST` / `CMS_HOST` in `wrangler.jsonc`, and deploy again.
+The custom domains are declared in `wrangler.jsonc`; Wrangler attaches them during deployment. Cloudflare provisions their DNS records and HTTPS certificates. Check that neither hostname already has a conflicting DNS record before deploying.
 
 Worth enabling later (Cloudflare Dashboard, free):
 - **Turnstile** on the trial form (anti-spam) — currently protected by a hidden honeypot field only.
@@ -87,11 +90,11 @@ Every **push to `main`** runs `.github/workflows/deploy.yml`:
 TypeScript check → unit and API smoke tests → apply new D1 migrations (if any) → build + deploy to Cloudflare. Follow progress in the repo's **Actions** tab.
 If the TypeScript check or a test fails, it stops and does **not** deploy — the running site is unaffected.
 
-> **Not active yet:** the `CLOUDFLARE_API_TOKEN` secret has not been added, so runs fail at the first step. Until then, deploy manually with `npm run deploy`.
+> **Not active yet:** add `CLOUDFLARE_API_TOKEN` only after the destination D1/R2 transfer and domain checks. Until then, runs fail at the first step and cannot deploy an incomplete site.
 
 **One-time setup:**
 1. Cloudflare Dashboard → top-right profile icon → **My Profile → API Tokens → Create Token**.
-2. Pick the **"Edit Cloudflare Workers"** template → **Add more** permission: `Account` · `D1` · `Edit` → Account Resources: the club's Cloudflare account; Zone Resources: `huutrong203.id.vn` → **Create Token** → copy the token (shown only once).
+2. Pick the **"Edit Cloudflare Workers"** template → **Add more** permission: `Account` · `D1` · `Edit` → Account Resources: the club's Cloudflare account; Zone Resources: `gloryfightclub.vn` → **Create Token** → copy the token (shown only once). Ensure the token can deploy Workers, manage Worker routes/custom domains and access the new D1/R2 bindings.
 3. GitHub repo → **Settings → Secrets and variables → Actions → New repository secret** → Name: `CLOUDFLARE_API_TOKEN`, Secret: paste the token → **Add secret**.
 4. Open the **Actions** tab → workflow **Deploy** → **Run workflow** to test it (or push any commit).
 
