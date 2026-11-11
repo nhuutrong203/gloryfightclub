@@ -4,7 +4,9 @@
 
 Read `CLAUDE.md` first: it holds every rule and convention. This file only says what is **in flight** and what is **next**.
 
-The owner replaced the Google Sites CNAME with a proxied DNS record for `www`. Verified HTTP and HTTPS requests to `www` redirect with status 301 to the apex over HTTPS, preserving paths and query strings. GitHub Actions setup remains pending.
+The owner replaced the Google Sites CNAME with a proxied DNS record for `www`. Verified HTTP and HTTPS requests to `www` redirect with status 301 to the apex over HTTPS, preserving paths and query strings.
+
+GitHub Actions deployed commit `b91bd2c` to the club account as Worker version `9470b69c-0280-4740-940c-938f0b6ed82e`. Run `42981827818` passed on attempt 2 after a transient npm connection reset. The API smoke test passed, D1 had no pending migrations, and the public home and CMS login both returned 200 over HTTPS.
 
 ## 1. Deploy state
 

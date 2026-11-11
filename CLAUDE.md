@@ -19,6 +19,7 @@ Promotional website + student-management CMS for **GLORY FIGHT CLUB** (MMA, Kudo
 - Schema changes: create a migration with `npm run db:generate` and commit it — CI applies it to cloud D1 before deploying. Migrations must be backward compatible (add columns/tables only), because the old code keeps running while migrating.
 
 ## Status
+- [x] 2026-11-11 — Made the existing club favicon square at 96 × 96 with a stable URL for Google Search.
 - [ ] 2026-11-11 — Deployed Worker version `e8a70b00-a9a2-429e-8c1a-081b65675b43` to both club domains using the imported D1 snapshot and 53 verified R2 objects. The public home and CMS login returned HTTP 200 over HTTPS. The `www` redirect and GitHub Actions setup remain pending.
 - [x] 2026-11-07 — Audit fixes: validate real student/payment dates; allow code-only partial student imports; restrict dashboard student counts to students.view; remove the unconditional Open mat schedule callout; refresh public pages on Vietnam date rollover. Added API regression checks for payments, imports and restricted coaches. Local checks, 19 unit tests and disposable-D1 API tests passed. Not deployed.
 - [x] 2026-11-07 — Restored animated fee plan prices on Home and Fees. Prices count once when visible, with final values already present in HTML and no animation under reduced motion. Verified the four amounts locally and on the live Fees page. Deployed as Worker `0bd6a00a-8a59-4467-b26b-eee29a06fc3f`.
