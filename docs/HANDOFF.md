@@ -1,5 +1,23 @@
 # Handoff — where we left off (2026-11-07)
 
+2026-11-12: The Partners & Sponsors interaction refresh is local. Home and About use the shared image viewer and retain equal square artwork frames. Website links remain separate from the image action. No schema change. Not deployed.
+
+2026-11-12: Deployed the reviewed local build as Worker `4fdc98d6-bb87-4107-8a9f-b7eabd8c07f4`. Cloud D1 is at migration `0006_polite_lord_tyger`. Both partner entries and R2 images are live on VI/EN Home and About. The CMS route returned 200 and the public admin API returned 404. The entries use the neutral supporter type pending confirmation of their roles.
+
+2026-11-12: The Partners & Sponsors section is wired to CMS content management. It appears on Home and About when at least one entry is public. Migration `0006_polite_lord_tyger` is applied locally. Soi BJJ Tattoo and Team Vô Tri are present in local D1/R2 with the neutral supporter type until their roles are confirmed. Production will need migration `0006` before deployment and the real entries entered through CMS. Not deployed.
+
+2026-11-12: Six audit fixes are local. Student codes are reserved through a persistent counter in the existing settings table, CSV imports check column counts, assigned classes cannot change locations, fee actions wait for the selected month's data, API pagination handles invalid numbers, and the smoke test preserves the request hostname. All 22 unit tests, Astro check, the production build, and the complete disposable D1 smoke suite passed, including the public host cases. Chrome verified that fee actions stay unavailable during a delayed month change and that the fee screen has no horizontal overflow at 375px and 1600px. No migration. Not deployed.
+
+2026-11-12: Five follow-up audit fixes are local. Retry CSVs preserve the source columns, invalid files cannot leave the previous preview active, trial consent checks the displayed policy version, conversion skips classes that moved to another location, and Hero/About settings validate their field types. The CMS has separate About and Contact shortcuts. Public lists use their content resources or Class Diary, and Home and About reuse those records. Hero, About, contact details, club rules, and website text use settings forms. No schema change. Not deployed.
+
+2026-11-12: Three audit fixes are local: reject repeated student codes in imports, cap student birth years at the current Vietnam year, and reject incomplete or invalid content reorder requests. No schema change. Not deployed.
+
+2026-11-11: Latest local fixes cover the `/en/api` public-host guard, partial Excel location changes with existing classes, age-based trial slot checks across public classes, and formula-safe retry CSV. `npm test` passed 21/21, `npm run check` reported 0 errors, and build passed. The new API smoke assertions could not run because Wrangler failed to initialize disposable local D1 after a network fetch failure. Not deployed.
+2026-11-11: Four further website audit fixes are local and not deployed: no trial-form GET fallback with personal data, hidden-discipline classes removed from public queries, Excel class matching scoped to location, and hidden discipline/plan IDs rejected by trial API. API smoke assertions were added; verify them on a disposable local D1 when Wrangler is available.
+2026-11-11: Public-site audit fixes are local: trial birth date fields now match the server requirement and show an error when blank, birth years follow Vietnam time, and missing English Home hero text falls back to Vietnamese. No schema change; deployment still requires the owner's explicit request.
+
+2026-11-11: Four repo-audit fixes are local and await deployment: partial student imports can export only unsaved rows for correction, student classes are checked against the selected location, trial requests require age or birth date, and public text overrides are request-local. No schema change.
+
 2026-11-11: Deployed Worker version `e8a70b00-a9a2-429e-8c1a-081b65675b43` to the owner's account with Custom Domains `gloryfightclub.vn` and `cms.gloryfightclub.vn`. The public home and CMS login both returned HTTP 200 over HTTPS after certificate activation. Cloudflare denied DNS and redirect rules access to the Wrangler credential. The `www` redirect and GitHub Actions setup remain pending. The destination holds the source D1 snapshot and 53 verified R2 objects. Changes made on the source after the snapshot have not been checked.
 
 Read `CLAUDE.md` first: it holds every rule and convention. This file only says what is **in flight** and what is **next**.

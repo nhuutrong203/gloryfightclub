@@ -8,11 +8,14 @@ type Student = { id: number; code: string; fullName: string; phone: string | nul
 type Payment = { id: number; studentId: number; month: string; amount: number; paidAt: string; method: 'cash' | 'transfer'; feePlanId: number | null; note: string | null };
 
 export function Fees({ me }: { me: Me }) {
-  const [month, setMonth] = useState(new URLSearchParams(location.search).get('month') ?? todayVN().slice(0, 7));
+  const [month, setMonth] = useState(() => {
+    const value = new URLSearchParams(location.search).get('month') ?? '';
+    return /^\d{4}-(0[1-9]|1[0-2])$/.test(value) ? value : todayVN().slice(0, 7);
+  });
   const [show, setShow] = useState<'unpaid' | 'paid' | 'all'>('unpaid');
   const [loc, setLoc] = useState('');
   const [q, setQ] = useState('');
-  const [paying, setPaying] = useState<Student | null>(null);
+  const [paying, setPaying] = useState<{ student: Student; month: string } | null>(null);
   const { data, error, loading, reload } = useApi<{ month: string; students: Student[]; payments: Payment[] }>(`/admin/fees?month=${month}`);
   const lk = useApi<Lookups>('/admin/lookups').data;
 
@@ -42,7 +45,7 @@ export function Fees({ me }: { me: Me }) {
         <Button variant="ghost" aria-label="Tháng sau" onClick={() => setMonth(shiftMonth(month, 1))}><Icon name="chevron" /></Button>
       </div>
 
-      {error ? <ErrorBox message={error} retry={reload} /> : !data ? <Loading /> : (
+      {error ? <ErrorBox message={error} retry={reload} /> : data?.month !== month ? <Loading /> : (
         <>
           <div className="mb-4 grid grid-cols-3 gap-px border border-neutral-200 bg-neutral-200">
             <div className="bg-white p-3"><p className="font-display text-3xl leading-none text-red-700">{unpaidCount}</p><p className="text-sm text-neutral-500">Chưa đóng</p></div>
@@ -83,7 +86,7 @@ export function Fees({ me }: { me: Me }) {
                       )}
                     </div>
                   ) : can(me, 'fees.edit') ? (
-                    <Button className="shrink-0 !px-4" onClick={() => setPaying(s)}>Thu tiền</Button>
+                    <Button className="shrink-0 !px-4" onClick={() => setPaying({ student: s, month })}>Thu tiền</Button>
                   ) : <Badge tone="red">Chưa đóng</Badge>}
                 </li>
               ))}
@@ -96,7 +99,7 @@ export function Fees({ me }: { me: Me }) {
       )}
 
       {paying && lk && (
-        <PaySheet student={paying} month={month} plans={lk.feePlans} onClose={() => setPaying(null)} onDone={() => { setPaying(null); reload(); }} />
+        <PaySheet student={paying.student} month={paying.month} plans={lk.feePlans} onClose={() => setPaying(null)} onDone={() => { setPaying(null); reload(); }} />
       )}
     </Page>
   );

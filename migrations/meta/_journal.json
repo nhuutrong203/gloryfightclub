@@ -43,6 +43,13 @@
       "when": 1793958754548,
       "tag": "0005_last_saracen",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1794468852049,
+      "tag": "0006_polite_lord_tyger",
+      "breakpoints": true
     }
   ]
 }

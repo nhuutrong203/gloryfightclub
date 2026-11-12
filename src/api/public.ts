@@ -5,6 +5,7 @@ import { db, schema } from '../db';
 import { normalizePhone, vnNow } from '../lib/util';
 import { parseDate } from '../lib/import';
 import { ageOn, upcomingSessions } from '../lib/schedule';
+import { publicClasses } from '../lib/public';
 import { body } from './guard';
 import { eq } from 'drizzle-orm';
 import type { Policy } from '../lib/site';
@@ -19,6 +20,7 @@ const trialSchema = z.object({
   classId: z.coerce.number().int().positive().nullish(), // Trial session chosen from the suggestions.
   trialDate: z.string().max(10).nullish(),
   agree: z.boolean().optional(), // Consent to the club rules.
+  policyVersion: z.string().max(40).nullish(),
   disciplineId: z.coerce.number().int().positive().nullish(),
   locationId: z.coerce.number().int().positive().nullish(),
   feePlanId: z.coerce.number().int().positive().nullish(),
@@ -41,23 +43,28 @@ publicRoutes.post('/trial', async (c) => {
   const today = vnNow().date;
   const birthDate = data.birthDate ? parseDate(data.birthDate) : null;
   const age = birthDate ? ageOn(birthDate, today) : (data.age ?? null);
-  if ((data.birthDate && !birthDate) || (age != null && (age < 3 || age > 90))) return c.json({ ok: false, code: 'birth' }, 400);
+  if ((data.birthDate && !birthDate) || age == null || age < 3 || age > 90) return c.json({ ok: false, code: 'birth' }, 400);
   // Require consent when rules exist and record the accepted version and time.
   const policyRow = await db.select({ value: schema.settings.value }).from(schema.settings).where(eq(schema.settings.key, 'policy')).get();
   const policy = policyRow?.value as Policy | undefined;
   const hasPolicy = !!(policy?.fees || policy?.safety);
+  if ((hasPolicy || data.policyVersion != null) && (data.policyVersion ?? null) !== (hasPolicy ? policy?.updated ?? null : null)) {
+    return c.json({ ok: false, code: 'policy_changed' }, 409);
+  }
   if (hasPolicy && data.agree !== true) return c.json({ ok: false, code: 'agree' }, 400);
 
   // Validate the selected IDs before inserting.
-  const [d, l, p, k] = await Promise.all([
-    data.disciplineId ? db.query.disciplines.findFirst({ where: (t, { eq }) => eq(t.id, data.disciplineId!), columns: { id: true } }) : null,
+  const [d, l, p, available] = await Promise.all([
+    data.disciplineId ? db.query.disciplines.findFirst({ where: (t, { and, eq }) => and(eq(t.id, data.disciplineId!), eq(t.isPublic, true)), columns: { id: true } }) : null,
     data.locationId ? db.query.locations.findFirst({ where: (t, { eq }) => eq(t.id, data.locationId!), columns: { id: true } }) : null,
-    data.feePlanId ? db.query.feePlans.findFirst({ where: (t, { eq }) => eq(t.id, data.feePlanId!), columns: { id: true } }) : null,
-    data.classId ? db.query.classes.findFirst({ where: (t, { and, eq }) => and(eq(t.id, data.classId!), eq(t.isPublic, true), eq(t.isActive, true)) }) : null,
+    data.feePlanId ? db.query.feePlans.findFirst({ where: (t, { and, eq }) => and(eq(t.id, data.feePlanId!), eq(t.isPublic, true)), columns: { id: true } }) : null,
+    data.classId ? publicClasses() : null,
   ]);
+  if ((data.disciplineId && !d) || (data.locationId && !l) || (data.feePlanId && !p)) return c.json({ ok: false, code: 'invalid' }, 400);
   // Use the same 60-minute booking cutoff as the form.
   const trialDate = data.trialDate ? parseDate(data.trialDate) : null;
-  const slot = k && trialDate && upcomingSessions([k], new Date(), { age }).some((s) => s.date === trialDate)
+  const k = available?.find((cls) => cls.id === data.classId);
+  const slot = k && trialDate && upcomingSessions(available!, new Date(), { age, locationId: k.locationId, disciplineId: data.disciplineId ?? k.disciplineIds[0] }).some((s) => s.cls.id === k.id && s.date === trialDate)
     ? { classId: k.id, trialDate } : null;
   if ((data.classId || data.trialDate) && !slot) return c.json({ ok: false, code: 'slot' }, 400);
   if (slot && ((data.locationId && data.locationId !== k!.locationId) || (data.disciplineId && !k!.disciplineIds.includes(data.disciplineId)))) {

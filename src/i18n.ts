@@ -100,7 +100,13 @@ export const dict = {
     about_history: 'Câu chuyện',
     about_philosophy: 'Triết lý',
     about_values: 'Giá trị',
+    partners_title: 'Đối tác & Nhà tài trợ',
+    partners_partner: 'Đối tác',
+    partners_sponsor: 'Nhà tài trợ',
+    partners_view_image: 'Xem ảnh lớn',
+    partners_visit: 'Mở trang của đơn vị',
     contact_title: 'Liên hệ',
+    contact_zalo: 'Chat Zalo',
     contact_sub: 'Ghé trực tiếp hoặc nhắn Facebook/Zalo để được tư vấn lớp phù hợp.',
     hotline: 'Hotline',
     social: 'Mạng xã hội',
@@ -126,7 +132,7 @@ export const dict = {
     f_ok_title: 'Cảm ơn bạn!',
     f_ok: 'CLB sẽ gọi lại trong 24h.',
     f_birth: 'Ngày sinh',
-    f_birth_why: 'Không bắt buộc; giúp CLB gợi ý lớp phù hợp với độ tuổi.',
+    f_birth_why: 'Để CLB gợi ý lớp phù hợp với độ tuổi.',
     f_day: 'Ngày',
     f_month: 'Tháng',
     f_year: 'Năm',
@@ -147,6 +153,7 @@ export const dict = {
     f_agree: 'Tôi đã đọc và đồng ý với Quy định CLB (học phí, bảo lưu, an toàn tập luyện).',
     f_agree_guardian: 'Tôi là cha mẹ / người giám hộ, đã đọc và đồng ý với Quy định CLB, và cho phép con tham gia tập luyện.',
     f_agree_err: 'Vui lòng đọc và đánh dấu đồng ý với Quy định CLB để gửi đăng ký.',
+    f_policy_changed: 'Quy định CLB đã thay đổi. Vui lòng tải lại trang để đọc và xác nhận bản mới.',
     f_policy_summary: 'Học phí đã đóng không hoàn lại · dùng đủ bảo hộ khi đối kháng · khai báo sức khỏe trung thực · dưới 18 tuổi cần phụ huynh đồng ý.',
     f_policy_read: 'Đọc quy định',
     f_policy_agree_btn: 'Tôi đã đọc và đồng ý',
@@ -279,7 +286,13 @@ export const dict = {
     about_history: 'Our story',
     about_philosophy: 'Philosophy',
     about_values: 'Values',
+    partners_title: 'Partners & Sponsors',
+    partners_partner: 'Partner',
+    partners_sponsor: 'Sponsor',
+    partners_view_image: 'View full-size image',
+    partners_visit: 'Visit website',
     contact_title: 'Contact',
+    contact_zalo: 'Chat on Zalo',
     contact_sub: 'Drop by or message us on Facebook/Zalo to find the right class.',
     hotline: 'Hotline',
     social: 'Social',
@@ -305,7 +318,7 @@ export const dict = {
     f_ok_title: 'Thank you!',
     f_ok: 'We will call you back within 24 hours.',
     f_birth: 'Date of birth',
-    f_birth_why: 'Optional; helps us suggest an age-appropriate class.',
+    f_birth_why: 'Helps us suggest an age-appropriate class.',
     f_day: 'Day',
     f_month: 'Month',
     f_year: 'Year',
@@ -326,6 +339,7 @@ export const dict = {
     f_agree: 'I have read and agree to the club rules (fees, membership freeze, training safety).',
     f_agree_guardian: 'I am the parent / legal guardian, I have read and agree to the club rules, and I allow my child to train.',
     f_agree_err: 'Please read and tick that you agree to the club rules to send your sign-up.',
+    f_policy_changed: 'The club rules have changed. Reload the page to read and accept the current rules.',
     f_policy_summary: 'Fees are non-refundable · full protective gear for sparring · declare your health honestly · under 18s need a parent’s consent.',
     f_policy_read: 'Read the rules',
     f_policy_agree_btn: 'I have read and agree',
@@ -365,11 +379,7 @@ export type DictKey = keyof (typeof dict)['vi'];
 
 /** Website text overrides are loaded from the CMS on each request. */
 export type TextOverrides = Partial<Record<Lang, Partial<Record<DictKey, string>>>>;
-// Biến cấp module dùng chung giữa các request: an toàn vì mọi request nạp cùng một giá trị (cài đặt chung).
-let overrides: TextOverrides = {};
-export const setTextOverrides = (o: TextOverrides | null | undefined) => { overrides = o ?? {}; };
-
-export const t = (lang: Lang, key: DictKey) => overrides[lang]?.[key] || dict[lang][key];
+export const t = (lang: Lang, key: DictKey, overrides?: TextOverrides) => overrides?.[lang]?.[key] || dict[lang][key];
 
 /** Read the English field when present and fall back to Vietnamese. */
 export function tr<T extends object>(row: T, field: string, lang: Lang): string {

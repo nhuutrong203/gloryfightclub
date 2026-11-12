@@ -6,7 +6,8 @@ import Icon from '../../components/public/Icon.astro';
 import CtaBand from '../../components/public/CtaBand.astro';
 import { postArchive, publishedPosts } from '../../lib/public';
 import { pageList, vnNow, vnRange } from '../../lib/util';
-import { t, href, type Lang } from '../../i18n';
+import { t as baseT, href, type Lang } from '../../i18n';
+const t = (lang: Parameters<typeof baseT>[0], key: Parameters<typeof baseT>[1]) => baseT(lang, key, Astro.locals.site.texts);
 
 // Group diary posts by year and month for browsing.
 // Show 12 compact cards per page and support year and month filters.

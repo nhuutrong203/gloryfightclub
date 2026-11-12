@@ -1,0 +1,60 @@
+---
+import Icon from './Icon.astro';
+import { publicPartners } from '../../lib/public';
+import { mediaUrl, thumbUrl } from '../../lib/site';
+import { t, tr } from '../../i18n';
+
+const { lang, site } = Astro.locals;
+const partners = await publicPartners();
+---
+{partners.length > 0 && (
+  <section id="doi-tac" aria-labelledby="partners-title" class="spot relative isolate scroll-mt-20 overflow-hidden border-y border-glory/35 bg-ink py-12 sm:py-20" data-spot>
+    <div class="partner-stripes pointer-events-none absolute inset-0 -z-10" aria-hidden="true"></div>
+    <div class="container-x max-w-5xl">
+      <h2 id="partners-title" class="border-l-4 border-glory pl-4 text-balance text-[clamp(2rem,5vw,4.25rem)]">{t(lang, 'partners_title', site.texts)}</h2>
+      <ul class="mt-7 grid gap-5 sm:mt-10 sm:grid-cols-2">
+        {partners.map((partner) => {
+          const name = tr(partner, 'name', lang);
+          const zoom = t(lang, 'partners_view_image', site.texts);
+          return (
+            <li data-tilt class:list={['partner-card relative flex min-w-0 flex-col border border-white/20 bg-coal focus-within:border-glory-bright hover:border-glory-bright', partner.kind === 'sponsor' && 'border-t-2 border-t-glory-bright']}>
+              <a href={mediaUrl(partner.imageKey)} data-lightbox="partners" data-caption={name} aria-label={`${zoom} — ${name}`}
+                class="group relative grid cursor-zoom-in place-items-center overflow-hidden border-b border-white/15 p-4 sm:p-5 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-glory-bright">
+                <img src={thumbUrl(partner.imageKey)} alt="" width="310" height="310" loading="lazy" decoding="async"
+                  class="relative aspect-square w-full max-w-[248px] object-contain shadow-lg motion-safe:transition-transform motion-safe:duration-300 motion-safe:group-hover:scale-[1.035] motion-safe:group-active:scale-[0.985] sm:max-w-[310px]" />
+                <span class="absolute bottom-3 right-3 grid size-11 place-items-center border border-white/35 bg-ink/95 text-white group-hover:border-glory-bright group-hover:bg-glory-dark" aria-hidden="true">
+                  <Icon name="expand" />
+                </span>
+              </a>
+              <div class="flex min-h-16 flex-1 items-center gap-3 px-4 py-3 sm:min-h-20 sm:px-5">
+                <span aria-hidden="true" class="h-7 w-1 shrink-0 -skew-x-12 bg-glory"></span>
+                <div class="min-w-0 flex-1">
+                  {partner.kind !== 'supporter' && <p class="text-xs font-semibold uppercase tracking-wide text-glory-bright">{t(lang, partner.kind === 'sponsor' ? 'partners_sponsor' : 'partners_partner', site.texts)}</p>}
+                  <h3 class="break-words text-2xl sm:text-3xl">{name}</h3>
+                </div>
+                {partner.website && (
+                  <a href={partner.website} aria-label={`${t(lang, 'partners_visit', site.texts)} — ${name}`}
+                    class="grid size-11 shrink-0 place-items-center border border-white/25 text-white hover:border-glory-bright focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glory-bright">
+                    <Icon name="arrow-up-right" />
+                  </a>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  </section>
+)}
+
+<style>
+  .partner-stripes {
+    background: linear-gradient(119deg, transparent 58%, color-mix(in srgb, var(--color-glory) 17%, transparent) 58% 73%, transparent 73% 74%, color-mix(in srgb, var(--color-glory) 8%, transparent) 74% 80%, transparent 80%);
+  }
+  .partner-card > a {
+    background: radial-gradient(ellipse at 50% 85%, color-mix(in srgb, var(--color-glory) 24%, transparent), transparent 73%), var(--color-ink);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .partner-card { transition: none; }
+  }
+</style>

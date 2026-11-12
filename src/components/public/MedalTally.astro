@@ -1,7 +1,8 @@
 ---
 import Medal from './Medal.astro';
 import { tally, type Tier } from '../../lib/medals';
-import { t, type Lang } from '../../i18n';
+import { t as baseT, type Lang } from '../../i18n';
+const t = (lang: Parameters<typeof baseT>[0], key: Parameters<typeof baseT>[1]) => baseT(lang, key, Astro.locals.site.texts);
 
 // Show medal totals only when at least one medal exists.
 interface Props { lines: string[]; lang: Lang; size?: 'sm' | 'lg'; class?: string }

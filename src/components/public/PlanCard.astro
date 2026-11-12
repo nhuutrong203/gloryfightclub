@@ -1,6 +1,7 @@
 ---
 import Icon, { type IconName } from './Icon.astro';
-import { t, tr, href, formatVnd, type Lang } from '../../i18n';
+import { t as baseT, tr, href, formatVnd, type Lang } from '../../i18n';
+const t = (lang: Parameters<typeof baseT>[0], key: Parameters<typeof baseT>[1]) => baseT(lang, key, Astro.locals.site.texts);
 import { lines } from '../../lib/public';
 import type { schema } from '../../db';
 

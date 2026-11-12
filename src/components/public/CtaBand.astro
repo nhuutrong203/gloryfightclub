@@ -2,7 +2,8 @@
 import Logo from '../Logo.astro';
 import Icon from './Icon.astro';
 import { telHref } from '../../lib/site';
-import { t, href, type Lang } from '../../i18n';
+import { t as baseT, href, type Lang } from '../../i18n';
+const t = (lang: Parameters<typeof baseT>[0], key: Parameters<typeof baseT>[1]) => baseT(lang, key, Astro.locals.site.texts);
 
 // Trial sign-up call to action at the bottom of the page.
 interface Props { lang: Lang }

@@ -4,7 +4,8 @@ import PageHero from '../components/public/PageHero.astro';
 import Icon from '../components/public/Icon.astro';
 import { telHref } from '../lib/site';
 import { publicClasses } from '../lib/public';
-import { t, tr, href, type Lang } from '../i18n';
+import { t as baseT, tr, href, type Lang } from '../i18n';
+const t = (lang: Parameters<typeof baseT>[0], key: Parameters<typeof baseT>[1]) => baseT(lang, key, Astro.locals.site.texts);
 
 const lang: Lang = Astro.locals.lang;
 const { club, locations } = Astro.locals.site;
@@ -23,7 +24,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
     </div>
     <div class="bg-ink p-6 sm:p-8">
       <p class="eyebrow flex items-center gap-2"><Icon name="message" class="size-4" />Zalo</p>
-      <a href={`https://zalo.me/${club.zalo}`} target="_blank" rel="noopener" class="btn mt-4 bg-[#0068ff] text-white hover:bg-white hover:text-ink w-full sm:w-auto">Chat Zalo<Icon name="arrow-up-right" /></a>
+      <a href={`https://zalo.me/${club.zalo}`} target="_blank" rel="noopener" class="btn mt-4 bg-[#0068ff] text-white hover:bg-white hover:text-ink w-full sm:w-auto">{t(lang, 'contact_zalo')}<Icon name="arrow-up-right" /></a>
     </div>
     <div class="bg-ink p-6 sm:p-8">
       <p class="eyebrow">{t(lang, 'social')}</p>

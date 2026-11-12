@@ -6,7 +6,8 @@ import CtaBand from '../components/public/CtaBand.astro';
 import { mediaUrl, telHref } from '../lib/site';
 import { publicClasses, publicCoaches, publicDisciplines } from '../lib/public';
 import { vnNow } from '../lib/util';
-import { t, tr, href, DAYS, dayShort, dayLong, type Lang, type DictKey } from '../i18n';
+import { t as baseT, tr, href, DAYS, dayShort, dayLong, type Lang, type DictKey } from '../i18n';
+const t = (lang: Parameters<typeof baseT>[0], key: Parameters<typeof baseT>[1]) => baseT(lang, key, Astro.locals.site.texts);
 
 const lang: Lang = Astro.locals.lang;
 const [{ club, locations }, allClasses, disciplines, coaches] = await Promise.all([Astro.locals.site, publicClasses(), publicDisciplines(), publicCoaches(),

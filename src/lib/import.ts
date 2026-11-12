@@ -3,6 +3,44 @@
 /** Fold accented text into lowercase plain text for matching. */
 export const fold = (x: string) => x.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase();
 
+/** Neutralize spreadsheet formulas before escaping CSV cells. */
+export const csvCell = (v: unknown) => {
+  const s = v == null ? '' : String(v);
+  const safe = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
+  return /[",\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+};
+
+/** Read quoted CSV using the separator found in the header. */
+export function parseCsv(text: string) {
+  const rows: string[][] = [];
+  let row: string[] = [], cell = '', quoted = false, headerRead = false;
+  let delimiter: ',' | ';' | undefined;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (quoted) {
+      if (ch === '"' && text[i + 1] === '"') { cell += '"'; i++; } else if (ch === '"') quoted = false; else cell += ch;
+    } else if (ch === '"') quoted = true;
+    else if (ch === delimiter || (!delimiter && !headerRead && (ch === ',' || ch === ';'))) {
+      delimiter ??= ch as ',' | ';';
+      row.push(cell); cell = '';
+    } else if (ch === '\n' || ch === '\r') {
+      if (ch === '\r' && text[i + 1] === '\n') i++;
+      row.push(cell);
+      headerRead ||= row.some((c) => !!c.trim());
+      rows.push(row);
+      row = [];
+      cell = '';
+    } else cell += ch;
+  }
+  if (quoted) throw new Error('CSV có ô chưa đóng dấu nháy');
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  const nonEmpty = rows.filter((r) => r.some((c) => c.trim()));
+  const width = nonEmpty[0]?.length;
+  const bad = rows.findIndex((r) => r.some((c) => c.trim()) && r.length !== width);
+  if (bad >= 0) throw new Error(`Dòng CSV ${bad + 1} có số cột khác tiêu đề`);
+  return nonEmpty;
+}
+
 /** Normalize a real date to ISO format. Return null for invalid dates. */
 export function parseDate(v?: string) {
   if (!v) return null;

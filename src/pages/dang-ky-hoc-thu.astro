@@ -4,8 +4,10 @@ import PageHero from '../components/public/PageHero.astro';
 import Icon from '../components/public/Icon.astro';
 import PolicyText from '../components/public/PolicyText.astro';
 import { telHref } from '../lib/site';
+import { vnNow } from '../lib/util';
 import { publicClasses, publicCoaches, publicDisciplines, publicPlans } from '../lib/public';
-import { t, tr, href, formatVnd, dayLong, DAYS, type Lang } from '../i18n';
+import { t as baseT, tr, href, formatVnd, dayLong, DAYS, type Lang } from '../i18n';
+const t = (lang: Parameters<typeof baseT>[0], key: Parameters<typeof baseT>[1]) => baseT(lang, key, Astro.locals.site.texts);
 
 // Personalize trial suggestions by age, discipline, and location.
 // Calculate the two nearest sessions client-side in Vietnam time because the page is cached.
@@ -18,10 +20,11 @@ const preselect = disciplines.find((d) => d.slug === Astro.url.searchParams.get(
 // Preselect the membership plan from the fees page link.
 const planPre = plans.find((p) => String(p.id) === Astro.url.searchParams.get('goi'))?.id;
 const keys = ['f_ok', 'f_err', 'f_too_many', 'f_phone_err', 'f_sending', 'f_submit', 'f_birth_err', 'f_slot_expired', 'f_age_hint', 'f_kid_hint', 'f_today', 'f_tomorrow',
-  'f_ok_hi', 'f_ok_title', 'trial_title', 'f_agree_err', 'level_kids', 'level_beginner', 'level_intermediate', 'level_advanced'] as const;
+  'f_ok_hi', 'f_ok_title', 'trial_title', 'f_agree_err', 'f_policy_changed', 'level_kids', 'level_beginner', 'level_intermediate', 'level_advanced'] as const;
 // Escape less-than signs in the public data so CMS text cannot close the script tag.
 const data = {
   lang,
+  policyVersion: policy?.updated ?? null,
   club: club.name,
   msg: Object.fromEntries(keys.map((k) => [k, t(lang, k)])),
   days: Object.fromEntries(DAYS.map((d) => [d, dayLong(d, lang)])),
@@ -32,7 +35,7 @@ const data = {
   })),
 };
 const json = JSON.stringify(data).replace(/</g, '\\u003c');
-const year = new Date().getFullYear();
+const year = Number(vnNow().date.slice(0, 4));
 const pol = (vi: string | null | undefined, en?: string | null) => (lang === 'en' ? en || vi : vi);
 const field = 'block w-full min-h-12 bg-ink border-2 border-white/20 px-4 py-3 text-base text-white placeholder:text-white/40 focus:border-glory focus:outline-none';
 const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
@@ -41,7 +44,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
   <PageHero eyebrow={t(lang, 'trial_title')} title={t(lang, 'cta_trial')} subtitle={t(lang, 'trial_sub')} />
   <section class="container-x py-12 sm:py-16 grid gap-12 lg:grid-cols-[3fr_2fr]">
     <div>
-      <form id="trial" class="grid gap-5 sm:grid-cols-2" novalidate>
+      <form id="trial" method="post" class="grid gap-5 sm:grid-cols-2" novalidate>
         <div class="sm:col-span-2">
           <label for="f-name" class={label}>{t(lang, 'f_name')} <span class="text-glory" aria-hidden="true">*</span></label>
           <input id="f-name" name="fullName" required maxlength="100" autocomplete="name" class={field} />
@@ -54,17 +57,17 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
         </div>
         <!-- Separate birth date fields avoid scrolling through years in the native picker. -->
         <fieldset aria-describedby="f-birth-why f-birth-hint">
-          <legend class={label}>{t(lang, 'f_birth')}</legend>
+          <legend class={label}>{t(lang, 'f_birth')} <span class="text-glory" aria-hidden="true">*</span></legend>
           <div class="grid grid-cols-[1fr_1fr_1.4fr] gap-2">
-            <select name="bday" aria-label={t(lang, 'f_day')} autocomplete="bday-day" class={`${field} !px-3`}>
+            <select name="bday" aria-label={t(lang, 'f_day')} autocomplete="bday-day" required class={`${field} !px-3`}>
               <option value="">{t(lang, 'f_day')}</option>
               {Array.from({ length: 31 }, (_, i) => <option value={i + 1}>{i + 1}</option>)}
             </select>
-            <select name="bmonth" aria-label={t(lang, 'f_month')} autocomplete="bday-month" class={`${field} !px-3`}>
+            <select name="bmonth" aria-label={t(lang, 'f_month')} autocomplete="bday-month" required class={`${field} !px-3`}>
               <option value="">{t(lang, 'f_month')}</option>
               {Array.from({ length: 12 }, (_, i) => <option value={i + 1}>{lang === 'en' ? new Date(Date.UTC(2000, i, 15)).toLocaleDateString('en-GB', { month: 'short', timeZone: 'UTC' }) : `Th ${i + 1}`}</option>)}
             </select>
-            <select name="byear" aria-label={t(lang, 'f_year')} autocomplete="bday-year" class={`${field} !px-3`}>
+            <select name="byear" aria-label={t(lang, 'f_year')} autocomplete="bday-year" required class={`${field} !px-3`}>
               <option value="">{t(lang, 'f_year')}</option>
               {Array.from({ length: 88 }, (_, i) => <option value={year - 3 - i}>{year - 3 - i}</option>)}
             </select>
@@ -147,7 +150,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
           </div>
         )}
         <p id="f-err" class="sm:col-span-2 hidden border-l-4 border-glory bg-glory/10 p-4 font-semibold" role="alert"></p>
-        <button type="submit" class="btn-red sm:col-span-2 !text-xl disabled:opacity-60 disabled:cursor-wait">{t(lang, 'f_submit')}<Icon name="arrow-right" /></button>
+        <button type="submit" disabled class="btn-red sm:col-span-2 !text-xl disabled:opacity-60 disabled:cursor-wait">{t(lang, 'f_submit')}<Icon name="arrow-right" /></button>
       </form>
 
       {policy && (
@@ -209,6 +212,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
     type Cls = { id: number; name: string; days: string; startTime: string; endTime: string; disciplineIds: number[]; locationId: number; level: string; coach: string | null };
     type Loc = { id: number; name: string; address: string; mapUrl: string | null };
     const D = JSON.parse(document.getElementById('trial-data')!.textContent!) as {
+      policyVersion: string | null;
       lang: 'vi' | 'en'; club: string; msg: Record<string, string>; days: Record<string, string>; locations: Loc[]; classes: Cls[];
     };
     const M = D.msg;
@@ -221,6 +225,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
     const hint = el('f-birth-hint');
     const btn = form.querySelector('button[type=submit]') as HTMLButtonElement;
     const btnHtml = btn.innerHTML;
+    btn.disabled = false;
     const locName = (id: number) => D.locations.find((l) => l.id === id);
     const dm = (date: string) => `${+date.slice(8)}/${+date.slice(5, 7)}`;
 
@@ -356,7 +361,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
         (form.querySelector(':invalid') as HTMLElement | null)?.focus();
         if (!phone.value || !phone.checkValidity()) phoneErr.classList.remove('hidden');
         if (agree && !agree.checked) agreeErr?.classList.remove('hidden');
-        if (b && Number.isNaN(b.age)) pick('bday').focus();
+        if (!b || Number.isNaN(b.age)) { hint.textContent = M.f_birth_err; pick('bday').focus(); }
         return;
       }
       const fd = new FormData(form);
@@ -370,6 +375,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
         classId: slot?.cls.id, trialDate: slot?.date,
         preferredTime: slot ? undefined : str('preferredTime'), note: str('note'), website: String(fd.get('website') ?? ''),
         agree: agree ? agree.checked : undefined,
+        policyVersion: D.policyVersion,
       };
       btn.disabled = true;
       btn.textContent = M.f_sending;
@@ -379,7 +385,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
         // Translate API error codes in the page language.
         if (!res.ok || !data.ok) {
           if (data.code === 'slot') renderSlots();
-          throw new Error(({ too_many: M.f_too_many, phone: M.f_phone_err, birth: M.f_birth_err, agree: M.f_agree_err, slot: M.f_slot_expired } as Record<string, string>)[data.code ?? ''] ?? M.f_err);
+          throw new Error(({ too_many: M.f_too_many, phone: M.f_phone_err, birth: M.f_birth_err, agree: M.f_agree_err, policy_changed: M.f_policy_changed, slot: M.f_slot_expired } as Record<string, string>)[data.code ?? ''] ?? M.f_err);
         }
         showThanks(body.fullName ?? '', slot);
       } catch (ex) {

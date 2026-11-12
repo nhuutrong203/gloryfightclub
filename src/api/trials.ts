@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { db, schema } from '../db';
 import { policyVersionText, vnNow } from '../lib/util';
 import { ageOn } from '../lib/schedule';
-import { body, idParam, need } from './guard';
+import { body, idParam, need, pageNumber } from './guard';
 import { isUnique, nextStudentCode } from './students';
 import type { Env } from '.';
 
@@ -14,7 +14,7 @@ export const trialRoutes = new Hono<Env>();
 
 trialRoutes.get('/', need('students.view'), async (c) => {
   const status = c.req.query('status');
-  const page = Math.max(1, Number(c.req.query('page')) || 1);
+  const page = pageNumber(c.req.query('page'));
   const perPage = 50;
   const rows = await db.select().from(t)
     .where(status ? eq(t.status, status as 'new') : undefined)
@@ -55,7 +55,7 @@ trialRoutes.post('/:id/convert', need('students.edit'), async (c) => {
     const code = await nextStudentCode();
     try {
       // Create the student, assign the class, and link the trial in one transaction.
-      const [inserted] = await env.DB.batch([
+      const [inserted, assigned] = await env.DB.batch([
         env.DB.prepare(`INSERT INTO students (code, full_name, phone, parent_phone, birth_year, location_id, fee_plan_id, joined_at, status, note)
           SELECT ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?
           WHERE EXISTS (SELECT 1 FROM trial_registrations WHERE id = ? AND student_id IS NULL AND status != 'enrolled') RETURNING id`)
@@ -63,12 +63,15 @@ trialRoutes.post('/:id/convert', need('students.edit'), async (c) => {
             trial.birthDate ? Number(trial.birthDate.slice(0, 4)) : trial.age != null ? Number(date.slice(0, 4)) - trial.age : null,
             trial.locationId, trial.feePlanId, date, note, id),
         ...(trial.classId ? [env.DB.prepare(`INSERT INTO student_classes (student_id, class_id)
-          SELECT id, ? FROM students WHERE code = ?`).bind(trial.classId, code)] : []),
+          SELECT s.id, c.id FROM students s JOIN classes c ON c.location_id = s.location_id
+          WHERE c.id = ? AND s.code = ? AND changes() = 1 RETURNING class_id`).bind(trial.classId, code)] : []),
         env.DB.prepare(`UPDATE trial_registrations SET status = 'enrolled', student_id = (SELECT id FROM students WHERE code = ?)
           WHERE id = ? AND student_id IS NULL AND status != 'enrolled'`).bind(code, id),
       ]);
       const studentId = (inserted.results?.[0] as { id: number } | undefined)?.id;
-      return studentId ? c.json({ studentId }, 201) : c.json({ error: 'Đăng ký đã được chuyển thành học viên, tải lại trang để xem' }, 409);
+      return studentId
+        ? c.json({ studentId, classAssigned: !!trial.classId && !!assigned.results?.length }, 201)
+        : c.json({ error: 'Đăng ký đã được chuyển thành học viên, tải lại trang để xem' }, 409);
     } catch (e) {
       if (attempt >= 2 || !isUnique(e)) throw e;
     }

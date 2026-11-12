@@ -21,6 +21,7 @@ const TABLES: Record<ResourceKey, SQLiteTable & Record<string, any>> = {
   testimonials: schema.testimonials,
   faqs: schema.faqs,
   achievements: schema.achievements,
+  partners: schema.partners,
 };
 
 const optStr = (max: number) => z.string().trim().max(max).nullish().transform((v) => v || null);
@@ -111,6 +112,11 @@ contentRoutes.put('/:res/order', need('content'), async (c) => {
   const [data, err] = await body(c, z.object({ ids: z.array(z.number().int().positive()).min(1).max(1000) }));
   if (err) return err;
   const t = TABLES[key];
+  const ids = new Set(data.ids);
+  const current = await db.select({ id: t.id }).from(t);
+  if (ids.size !== data.ids.length || current.length !== ids.size || current.some(({ id }) => !ids.has(id))) {
+    return c.json({ error: 'Danh sách không khớp. Tải lại rồi thử sắp xếp lại.' }, 409);
+  }
   const [first, ...rest] = data.ids.map((id, i) => db.update(t).set({ sort: i + 1 } as any).where(eq(t.id, id)));
   await db.batch([first, ...rest]);
   return c.json({ ok: true });
@@ -127,7 +133,14 @@ contentRoutes.put('/:res/:id', need('content'), async (c) => {
   const values = pick(data, writableColumns(RESOURCES[key]));
   if (!Object.keys(values).length) return c.json({ error: 'Không có gì để lưu' }, 400);
   const old = await db.select().from(TABLES[key]).where(eq(TABLES[key].id, id)).get();
-  const [row] = await db.update(TABLES[key]).set(values as any).where(eq(TABLES[key].id, id)).returning();
+  const where = key === 'classes' && values.locationId !== undefined
+    ? sql`${schema.classes.id} = ${id} and (${schema.classes.locationId} = ${values.locationId}
+        or not exists (select 1 from student_classes where class_id = ${id}))`
+    : eq(TABLES[key].id, id);
+  const [row] = await db.update(TABLES[key]).set(values as any).where(where).returning();
+  if (!row && old && key === 'classes' && values.locationId !== undefined) {
+    return c.json({ error: 'Không thể đổi cơ sở khi lớp còn học viên. Chuyển học viên sang lớp khác trước.' }, 409);
+  }
   if (row) await deleteMedia(imagesOf(key, old).filter((k) => k && !imagesOf(key, row).includes(k)));
   if (row && old && key === 'belts') {
     const sameDiscipline = old.disciplineId === row.disciplineId;

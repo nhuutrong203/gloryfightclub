@@ -6,7 +6,8 @@ import Icon from '../components/public/Icon.astro';
 import { db, schema } from '../db';
 import { youtubeEmbed } from '../lib/public';
 import { thumbSrcset, thumbUrl } from '../lib/site';
-import { t, tr, href, type Lang } from '../i18n';
+import { t as baseT, tr, href, type Lang } from '../i18n';
+const t = (lang: Parameters<typeof baseT>[0], key: Parameters<typeof baseT>[1]) => baseT(lang, key, Astro.locals.site.texts);
 
 const lang: Lang = Astro.locals.lang;
 const all = await db.select().from(schema.galleryItems).where(eq(schema.galleryItems.isPublic, true))

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { api, toast } from '../lib';
-import { fold } from '../../lib/import';
+import { csvCell, fold, parseCsv } from '../../lib/import';
 import { Button, Icon } from '../ui';
 
 // Match the export columns so staff can edit and reimport the file.
@@ -18,23 +18,6 @@ const COLUMNS: [key: string, header: string, aliases: string[]][] = [
   ['status', 'Trạng thái', ['trang thai']],
   ['note', 'Ghi chú', ['ghi chu']],
 ];
-
-/** CSV đơn giản có hỗ trợ dấu nháy (file Excel "Lưu dưới dạng CSV UTF-8"). */
-function parseCsv(text: string) {
-  const rows: string[][] = [];
-  let row: string[] = [], cell = '', quoted = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (quoted) {
-      if (ch === '"' && text[i + 1] === '"') { cell += '"'; i++; } else if (ch === '"') quoted = false; else cell += ch;
-    } else if (ch === '"') quoted = true;
-    else if (ch === ',' || ch === ';') { row.push(cell); cell = ''; }
-    else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; }
-    else cell += ch;
-  }
-  if (cell || row.length) { row.push(cell); rows.push(row); }
-  return rows.filter((r) => r.some((c) => c.trim()));
-}
 
 const cellText = (v: unknown) =>
   v == null ? '' : v instanceof Date ? v.toISOString().slice(0, 10) : String(v).replace(/^'/, '').trim();
@@ -64,8 +47,21 @@ function downloadTemplate() {
 
 type Result = { created: number; updated: number; errors: { row: number; error: string }[] };
 
+function downloadFailed(rows: Record<string, string>[]) {
+  const columns = COLUMNS.filter(([key]) => Object.hasOwn(rows[0], key));
+  const csv = '﻿' + [columns.map(([, header]) => header), ...rows.map((row) => columns.map(([key]) => row[key]))]
+    .map((line) => line.map(csvCell).join(',')).join('\r\n');
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'hoc-vien-chua-nhap.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export function StudentImport({ onDone }: { onDone: () => void }) {
   const ref = useRef<HTMLInputElement>(null);
+  const fileRead = useRef(0);
   const [rows, setRows] = useState<Record<string, string>[] | null>(null);
   const [fileName, setFileName] = useState('');
   const [busy, setBusy] = useState(false);
@@ -73,14 +69,18 @@ export function StudentImport({ onDone }: { onDone: () => void }) {
 
   async function pick(f?: File) {
     if (!f) return;
+    const read = ++fileRead.current;
+    setRows(null);
+    setFileName('');
     setResult(null);
     try {
       const r = await readRows(f);
+      if (read !== fileRead.current) return;
       if (!r.length) throw new Error('File không có dòng học viên nào');
       if (r.length > 2000) throw new Error('Tối đa 2000 học viên mỗi lần nhập');
       setRows(r);
       setFileName(f.name);
-    } catch (e: any) { toast(e.message, 'err'); }
+    } catch (e: any) { if (read === fileRead.current) toast(e.message, 'err'); }
   }
 
   async function submit() {
@@ -89,7 +89,7 @@ export function StudentImport({ onDone }: { onDone: () => void }) {
     try {
       const r = await api<Result>('/admin/students/import', { body: { rows } });
       setResult(r);
-      setRows(null);
+      setRows(r.errors.length ? rows.filter((_, i) => r.errors.some((e) => e.row === i + 2)) : null);
       toast(`Đã thêm ${r.created}, cập nhật ${r.updated} học viên`);
       onDone();
     } catch (e: any) { toast(e.message, 'err'); } finally { setBusy(false); }
@@ -98,7 +98,7 @@ export function StudentImport({ onDone }: { onDone: () => void }) {
   return (
     <div className="mb-4">
       <div className="flex flex-wrap gap-2">
-        <Button type="button" variant="ghost" icon="plus" onClick={() => ref.current?.click()}>Nhập Excel</Button>
+        <Button type="button" variant="ghost" icon="plus" disabled={busy} onClick={() => ref.current?.click()}>Nhập Excel</Button>
         <button type="button" onClick={downloadTemplate} className="min-h-12 px-2 text-sm font-semibold underline cursor-pointer">Tải file mẫu</button>
         <input ref={ref} type="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" className="hidden"
           onChange={(e) => { pick(e.target.files?.[0]); e.target.value = ''; }} />
@@ -129,7 +129,8 @@ export function StudentImport({ onDone }: { onDone: () => void }) {
 
       {result && result.errors.length > 0 && (
         <div className="mt-3 border border-amber-300 bg-amber-50 p-4 text-sm" role="alert">
-          <p className="font-semibold"><Icon name="x" className="mr-1 inline size-4" />{result.errors.length} dòng chưa nhập được — sửa trong file rồi nhập lại các dòng này:</p>
+          <p className="font-semibold"><Icon name="x" className="mr-1 inline size-4" />{result.errors.length} dòng chưa nhập được. Tải riêng các dòng này, sửa rồi nhập lại file đó:</p>
+          {rows && <Button type="button" variant="ghost" onClick={() => downloadFailed(rows)}>Tải dòng chưa nhập</Button>}
           <ul className="mt-2 max-h-48 list-disc overflow-y-auto pl-5">
             {result.errors.map((e) => <li key={e.row}>Dòng {e.row}: {e.error}</li>)}
           </ul>

@@ -84,8 +84,10 @@ export function Trials({ me }: { me: Me }) {
                   <Button icon="plus" loading={busy === t.id} onClick={async () => {
                     setBusy(t.id);
                     try {
-                      const r = await api<{ studentId: number }>(`/admin/trials/${t.id}/convert`, { method: 'POST' });
-                      toast(`Đã tạo học viên${t.feePlanId || t.classId ? ` (đã gán ${[t.feePlanId && 'gói', t.classId && 'lớp học thử'].filter(Boolean).join(' + ')} khách chọn)` : ''} — kiểm tra lại lớp & gói`);
+                      const r = await api<{ studentId: number; classAssigned: boolean }>(`/admin/trials/${t.id}/convert`, { method: 'POST' });
+                      toast(t.classId && !r.classAssigned
+                        ? 'Đã tạo học viên. Lớp học thử không còn ở cơ sở đã chọn, vui lòng chọn lại lớp.'
+                        : 'Đã tạo học viên — kiểm tra lại lớp & gói');
                       navigate(`/admin/hoc-vien/${r.studentId}`);
                     } catch (e: any) { toast(e.message, 'err'); setBusy(null); }
                   }}>Chuyển thành học viên</Button>

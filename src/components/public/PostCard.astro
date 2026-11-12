@@ -1,6 +1,7 @@
 ---
 import Icon from './Icon.astro';
-import { tr, href, t, dayLong, type Lang } from '../../i18n';
+import { tr, href, t as baseT, dayLong, type Lang } from '../../i18n';
+const t = (lang: Parameters<typeof baseT>[0], key: Parameters<typeof baseT>[1]) => baseT(lang, key, Astro.locals.site.texts);
 import { richText, postHtml, youtubeEmbed, type PostMedia } from '../../lib/public';
 import { toText } from '../../lib/html';
 import { vnNow, youtubeId } from '../../lib/util';

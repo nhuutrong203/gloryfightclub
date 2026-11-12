@@ -17,6 +17,7 @@ const GROUPS: [string, RegExp][] = [
   ['Thư viện', /^(gallery_|watch_video)/],
   ['Hỏi đáp', /^faq_/],
   ['Giới thiệu', /^about_/],
+  ['Đối tác & Nhà tài trợ', /^partners_/],
   ['Liên hệ', /^(contact_|hotline|social|map_)/],
   ['Form đăng ký học thử', /^(trial_|f_)/],
   ['Quy định CLB', /^policy_/],

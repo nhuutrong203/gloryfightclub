@@ -37,9 +37,13 @@ export async function publicCoaches() {
 export const publicPlans = () =>
   db.select().from(schema.feePlans).where(eq(schema.feePlans.isPublic, true)).orderBy(asc(schema.feePlans.pricePerMonth), asc(schema.feePlans.sort)); // Order by ascending price.
 
+// Include Open mat and classes with at least one public discipline.
+export const publicClass = () => and(eq(schema.classes.isPublic, true), eq(schema.classes.isActive, true),
+  sql`(json_array_length(${schema.classes.disciplineIds}) = 0 or exists (select 1 from json_each(${schema.classes.disciplineIds}) j join disciplines d on d.id = j.value where d.is_public = 1))`);
+
 export const publicClasses = () =>
   db.select().from(schema.classes)
-    .where(and(eq(schema.classes.isPublic, true), eq(schema.classes.isActive, true)))
+    .where(publicClass())
     .orderBy(asc(schema.classes.startTime));
 
 export const publicAchievements = () =>
@@ -51,6 +55,10 @@ export const publicTestimonials = () =>
 
 export const publicFaqs = () =>
   db.select().from(schema.faqs).where(eq(schema.faqs.isPublic, true)).orderBy(asc(schema.faqs.sort));
+
+export const publicPartners = () =>
+  db.select().from(schema.partners).where(eq(schema.partners.isPublic, true))
+    .orderBy(asc(schema.partners.sort), asc(schema.partners.id));
 
 const postVisible = () => and(eq(schema.posts.isPublic, true), lte(schema.posts.publishedAt, Date.now()));
 

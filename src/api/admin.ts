@@ -92,6 +92,16 @@ const clubSchema = z.looseObject({
 });
 // Each rules save records a new version for trial consent.
 const policyText = z.string().max(20000).nullish().transform((v) => v?.trim() || null);
+const settingsText = z.string().trim().max(10000).nullish();
+const heroSchema = z.object({
+  title: settingsText, title_en: settingsText, subtitle: settingsText, subtitle_en: settingsText,
+  image_key: z.string().max(500).regex(/^public\/[\w\-/.]+$/).nullish(),
+});
+const aboutSchema = z.object({
+  history: settingsText, history_en: settingsText, philosophy: settingsText, philosophy_en: settingsText,
+  values: z.array(z.string().trim().min(1).max(500)).max(100).optional(),
+  values_en: z.array(z.string().trim().min(1).max(500)).max(100).optional(),
+});
 const policySchema = z.object({ fees: policyText, fees_en: policyText, safety: policyText, safety_en: policyText })
   .transform((v) => ({ ...v, updated: new Date().toISOString() }));
 adminRoutes.get('/settings', need('content'), async (c) => {
@@ -101,7 +111,7 @@ adminRoutes.get('/settings', need('content'), async (c) => {
 adminRoutes.put('/settings/:key', need('content'), async (c) => {
   const key = c.req.param('key') ?? '';
   if (!SETTING_KEYS.includes(key as any)) return c.notFound();
-  const [value, err] = await body(c, key === 'texts' ? textsSchema : key === 'club' ? clubSchema : key === 'policy' ? policySchema : z.record(z.string(), z.unknown()),
+  const [value, err] = await body<unknown>(c, key === 'texts' ? textsSchema : key === 'club' ? clubSchema : key === 'policy' ? policySchema : key === 'hero' ? heroSchema : aboutSchema,
     { name: 'Tên CLB', slogan: 'Slogan', hotlines: 'Hotline', zalo: 'Số Zalo', facebook: 'Link Facebook', instagram: 'Link Instagram', fees: 'Quy định học phí', safety: 'Quy định an toàn' });
   if (err) return err;
   if (JSON.stringify(value).length > 50_000) return c.json({ error: 'Nội dung quá dài' }, 400);

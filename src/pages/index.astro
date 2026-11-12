@@ -7,6 +7,7 @@ import PlanCard from '../components/public/PlanCard.astro';
 import CoachCard from '../components/public/CoachCard.astro';
 import PostCard from '../components/public/PostCard.astro';
 import CtaBand from '../components/public/CtaBand.astro';
+import PartnerSection from '../components/public/PartnerSection.astro';
 import TestimonialBand from '../components/public/TestimonialBand.astro';
 import AchievementIcon from '../components/public/AchievementIcon.astro';
 import { mediaUrl, thumbSrcset, thumbUrl } from '../lib/site';
@@ -15,7 +16,8 @@ import {
   publicDisciplines, publicCoaches, publicPlans, publicClasses,
   publishedPosts, publicTestimonials, publicAchievements,
 } from '../lib/public';
-import { t, tr, href, dayLong, type Lang } from '../i18n';
+import { t as baseT, tr, href, dayLong, type Lang } from '../i18n';
+const t = (lang: Parameters<typeof baseT>[0], key: Parameters<typeof baseT>[1]) => baseT(lang, key, Astro.locals.site.texts);
 
 const lang: Lang = Astro.locals.lang;
 const { hero, locations, club } = Astro.locals.site;
@@ -28,7 +30,7 @@ const todayByLoc = locations
   .map((l) => ({ l, items: classes.filter((c) => c.locationId === l.id && c.days.includes(today)) }))
   .filter((x) => x.items.length);
 const heroImage = mediaUrl(hero.image_key);
-const titleParts: string[] = (lang === 'en' ? hero.title_en : hero.title)?.split('–') ?? ['NO PAIN', 'NO GLORY'];
+const titleParts: string[] = (lang === 'en' ? hero.title_en || hero.title : hero.title)?.split('–') ?? ['NO PAIN', 'NO GLORY'];
 const coachName = (id: number | null) => coaches.find((c) => c.id === id)?.fullName;
 // Use featured coaches when selected, otherwise show all public coaches.
 const homeCoaches = coaches.some((c) => c.isFeatured) ? coaches.filter((c) => c.isFeatured) : coaches;
@@ -60,7 +62,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
           ? <span class="hero-line block" style="--d:120ms">{part.trim()}</span>
           : <span class="block text-glory"><span class="block-reveal" style={`--d:${260 + i * 120}ms`}>{part.trim()}</span></span>)}
       </h1>
-      <p class="hero-in mt-6 max-w-xl text-lg sm:text-xl text-white/85" style="--d:380ms">{lang === 'en' ? hero.subtitle_en : hero.subtitle}</p>
+      <p class="hero-in mt-6 max-w-xl text-lg sm:text-xl text-white/85" style="--d:380ms">{lang === 'en' ? hero.subtitle_en || hero.subtitle : hero.subtitle}</p>
       <div class="hero-in mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4" style="--d:480ms">
         <a href={href('/dang-ky-hoc-thu', lang)} class="btn-red !text-xl !px-8" data-magnetic>{t(lang, 'cta_trial')}<Icon name="arrow-right" /></a>
         <a href={href('/lich-hoc', lang)} class="btn-ghost !text-xl !px-8"><Icon name="calendar" />{t(lang, 'nav_schedule')}</a>
@@ -238,6 +240,8 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
       <div class="mt-10"><TestimonialBand items={testimonials} lang={lang} tone="ink" /></div>
     </section>
   )}
+
+  <PartnerSection />
 
   <!-- Locations -->
   <section class="container-x py-16 sm:py-24">

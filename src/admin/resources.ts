@@ -41,7 +41,7 @@ export type Resource = {
 
 export type ResourceKey =
   | 'locations' | 'disciplines' | 'classes' | 'coaches' | 'belts'
-  | 'feePlans' | 'gallery' | 'testimonials' | 'faqs' | 'achievements';
+  | 'feePlans' | 'gallery' | 'testimonials' | 'faqs' | 'achievements' | 'partners';
 
 const pub: Field = { name: 'isPublic', label: 'Hiện trên website', type: 'bool' };
 
@@ -206,6 +206,26 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
     fields: [
       { name: 'question', label: 'Câu hỏi', type: 'text', required: true, en: true },
       { name: 'answer', label: 'Trả lời', type: 'textarea', required: true, en: true },
+      pub,
+    ],
+  },
+  partners: {
+    key: 'partners',
+    title: 'Đối tác & Nhà tài trợ',
+    publicPath: '/#doi-tac',
+    listTitle: (r) => r.name,
+    listSub: (r) => r.kind === 'sponsor' ? 'Nhà tài trợ' : r.kind === 'partner' ? 'Đối tác' : 'Đơn vị đồng hành',
+    orderBy: 'sort',
+    check: (row) => row.imageKey === null ? 'Vui lòng tải ảnh nhận diện' : null,
+    fields: [
+      { name: 'name', label: 'Tên đơn vị', type: 'text', required: true, en: true },
+      { name: 'kind', label: 'Loại', type: 'select', required: true, options: [
+        { value: 'supporter', label: 'Đơn vị đồng hành' },
+        { value: 'partner', label: 'Đối tác' },
+        { value: 'sponsor', label: 'Nhà tài trợ' },
+      ], help: 'Dùng nút ↑↓ ở danh sách để đưa nhà tài trợ lên đầu.' },
+      { name: 'imageKey', label: 'Ảnh nhận diện', type: 'image', required: true, help: 'Ảnh vuông cho kết quả tốt nhất. Website giữ nguyên tỷ lệ ảnh.' },
+      { name: 'website', label: 'Link website hoặc mạng xã hội', type: 'url' },
       pub,
     ],
   },

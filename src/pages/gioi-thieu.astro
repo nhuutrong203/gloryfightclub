@@ -6,11 +6,13 @@ import Icon from '../components/public/Icon.astro';
 import Marquee from '../components/public/Marquee.astro';
 import CoachCard from '../components/public/CoachCard.astro';
 import CtaBand from '../components/public/CtaBand.astro';
+import PartnerSection from '../components/public/PartnerSection.astro';
 import AchievementIcon from '../components/public/AchievementIcon.astro';
 import { db, schema } from '../db';
 
 import { publicCoaches, publicAchievements, publicDisciplines, richText } from '../lib/public';
-import { t, tr, href, type Lang } from '../i18n';
+import { t as baseT, tr, href, type Lang } from '../i18n';
+const t = (lang: Parameters<typeof baseT>[0], key: Parameters<typeof baseT>[1]) => baseT(lang, key, Astro.locals.site.texts);
 
 type About = { history?: string; history_en?: string; philosophy?: string; philosophy_en?: string; values?: string[]; values_en?: string[] };
 
@@ -98,5 +100,6 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
       </ul>
     </section>
   )}
+  <PartnerSection />
   <CtaBand lang={lang} />
 </PublicLayout>

@@ -1,10 +1,31 @@
 // Run with npm test using Node 24 TypeScript support.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STATUS_IN, byName, fixPhone, fold, parseDate, updatableColumns } from '../src/lib/import.ts';
+import { STATUS_IN, byName, csvCell, fixPhone, fold, parseCsv, parseDate, updatableColumns } from '../src/lib/import.ts';
 import { normalizePhone, pageList, policyVersionText, vnNow, vnRange, youtubeId } from '../src/lib/util.ts';
 import { textToHtml, toText } from '../src/lib/html.ts';
 import { RESOURCES } from '../src/admin/resources.ts';
+import { t } from '../src/i18n.ts';
+
+test('website text overrides stay with the caller', () => {
+  assert.equal(t('vi', 'home', { vi: { home: 'Trang A' } }), 'Trang A');
+  assert.equal(t('vi', 'home', { vi: { home: 'Trang B' } }), 'Trang B');
+  assert.equal(t('vi', 'home'), 'Trang chủ');
+});
+
+test('CSV cells prevent Excel formulas in failed import downloads', () => {
+  assert.equal(csvCell('=HYPERLINK("https://example.com")'), '"\'=HYPERLINK(""https://example.com"")"');
+  assert.equal(csvCell('+SUM(1,2)'), '"\'+SUM(1,2)"');
+  assert.equal(csvCell('ordinary'), 'ordinary');
+});
+
+test('CSV uses one separator and rejects rows that would shift student fields', () => {
+  const rows = [['Mã', 'Tên', 'Ghi chú'], ['GF0002', 'Nguyễn; An', 'Tập nhẹ, báo HLV\nĐã gọi']];
+  assert.deepEqual(parseCsv(rows.map((row) => row.map(csvCell).join(',')).join('\r\n')), rows);
+  assert.deepEqual(parseCsv('\nMã,Ghi chú\nGF0002,Tập nhẹ'), [['Mã', 'Ghi chú'], ['GF0002', 'Tập nhẹ']]);
+  assert.deepEqual(parseCsv('Mã;Ghi chú\r\nGF0002;Tập nhẹ, báo HLV'), [['Mã', 'Ghi chú'], ['GF0002', 'Tập nhẹ, báo HLV']]);
+  assert.throws(() => parseCsv('Mã,Tên,Ghi chú\nGF0002,Nguyễn An'), /Dòng CSV 2/);
+});
 
 test('Parse Vietnamese and ISO dates', () => {
   assert.equal(parseDate('5/8/2026'), '2026-08-05');
@@ -42,6 +63,7 @@ test('Update only supplied columns and preserve blank status and join date', () 
 test('Use Vietnam time and encode Sunday as 8', () => {
   assert.equal(vnNow(new Date('2026-11-08T05:00:00Z')).weekday, '8'); // Sunday at noon in Vietnam.
   assert.equal(vnNow(new Date('2026-11-08T17:30:00Z')).weekday, '2'); // Monday at 00:30 in Vietnam.
+  assert.equal(Number(vnNow(new Date('2026-12-31T17:30:00Z')).date.slice(0, 4)), 2027); // The birth year limit rolls over at midnight in Vietnam.
 });
 
 test('Distinguish rule revisions saved on the same day', () => {

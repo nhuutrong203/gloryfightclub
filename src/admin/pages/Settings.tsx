@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api, siteUrl, toast, useApi, useDirty, useUploading } from '../lib';
+import { api, siteUrl, toast, useApi, useDirty, usePath, useUploading } from '../lib';
 import { Button, ErrorBox, ImageInput, Loading, Page, TextArea, TextInput, ViewOnSite } from '../ui';
 import { policyVersionText } from '../../lib/util';
 
@@ -11,13 +11,14 @@ const NONE: S = {};
 // Contact, home hero, and About settings are saved by group.
 export function Settings() {
   const { data, error, reload } = useApi<Record<string, S>>('/admin/settings');
+  const path = usePath();
   // The page stays dirty while any group has unsaved changes.
   const [dirty, setDirtyGroups] = useState<Record<string, boolean>>({});
   const markDirty = useDirty();
   useEffect(() => markDirty(Object.values(dirty).some(Boolean)), [dirty]);
   const onDirty = (k: string, on: boolean) => setDirtyGroups((x) => (x[k] === on ? x : { ...x, [k]: on }));
   // Scroll to the group named by the menu link after loading.
-  useEffect(() => { if (data && location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView(); }, [data]);
+  useEffect(() => { if (data && location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView(); }, [data, path]);
   if (error) return <Page title="Trang chủ · Giới thiệu · Liên hệ" back="/admin/them"><ErrorBox message={error} retry={reload} /></Page>;
   if (!data) return <Loading />;
   return (

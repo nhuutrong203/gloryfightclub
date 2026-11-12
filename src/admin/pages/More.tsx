@@ -22,7 +22,7 @@ export function menuGroups(me: Me): { title: string; items: Item[] }[] {
       title: 'Trang web — menu chính',
       items: [
         ...(content ? [
-          { to: '/admin/cai-dat#hero', label: 'Trang chủ', icon: 'home', sub: 'Ảnh nền, tiêu đề lớn · HLV "nổi bật" chọn ở mục HLV' },
+          { to: '/admin/cai-dat#hero', label: 'Trang chủ', icon: 'home', sub: 'Sửa ảnh nền và lời giới thiệu. Lịch, HLV, học phí và các danh sách bên dưới lấy từ từng mục tương ứng.' },
           res('disciplines', 'star', 'Tên, mô tả, ảnh bìa từng môn'),
           res('classes', 'calendar', 'Lớp & giờ tập từng cơ sở'),
           res('coaches', 'users', 'Ảnh, chức danh, thành tích, nổi bật ở trang chủ'),
@@ -35,11 +35,13 @@ export function menuGroups(me: Me): { title: string; items: Item[] }[] {
     {
       title: 'Trang web — mục phụ',
       items: content ? [
-        { to: '/admin/cai-dat#club', label: 'Giới thiệu · Liên hệ chung', icon: 'settings', sub: 'Câu chuyện CLB, hotline, Zalo, Facebook' },
+        { to: '/admin/cai-dat#about', label: 'Giới thiệu', icon: 'edit', sub: 'Câu chuyện, triết lý và các giá trị của CLB' },
+        { to: '/admin/cai-dat#club', label: 'Liên hệ & mạng xã hội', icon: 'settings', sub: 'Tên CLB, slogan, hotline, Zalo và mạng xã hội' },
         res('achievements', 'star', 'Huy chương, ảnh lên bục (gắn HLV được)'),
         res('belts', 'edit', 'Hệ thống đai Kudo, Jiujitsu'),
         res('gallery', 'image', 'Ảnh & video CLB'),
         res('testimonials', 'edit', 'Học viên, phụ huynh nói gì'),
+        res('partners', 'star', 'Ảnh, tên và liên kết của các đơn vị đồng hành'),
         res('faqs', 'edit', 'Câu hỏi thường gặp (hiện cả ở trang Học phí)'),
         { to: '/admin/cai-dat#policy', label: 'Quy định CLB', icon: 'edit', sub: 'Học phí, bảo lưu, an toàn — khách đồng ý khi đăng ký học thử' },
         { to: '/admin/chu-website', label: 'Chữ trên website', icon: 'edit', sub: 'Nút bấm, tiêu đề, câu cố định' },

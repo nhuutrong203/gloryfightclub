@@ -17,6 +17,7 @@ export async function deleteMedia(keys: (string | null | undefined)[]) {
       or exists (select 1 from disciplines where cover_key = j.value) or exists (select 1 from locations where schedule_image_key = j.value)
       or exists (select 1 from gallery_items where key = j.value) or exists (select 1 from testimonials where photo_key = j.value)
       or exists (select 1 from achievements where image_key = j.value)
+      or exists (select 1 from partners where image_key = j.value)
       or exists (select 1 from settings where key = 'hero' and json_extract(value, '$.image_key') = j.value)`);
     const free = list.filter((k) => !used.some((u) => u.k === k));
     if (free.length) await env.MEDIA.delete([...free, ...free.map((k) => k + THUMB)]); // Delete the 800px thumbnail when present.

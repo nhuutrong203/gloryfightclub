@@ -3,7 +3,8 @@ import PublicLayout from '../layouts/PublicLayout.astro';
 import PageHero from '../components/public/PageHero.astro';
 import PolicyText from '../components/public/PolicyText.astro';
 import CtaBand from '../components/public/CtaBand.astro';
-import { t, href, type Lang } from '../i18n';
+import { t as baseT, href, type Lang } from '../i18n';
+const t = (lang: Parameters<typeof baseT>[0], key: Parameters<typeof baseT>[1]) => baseT(lang, key, Astro.locals.site.texts);
 import { policyVersionText } from '../lib/util';
 
 // Link to individual sections of the club rules from the trial and fees pages.

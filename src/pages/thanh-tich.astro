@@ -6,7 +6,8 @@ import CtaBand from '../components/public/CtaBand.astro';
 import AchievementIcon from '../components/public/AchievementIcon.astro';
 import { publicAchievements, publicCoaches, richText } from '../lib/public';
 import { mediaUrl, thumbSrcset, thumbUrl } from '../lib/site';
-import { t, tr, href, formatDate, type Lang } from '../i18n';
+import { t as baseT, tr, href, formatDate, type Lang } from '../i18n';
+const t = (lang: Parameters<typeof baseT>[0], key: Parameters<typeof baseT>[1]) => baseT(lang, key, Astro.locals.site.texts);
 
 const lang: Lang = Astro.locals.lang;
 const [achievements, coaches] = await Promise.all([publicAchievements(), publicCoaches()]);

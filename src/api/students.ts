@@ -6,7 +6,7 @@ import { db, schema } from '../db';
 import { normalizePhone, vnNow } from '../lib/util';
 import { STATUS_IN, byName, fixPhone, fold, parseDate, updatableColumns } from '../lib/import';
 import { can } from '../lib/auth';
-import { body, csv, idParam, issueText, need } from './guard';
+import { body, csv, idParam, issueText, need, pageNumber } from './guard';
 import { owesIn } from './fees';
 import type { Env } from '.';
 
@@ -23,7 +23,9 @@ const phone = z.string().trim().max(20).nullish().transform((v, ctx) => {
 export const studentSchema = z.object({
   fullName: z.string().trim().min(2, 'Nhập họ tên').max(100),
   phone,
-  birthYear: z.coerce.number().int().min(1940, 'Năm sinh từ 1940 trở đi').max(2030, 'Năm sinh chưa đúng').nullish().transform((v) => v ?? null),
+  birthYear: z.coerce.number().int().min(1940, 'Năm sinh từ 1940 trở đi')
+    .refine((year) => year <= Number(vnNow().date.slice(0, 4)), 'Năm sinh không được ở tương lai')
+    .nullish().transform((v) => v ?? null),
   parentName: z.string().trim().max(100).nullish().transform((v) => v || null),
   parentPhone: phone,
   locationId: z.number().int().positive().nullish().transform((v) => v ?? null),
@@ -44,6 +46,12 @@ const classesByCode = (code: string, classIds: number[]) => db.insert(schema.stu
   db.select({ studentId: s.id, classId: schema.classes.id }).from(s).innerJoin(schema.classes, inArray(schema.classes.id, classIds)).where(eq(s.code, code)),
 );
 
+async function invalidClasses(classIds: number[], locationId: number | null) {
+  if (!classIds.length) return false;
+  const rows = await db.select({ id: schema.classes.id, locationId: schema.classes.locationId }).from(schema.classes).where(inArray(schema.classes.id, classIds));
+  return rows.length !== new Set(classIds).size || rows.some((row) => row.locationId !== locationId);
+}
+
 export const isUnique = (e: unknown) => /UNIQUE constraint failed/.test(String((e as any)?.cause?.message ?? e));
 
 /** Create the student and class links atomically. Retry on a duplicate code. */
@@ -59,11 +67,25 @@ export async function createStudent(values: Omit<typeof s.$inferInsert, 'code'>,
   }
 }
 
-/** Mã học viên kế tiếp: GF0001, GF0002… */
-export async function nextStudentCode() {
-  const r = await db.select({ m: sql<number>`coalesce(max(cast(substr(${s.code}, 3) as integer)), 0)` }).from(s).get();
-  return `GF${String((r?.m ?? 0) + 1).padStart(4, '0')}`;
+const studentCode = (n: number) => `GF${String(n).padStart(4, '0')}`;
+
+/** Reserve a range in one write so deletions and concurrent imports cannot recycle codes. */
+async function reserveStudentCodes(count: number) {
+  const floor = sql`max(
+    (select coalesce(max(cast(substr(code, 3) as integer)), 0) from students),
+    coalesce((select seq from sqlite_sequence where name = 'students'), 0)
+  )`;
+  const [row] = await db.insert(schema.settings)
+    .values({ key: 'student_code_sequence', value: sql`${floor} + ${count}` })
+    .onConflictDoUpdate({
+      target: schema.settings.key,
+      set: { value: sql`max(cast(${schema.settings.value} as integer), ${floor}) + ${count}` },
+    })
+    .returning({ last: sql<number>`cast(${schema.settings.value} as integer)` });
+  return row.last - count + 1;
 }
+
+export const nextStudentCode = async () => studentCode(await reserveStudentCodes(1));
 
 function filters(q: Record<string, string | undefined>) {
   const w: SQL[] = [];
@@ -88,7 +110,7 @@ const SORTS = { name: asc(s.fullName), code: asc(s.code), joined: desc(s.joinedA
 
 studentRoutes.get('/', need('students.view'), async (c) => {
   const q = c.req.query();
-  const page = Math.max(1, Number(q.page) || 1);
+  const page = pageNumber(q.page);
   const where = filters(q);
   const all = matchQuery(await db.select().from(s).where(where).orderBy(SORTS[q.sort as keyof typeof SORTS] ?? SORTS.name), q.q);
   const rows = all.slice((page - 1) * 50, page * 50);
@@ -132,34 +154,48 @@ const importRow = z.object({
 studentRoutes.post('/import', need('students.edit'), async (c) => {
   const [data, err] = await body(c, z.object({ rows: z.array(importRow).min(1).max(2000) }));
   if (err) return err;
-  const [locations, plans, classes, existing] = await Promise.all([
+  const [locations, plans, classes, existing, links] = await Promise.all([
     db.select().from(schema.locations), db.select().from(schema.feePlans), db.select().from(schema.classes),
-    db.select({ id: s.id, code: s.code, fullName: s.fullName }).from(s),
+    db.select({ id: s.id, code: s.code, fullName: s.fullName, locationId: s.locationId }).from(s),
+    db.select().from(schema.studentClasses),
   ]);
   // Use the exported format for class names, days, and start times.
-  const classOf = (x: string) => classes.find((k) => fold(`${k.name} ${k.days} ${k.startTime}`) === fold(x))?.id;
-  const codes = new Map<string, number>(existing.map((e) => [e.code.toUpperCase(), e.id]));
-  let next = Number((await nextStudentCode()).slice(2));
+  const classMatches = (x: string, locationId: number | null) => classes.filter((k) => k.locationId === locationId && fold(`${k.name} ${k.days} ${k.startTime}`) === fold(x));
+  const studentsByCode = new Map(existing.map((e) => [e.code.toUpperCase(), e]));
+  const codeCounts = new Map<string, number>();
+  for (const row of data.rows) {
+    const code = row.code?.toUpperCase();
+    if (code) codeCounts.set(code, (codeCounts.get(code) ?? 0) + 1);
+  }
+  const newRows = data.rows.filter((row) => !row.code).length;
+  let next = newRows ? await reserveStudentCodes(newRows) : 0;
   const errors: { row: number; error: string }[] = [];
   const todo: { row: number; isNew: boolean; stmts: BatchItem<'sqlite'>[] }[] = [];
 
   for (const [i, r] of data.rows.entries()) {
     const rowNo = i + 2; // Row 1 contains headers.
+    const code = r.code?.toUpperCase();
+    if (code && (codeCounts.get(code) ?? 0) > 1) {
+      errors.push({ row: rowNo, error: `mã học viên "${code}" xuất hiện nhiều lần trong file` });
+      continue;
+    }
     // Reject unrecognized input so it cannot overwrite existing data with defaults.
     const locationId = byName(locations, r.location);
     const feePlanId = byName(plans, r.plan);
     const joinedAt = parseDate(r.joinedAt);
     const status = STATUS_IN[fold(r.status ?? '')];
     const classNames = (r.classes ?? '').split(/[;\n]/).map((x) => x.trim()).filter(Boolean);
-    const badClass = classNames.find((x) => !classOf(x));
+    const previous = code ? studentsByCode.get(code) : undefined;
+    const effectiveLocation = r.location === undefined ? previous?.locationId ?? null : locationId;
+    const badClass = classNames.find((x) => classMatches(x, effectiveLocation).length !== 1);
     const miss = r.location && !locationId ? `không thấy cơ sở "${r.location}"`
       : r.plan && !feePlanId ? `không thấy gói học phí "${r.plan}"`
       : r.joinedAt && !joinedAt ? `ngày nhập học "${r.joinedAt}" chưa đúng (ghi dạng ngày/tháng/năm, vd. 15/08/2026)`
       : r.status && !status ? `trạng thái "${r.status}" chưa đúng (ghi Đang học, Tạm nghỉ hoặc Đã nghỉ)`
-      : badClass ? `không thấy lớp "${badClass}" (ghi đúng dạng: Tên lớp + thứ + giờ, vd. "MMA 246 18:30")` : null;
+      : badClass ? `không tìm thấy đúng một lớp "${badClass}" ở cơ sở đã chọn (ghi dạng: Tên lớp + thứ + giờ, vd. "MMA 246 18:30")` : null;
     if (miss) { errors.push({ row: rowNo, error: miss }); continue; }
     const parsed = studentSchema.safeParse({
-      fullName: r.fullName ?? (existing.find((e) => e.code.toUpperCase() === r.code?.toUpperCase())?.fullName ?? ''),
+      fullName: r.fullName ?? previous?.fullName ?? '',
       phone: fixPhone(r.phone),
       birthYear: r.birthYear ? Number(r.birthYear) : null,
       parentName: r.parentName || null,
@@ -169,7 +205,7 @@ studentRoutes.post('/import', need('students.edit'), async (c) => {
       joinedAt: joinedAt ?? vnNow().date,
       status: status ?? 'active',
       note: r.note || null,
-      classIds: [...new Set(classNames.map((x) => classOf(x)!))],
+      classIds: [...new Set(classNames.map((x) => classMatches(x, effectiveLocation)[0].id))],
     });
     if (!parsed.success) {
       const iss = parsed.error.issues[0];
@@ -177,9 +213,13 @@ studentRoutes.post('/import', need('students.edit'), async (c) => {
       continue;
     }
     const { classIds: cls, ...values } = parsed.data;
-    const id = r.code ? codes.get(r.code.toUpperCase()) : undefined;
+    const id = previous?.id;
     // Reject unknown codes so retrying an import cannot silently create a new student.
     if (r.code && !id) { errors.push({ row: rowNo, error: `không thấy mã học viên "${r.code}" — học viên mới thì để trống ô Mã` }); continue; }
+    if (id && r.location !== undefined && r.classes === undefined && links.some((link) => link.studentId === id && classes.find((k) => k.id === link.classId)?.locationId !== locationId)) {
+      errors.push({ row: rowNo, error: 'đổi cơ sở cần cập nhật cột Lớp để lớp thuộc cơ sở mới' });
+      continue;
+    }
     if (id) {
       // Update only supplied columns. A present but blank Classes column removes all class links.
       const stmts: BatchItem<'sqlite'>[] = [db.update(s).set({ ...updatableColumns(values, r), updatedAt: Date.now() }).where(eq(s.id, id))];
@@ -188,7 +228,7 @@ studentRoutes.post('/import', need('students.edit'), async (c) => {
       todo.push({ row: rowNo, isNew: false, stmts });
     } else {
       // Use the reserved code to assign classes in the same batch as student creation.
-      const code = `GF${String(next++).padStart(4, '0')}`;
+      const code = studentCode(next++);
       todo.push({ row: rowNo, isNew: true, stmts: [db.insert(s).values({ ...values, code }), ...(cls.length ? [classesByCode(code, cls)] : [])] });
     }
   }
@@ -247,6 +287,7 @@ studentRoutes.post('/', need('students.edit'), async (c) => {
   const [data, err] = await body(c, studentSchema, STUDENT_LABELS);
   if (err) return err;
   const { classIds, ...values } = data;
+  if (await invalidClasses(classIds, values.locationId)) return c.json({ error: 'Lớp không thuộc cơ sở đã chọn' }, 400);
   return c.json(await createStudent(values, classIds), 201);
 });
 
@@ -256,6 +297,7 @@ studentRoutes.put('/:id', need('students.edit'), async (c) => {
   const [data, err] = await body(c, studentSchema, STUDENT_LABELS);
   if (err) return err;
   const { classIds, ...values } = data;
+  if (await invalidClasses(classIds, values.locationId)) return c.json({ error: 'Lớp không thuộc cơ sở đã chọn' }, 400);
   // Return a clear 404 if the student was already deleted.
   if (!(await db.select({ id: s.id }).from(s).where(eq(s.id, id)).get())) return c.json({ error: 'Học viên này đã bị xoá' }, 404);
   await db.batch([

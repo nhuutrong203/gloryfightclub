@@ -192,6 +192,17 @@ export const faqs = sqliteTable('faqs', {
   sort: sort(),
 });
 
+export const partners = sqliteTable('partners', {
+  id: id(),
+  name: text('name').notNull(),
+  nameEn: text('name_en'),
+  kind: text('kind', { enum: ['supporter', 'partner', 'sponsor'] }).notNull().default('supporter'),
+  imageKey: text('image_key').notNull(),
+  website: text('website'),
+  isPublic: isPublic(),
+  sort: sort(),
+});
+
 export const achievements = sqliteTable('achievements', {
   id: id(),
   title: text('title').notNull(),

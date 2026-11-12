@@ -1,7 +1,8 @@
 ---
 import Icon from './Icon.astro';
 import TestimonialAuthor from './TestimonialAuthor.astro';
-import { t, tr, type Lang } from '../../i18n';
+import { t as baseT, tr, type Lang } from '../../i18n';
+const t = (lang: Parameters<typeof baseT>[0], key: Parameters<typeof baseT>[1]) => baseT(lang, key, Astro.locals.site.texts);
 import type { schema } from '../../db';
 
 // Scroll testimonials continuously without a visible jump at the end.

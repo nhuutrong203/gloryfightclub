@@ -1,6 +1,7 @@
 import type { Context, Next } from 'hono';
 import { z, type ZodType } from 'zod';
 import { can, type Permission } from '../lib/auth';
+import { csvCell } from '../lib/import';
 import type { Env } from '.';
 
 // Use Vietnamese for default Zod validation messages.
@@ -37,15 +38,14 @@ export const idParam = (c: Context<any>) => {
   return Number.isInteger(n) && n > 0 ? n : null;
 };
 
+export const pageNumber = (value?: string) => {
+  const n = Number(value);
+  return Number.isSafeInteger(n) && n >= 1 && n <= Math.floor(Number.MAX_SAFE_INTEGER / 100) ? n : 1;
+};
+
 /** Include a UTF-8 BOM so Excel displays Vietnamese correctly. */
 export function csv(filename: string, header: string[], rows: unknown[][]) {
-  const cell = (v: unknown) => {
-    const s = v == null ? '' : String(v);
-    // Chặn công thức Excel (CSV injection) và escape dấu nháy.
-    const safe = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
-    return /[",\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
-  };
-  const text = '﻿' + [header, ...rows].map((r) => r.map(cell).join(',')).join('\r\n');
+  const text = '﻿' + [header, ...rows].map((r) => r.map(csvCell).join(',')).join('\r\n');
   return new Response(text, {
     headers: {
       'content-type': 'text/csv; charset=utf-8',

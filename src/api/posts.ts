@@ -5,7 +5,7 @@ import { db, schema } from '../db';
 import { slugify, youtubeId } from '../lib/util';
 import { sanitizeHtml, toText } from '../lib/html';
 import { withMedia } from '../lib/public';
-import { body, idParam, need } from './guard';
+import { body, idParam, need, pageNumber } from './guard';
 import { deleteMedia } from './media';
 import type { Env } from '.';
 
@@ -49,7 +49,7 @@ const mediaRows = (postId: number, media: z.infer<typeof mediaItem>[]) => media.
 const PER_PAGE = 50; // Keep the withMedia ID list below the D1 parameter limit.
 
 postRoutes.get('/', need('posts'), async (c) => {
-  const page = Math.max(1, Number(c.req.query('page')) || 1);
+  const page = pageNumber(c.req.query('page'));
   const rows = await db.select().from(p).orderBy(desc(p.publishedAt), desc(p.id)).limit(PER_PAGE + 1).offset((page - 1) * PER_PAGE);
   return c.json({ page, hasMore: rows.length > PER_PAGE, rows: await withMedia(rows.slice(0, PER_PAGE)) });
 });

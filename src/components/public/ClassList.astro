@@ -1,6 +1,7 @@
 ---
 import Icon from './Icon.astro';
-import { tr, t, dayShort, type Lang, type DictKey } from '../../i18n';
+import { tr, t as baseT, dayShort, type Lang, type DictKey } from '../../i18n';
+const t = (lang: Parameters<typeof baseT>[0], key: Parameters<typeof baseT>[1]) => baseT(lang, key, Astro.locals.site.texts);
 import type { PublicClass } from '../../lib/public';
 
 // Compact schedule for discipline, coach, and home pages. Hide when empty.

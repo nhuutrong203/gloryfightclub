@@ -7,7 +7,8 @@ import { postBySlug, publishedPosts } from '../../lib/public';
 import { toText } from '../../lib/html';
 import { youtubeId } from '../../lib/util';
 import { mediaUrl } from '../../lib/site';
-import { t, tr, href, type Lang } from '../../i18n';
+import { t as baseT, tr, href, type Lang } from '../../i18n';
+const t = (lang: Parameters<typeof baseT>[0], key: Parameters<typeof baseT>[1]) => baseT(lang, key, Astro.locals.site.texts);
 
 const lang: Lang = Astro.locals.lang;
 const post = await postBySlug(Astro.params.slug ?? '');

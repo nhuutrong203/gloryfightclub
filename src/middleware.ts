@@ -1,6 +1,5 @@
 import { defineMiddleware } from 'astro:middleware';
 import { env } from 'cloudflare:workers';
-import { setTextOverrides } from './i18n';
 import { getSite } from './lib/site';
 
 // Serve media on the CMS host for image previews.
@@ -17,7 +16,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const admin = host === env.PUBLIC_HOST && pathname.match(/^(?:\/en)?(\/admin(?:\/.*)?)$/);
   if (admin) return context.redirect(`https://${env.CMS_HOST}${admin[1]}`, 302);
   // Block login and administrative APIs on the public host.
-  if (host === env.PUBLIC_HOST && /^\/api\/(admin|auth)(\/|$)/.test(pathname)) return new Response('Not found', { status: 404 });
+  if (host === env.PUBLIC_HOST && /^(?:\/en)?\/api\/(admin|auth)(\/|$)/.test(pathname)) return new Response('Not found', { status: 404 });
 
   // Redirect saved news links to the class diary.
   const old = pathname.match(/^(\/en)?\/tin-tuc(\/.*)?$/);
@@ -26,7 +25,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // Load shared site data once for public pages, skipping API and media requests.
   if (!CMS_PATH.test(pathname) && !pathname.startsWith('/_')) {
     context.locals.site = await getSite();
-    setTextOverrides(context.locals.site.texts);
   }
 
   // Reuse the Vietnamese page with English locals for /en paths.

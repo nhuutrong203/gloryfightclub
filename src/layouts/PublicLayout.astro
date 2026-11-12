@@ -6,7 +6,8 @@ import { sql } from 'drizzle-orm';
 import { db } from '../db';
 import { vnNow } from '../lib/util';
 import { telHref } from '../lib/site';
-import { t, href, type Lang, type DictKey } from '../i18n';
+import { t as baseT, href, type Lang, type DictKey } from '../i18n';
+const t = (lang: Parameters<typeof baseT>[0], key: Parameters<typeof baseT>[1]) => baseT(lang, key, Astro.locals.site.texts);
 
 interface Props {
   title?: string;

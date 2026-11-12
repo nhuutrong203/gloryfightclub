@@ -4,7 +4,8 @@ import PageHero from '../../components/public/PageHero.astro';
 import CoachCard from '../../components/public/CoachCard.astro';
 import CtaBand from '../../components/public/CtaBand.astro';
 import { publicCoaches } from '../../lib/public';
-import { t, type Lang } from '../../i18n';
+import { t as baseT, type Lang } from '../../i18n';
+const t = (lang: Parameters<typeof baseT>[0], key: Parameters<typeof baseT>[1]) => baseT(lang, key, Astro.locals.site.texts);
 
 const lang: Lang = Astro.locals.lang;
 const coaches = await publicCoaches();

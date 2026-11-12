@@ -113,7 +113,8 @@ export function StudentEdit({ id, me }: { id: string; me: Me }) {
   if ((!isNew && !data) || !lk) return <Loading />;
 
   const set = (k: keyof typeof form) => (v: any) => { setForm((x) => ({ ...x, [k]: v })); markDirty(true); };
-  const age = form.birthYear ? new Date().getFullYear() - Number(form.birthYear) : null;
+  const currentYear = Number(todayVN().slice(0, 4));
+  const age = form.birthYear && Number(form.birthYear) <= currentYear ? currentYear - Number(form.birthYear) : null;
   const isKid = age != null && age < 16;
   // Keep selected inactive or old-location classes visible so staff can remove them.
   const classOpts = lk.classes.filter((k) => form.classIds.includes(k.id) || (k.isActive && (!form.locationId || k.locationId === Number(form.locationId))));
@@ -159,7 +160,7 @@ export function StudentEdit({ id, me }: { id: string; me: Me }) {
           <legend className="sr-only">Thông tin học viên</legend>
           <div className="sm:col-span-2"><TextInput label="Họ và tên *" required value={form.fullName} onChange={(e) => set('fullName')(e.target.value)} /></div>
           <TextInput label="Số điện thoại" type="tel" inputMode="tel" value={form.phone} onChange={(e) => set('phone')(e.target.value)} help={isKid ? 'Trẻ nhỏ có thể bỏ trống, dùng SĐT phụ huynh' : undefined} />
-          <TextInput label="Năm sinh" type="number" inputMode="numeric" min={1940} max={2030} value={form.birthYear} onChange={(e) => set('birthYear')(e.target.value)} help={age != null ? `${age} tuổi` : undefined} />
+          <TextInput label="Năm sinh" type="number" inputMode="numeric" min={1940} max={currentYear} value={form.birthYear} onChange={(e) => set('birthYear')(e.target.value)} help={age != null ? `${age} tuổi` : undefined} />
           {/* Parent details are optional. Suggest them for children so staff can reach a guardian. */}
           <TextInput label="Tên phụ huynh" value={form.parentName} onChange={(e) => set('parentName')(e.target.value)} help={isKid ? 'Nên ghi để tiện liên lạc' : undefined} />
           <TextInput label="SĐT phụ huynh" type="tel" inputMode="tel" value={form.parentPhone} onChange={(e) => set('parentPhone')(e.target.value)} />
