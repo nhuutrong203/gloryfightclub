@@ -5,20 +5,20 @@ import { RichEditor } from '../RichEditor';
 import { textToHtml, toText } from '../../lib/html';
 import { youtubeId } from '../../lib/util';
 
-// Nhật ký lớp học: mỗi buổi tập một bài — chữ có định dạng, nhiều ảnh, video (tải lên hoặc link YouTube).
+// Class diary entries support rich text, images, video uploads, and YouTube links.
 
 type Media = { type: 'image' | 'video' | 'youtube'; key: string };
 type Post = { id: number; slug: string; title: string | null; titleEn: string | null; content: string; contentEn: string | null; format: 'text' | 'html'; publishedAt: number; isPublic: boolean; media: Media[] };
 
 const MAX_MEDIA = 24;
 
-/** Chuyển giữa timestamp và "YYYY-MM-DDTHH:MM" (giờ máy người dùng) cho ô Ngày + ô Giờ. */
+/** Convert timestamps to local date and time fields and back. */
 const toLocalInput = (ms: number) => { const d = new Date(ms); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); };
 const fromLocalInput = (s: string) => new Date(s).getTime();
 const fmtDateTime = (ms: number) => new Date(ms).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
 const plain = (p: Post) => (p.format === 'html' ? toText(p.content) : p.content);
 
-/** Ô xem trước 1 ảnh / video / YouTube (dùng ở danh sách và form). */
+/** Media preview shared by the list and editor. */
 function Thumb({ m, className = '' }: { m: Media; className?: string }) {
   if (m.type === 'image') return <img src={mediaUrl(m.key)} alt="" loading="lazy" className={`size-full object-cover ${className}`} />;
   return (
@@ -83,7 +83,7 @@ export function PostEdit({ id, me }: { id: string; me: Me }) {
   const [showEn, setShowEn] = useState(false);
   const [uploading, setUploading] = useState(0);
   const [videoPct, setVideoPct] = useState<number | null>(null);
-  const [yt, setYt] = useState<string | null>(null); // ô dán link YouTube (null = đang ẩn)
+  const [yt, setYt] = useState<string | null>(null); // YouTube URL field. Null means closed.
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const markDirty = useDirty();
@@ -92,7 +92,7 @@ export function PostEdit({ id, me }: { id: string; me: Me }) {
 
   useEffect(() => {
     if (!existing) return;
-    const html = (s: string | null) => (!s ? '' : existing.format === 'html' ? s : textToHtml(s)); // bài cũ chữ thường → mở được trong trình soạn thảo
+    const html = (s: string | null) => (!s ? '' : existing.format === 'html' ? s : textToHtml(s)); // Convert legacy plain text for the rich editor.
     setForm({ title: existing.title ?? '', titleEn: existing.titleEn ?? '', content: html(existing.content), contentEn: html(existing.contentEn), publishedAt: existing.publishedAt, isPublic: existing.isPublic, media: existing.media });
     setPickDate(existing.publishedAt > Date.now());
     setShowEn(!!(existing.titleEn || existing.contentEn));
@@ -157,7 +157,7 @@ export function PostEdit({ id, me }: { id: string; me: Me }) {
             help="Bôi đen chữ rồi bấm nút để in đậm, làm tiêu đề, danh sách… Dán chữ từ Facebook/Zalo vẫn được." />
         </section>
 
-        {/* Ảnh & video */}
+        {/* Images and video */}
         <section className="border border-neutral-200 bg-white p-4">
           <p className="mb-2 text-sm font-semibold">Ảnh & video ({form.media.length}/{MAX_MEDIA}) <span className="font-normal text-neutral-500">· ô đầu tiên làm ảnh bìa</span></p>
           {(form.media.length > 0 || uploading > 0 || videoPct !== null) && (
@@ -214,7 +214,7 @@ export function PostEdit({ id, me }: { id: string; me: Me }) {
           <Toggle label="Hiện trên website" checked={form.isPublic} onChange={set('isPublic')} help={form.isPublic ? undefined : 'Bài đang ẩn, khách không thấy'} />
           <Toggle label="Chọn ngày đăng khác" help="Ghi lại buổi tập hôm trước, hoặc hẹn giờ đăng sau" checked={pickDate}
             onChange={(v) => { setPickDate(v); markDirty(true); }} />
-          {/* Ngày + giờ tách 2 ô: giờ luôn kiểu 24 giờ (ô datetime-local gốc hiện "07:30 PM" trên máy tiếng Anh). */}
+          {/* Separate date and time so the time picker always uses 24-hour notation. */}
           {pickDate && (() => {
             const [d, tm] = toLocalInput(form.publishedAt).split('T');
             return (

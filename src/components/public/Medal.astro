@@ -1,7 +1,7 @@
 ---
 import type { Tier } from '../../lib/medals';
 
-// Huy chương tròn có dây đeo, màu theo hạng. Trang trí (aria-hidden) — chữ đi kèm nói rõ hạng.
+// Decorative medal. The accompanying text identifies the rank.
 interface Props { tier: Tier; class?: string }
 const { tier, class: className = 'size-7' } = Astro.props;
 ---

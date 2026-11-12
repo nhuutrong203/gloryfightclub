@@ -21,11 +21,11 @@ app.onError((err, c) => {
   return c.json({ error: 'Lỗi máy chủ, vui lòng thử lại.' }, 500);
 });
 
-// Chống CSRF: mọi request ghi dữ liệu phải đến từ chính trang này.
+// Check the request origin for writes to protect against CSRF.
 app.use('*', async (c, next) => {
   if (c.req.method !== 'GET' && c.req.method !== 'HEAD') {
     const origin = c.req.header('origin');
-    // "Origin: null" (iframe sandbox, file://) không phải URL → coi như trang khác.
+    // Treat an opaque origin from a sandbox or file URL as external.
     const host = origin ? URL.parse(origin)?.host : undefined;
     if (origin && host !== new URL(c.req.url).host) return c.json({ error: 'Forbidden' }, 403);
   }
@@ -35,7 +35,7 @@ app.use('*', async (c, next) => {
 app.route('/public', publicRoutes);
 app.route('/auth', authRoutes);
 
-// Từ đây trở xuống cần đăng nhập.
+// Require authentication for the following routes.
 app.use('/admin/*', async (c, next) => {
   const token = getCookie(c, SESSION_COOKIE);
   if (!token) return c.json({ error: 'Chưa đăng nhập' }, 401);
@@ -47,7 +47,7 @@ app.use('/admin/*', async (c, next) => {
     .where(and(eq(schema.sessions.id, sid), gt(schema.sessions.expiresAt, Date.now()), eq(schema.users.isActive, true)))
     .get();
   if (!row) return c.json({ error: 'Phiên đăng nhập đã hết hạn' }, 401);
-  // Gia hạn khi còn < 15 ngày: ai dùng CMS thường xuyên không bao giờ bị đăng xuất giữa chừng (mỗi người ghi DB tối đa ~2 lần/tháng).
+  // Renew sessions with less than 15 days left to keep regular users signed in.
   if (row.expiresAt - Date.now() < 15 * 86400_000) {
     await db.update(schema.sessions).set({ expiresAt: Date.now() + SESSION_DAYS * 86400_000 }).where(eq(schema.sessions.id, sid));
     setCookie(c, SESSION_COOKIE, token, cookieOpts(c));

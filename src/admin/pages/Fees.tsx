@@ -18,21 +18,21 @@ export function Fees({ me }: { me: Me }) {
 
   const rows = useMemo(() => {
     if (!data) return [];
-    const term = fold(q.trim()); // "nguyen" khớp "Nguyễn", giống trang Học viên
+    const term = fold(q.trim()); // Match names without accents, as on the students page.
     return data.students
       .map((s) => ({ s, p: data.payments.find((p) => p.studentId === s.id) }))
       .filter(({ s, p }) => (show === 'all' || (show === 'paid' ? p : !p)) && (!loc || s.locationId === Number(loc)) && (!term || fold(s.fullName).includes(term) || s.code.toLowerCase().includes(term)));
   }, [data, show, loc, q]);
   const total = data?.payments.reduce((a, p) => a + p.amount, 0) ?? 0;
-  const unpaidCount = data ? data.students.filter((s) => !data.payments.some((p) => p.studentId === s.id)).length : 0; // server chỉ trả người phải đóng (owesIn) + người đã đóng
+  const unpaidCount = data ? data.students.filter((s) => !data.payments.some((p) => p.studentId === s.id)).length : 0; // The API returns students who owe fees and anyone who already paid.
   const plan = (id: number | null) => lk?.feePlans.find((p) => p.id === id);
 
   return (
     <Page title="Học phí">
-      {/* Chọn tháng */}
+      {/* Month selector */}
       <div className="mb-4 flex items-center gap-2">
         <Button variant="ghost" aria-label="Tháng trước" onClick={() => setMonth(shiftMonth(month, -1))}><Icon name="back" /></Button>
-        {/* Ô chọn tháng gốc hiện theo ngôn ngữ trình duyệt ("NOVEMBER") → phủ ô trong suốt lên nhãn tiếng Việt. */}
+        {/* Overlay the native picker on the localized month label. */}
         <label className={`${inputCls} relative flex flex-1 cursor-pointer items-center justify-center font-display text-xl uppercase`}>
           {monthLabel(month)}
           <input type="month" aria-label="Chọn tháng" value={month} onChange={(e) => e.target.value && setMonth(e.target.value)}

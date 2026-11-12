@@ -3,7 +3,7 @@ import { api, toast } from '../lib';
 import { fold } from '../../lib/import';
 import { Button, Icon } from '../ui';
 
-// Cột giống file "Xuất Excel" → thầy xuất ra, sửa trong Excel, nhập lại được.
+// Match the export columns so staff can edit and reimport the file.
 const COLUMNS: [key: string, header: string, aliases: string[]][] = [
   ['code', 'Mã', ['ma', 'ma hv', 'ma hoc vien']],
   ['fullName', 'Họ tên', ['ho ten', 'ho va ten', 'ten', 'hoc vien']],
@@ -43,7 +43,7 @@ async function readRows(file: File): Promise<Record<string, string>[]> {
   let grid: unknown[][];
   if (/\.csv$/i.test(file.name) || file.type === 'text/csv') grid = parseCsv((await file.text()).replace(/^﻿/, ''));
   else {
-    const { readSheet } = await import('read-excel-file/browser'); // chỉ tải thư viện khi cần
+    const { readSheet } = await import('read-excel-file/browser'); // Load the spreadsheet parser on demand.
     grid = await readSheet(file);
   }
   const [header, ...body] = grid;

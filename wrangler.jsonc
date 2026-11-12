@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "gloryfightclub",
-  // ID tài khoản Cloudflare — không bí mật; cần cho deploy tự động từ GitHub.
+  // Public Cloudflare account ID used by GitHub Actions.
   "account_id": "a0f441c17cd276cee70894a4abcde80d",
   "main": "@astrojs/cloudflare/entrypoints/server",
   "compatibility_date": "2026-10-01",
@@ -19,19 +19,19 @@
     }
   ],
   "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "glory-media" }],
-  // Giới hạn đăng nhập: 10 lần / 60 giây / IP (Workers Rate Limiting).
+  // Limit logins to 10 attempts per 60 seconds per IP.
   "ratelimits": [
     { "name": "LOGIN_LIMITER", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } },
     { "name": "TRIAL_LIMITER", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } }
   ],
-  // Hai tên miền con trỏ vào cùng Worker; middleware phân luồng public / CMS.
+  // Route the public and CMS hostnames through the same Worker.
   "routes": [
     { "pattern": "gloryfightclub.vn", "custom_domain": true },
     { "pattern": "cms.gloryfightclub.vn", "custom_domain": true }
   ],
 
-  // `npm run dev:remote` (CLOUDFLARE_ENV=remote): chạy local nhưng đọc/ghi D1 + R2 THẬT trên cloud.
-  // Binding không được kế thừa giữa các env nên phải khai báo lại ở đây.
+  // Remote development reads and writes the live D1 database and R2 bucket.
+  // Redeclare bindings because environments do not inherit them.
   "env": {
     "remote": {
       "vars": {

@@ -1,8 +1,8 @@
 import { sql } from 'drizzle-orm';
 import { sqliteTable, text, integer, primaryKey, uniqueIndex, index } from 'drizzle-orm/sqlite-core';
 
-// Quy ước: ngày = text 'YYYY-MM-DD'; thời điểm = integer unix ms; ảnh = key R2.
-// Cột chữ hiển thị public có cặp `_en` (trống thì trang EN dùng bản tiếng Việt).
+// Dates use YYYY-MM-DD, timestamps use Unix milliseconds, and images use R2 keys.
+// Public text uses an English companion with Vietnamese fallback.
 
 const id = () => integer('id').primaryKey({ autoIncrement: true });
 const createdAt = () => integer('created_at').notNull().default(sql`(unixepoch() * 1000)`);
@@ -10,7 +10,7 @@ const updatedAt = () => integer('updated_at').notNull().default(sql`(unixepoch()
 const isPublic = () => integer('is_public', { mode: 'boolean' }).notNull().default(true);
 const sort = () => integer('sort').notNull().default(0);
 
-// ───────────── Hệ thống ─────────────
+// System tables
 
 export const users = sqliteTable('users', {
   id: id(),
@@ -18,7 +18,7 @@ export const users = sqliteTable('users', {
   passwordHash: text('password_hash').notNull(),
   fullName: text('full_name').notNull(),
   role: text('role', { enum: ['owner', 'coach'] }).notNull().default('coach'),
-  // Quyền chủ CLB tick cho HLV; owner luôn toàn quyền.
+  // Owners choose coach permissions. Owners always have full access.
   permissions: text('permissions', { mode: 'json' }).$type<string[]>().notNull().default(sql`'[]'`),
   coachId: integer('coach_id').references(() => coaches.id, { onDelete: 'set null' }),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
@@ -26,18 +26,18 @@ export const users = sqliteTable('users', {
 });
 
 export const sessions = sqliteTable('sessions', {
-  id: text('id').primaryKey(), // SHA-256 của token trong cookie
+  id: text('id').primaryKey(), // SHA-256 hash of the cookie token.
   userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   expiresAt: integer('expires_at').notNull(),
 });
 
-// Thông tin chung của CLB: hotline, zalo, mạng xã hội, hero, trang giới thiệu…
+// Shared club settings, including contact details, hero, and About content.
 export const settings = sqliteTable('settings', {
   key: text('key').primaryKey(),
   value: text('value', { mode: 'json' }).notNull(),
 });
 
-// ───────────── Nội dung public ─────────────
+// Public content
 
 export const locations = sqliteTable('locations', {
   id: id(),
@@ -46,7 +46,7 @@ export const locations = sqliteTable('locations', {
   address: text('address').notNull(),
   mapUrl: text('map_url'),
   phone: text('phone'),
-  scheduleImageKey: text('schedule_image_key'), // có ảnh thì trang Lịch học hiện ảnh này
+  scheduleImageKey: text('schedule_image_key'), // Optional schedule image shown on the Schedule page.
   sort: sort(),
 });
 
@@ -65,7 +65,7 @@ export const disciplines = sqliteTable('disciplines', {
   sort: sort(),
 });
 
-// Lớp / ca tập. days = các thứ theo cách gọi VN: '246' = T2·T4·T6, '357', '8' = CN.
+// Vietnamese day codes: 246 is Mon/Wed/Fri, 357 is Tue/Thu/Sat, and 8 is Sunday.
 export const classes = sqliteTable('classes', {
   id: id(),
   name: text('name').notNull(),
@@ -92,7 +92,7 @@ export const coaches = sqliteTable('coaches', {
   titleEn: text('title_en'),
   bio: text('bio'),
   bioEn: text('bio_en'),
-  achievements: text('achievements'), // mỗi dòng 1 thành tích
+  achievements: text('achievements'), // One achievement per line.
   achievementsEn: text('achievements_en'),
   disciplineIds: text('discipline_ids', { mode: 'json' }).$type<number[]>().notNull().default(sql`'[]'`),
   isFeatured: integer('is_featured', { mode: 'boolean' }).notNull().default(false),
@@ -112,19 +112,19 @@ export const belts = sqliteTable('belts', {
   minMonths: integer('min_months'),
 });
 
-// Gói tập theo tháng (Premium, Standard, Trẻ em, HSSV…).
+// Monthly membership plans.
 export const feePlans = sqliteTable('fee_plans', {
   id: id(),
   name: text('name').notNull(),
   nameEn: text('name_en'),
-  headline: text('headline'), // vd. "Tập tất cả các môn"
+  headline: text('headline'), // Short summary of the plan.
   headlineEn: text('headline_en'),
-  condition: text('condition'), // vd. "Trừ lớp trẻ em và lớp Fighter"
+  condition: text('condition'), // Plan restrictions and exceptions.
   conditionEn: text('condition_en'),
-  audience: text('audience'), // phù hợp với ai, 1–2 câu (thẻ gói ở Trang chủ + /hoc-phi)
+  audience: text('audience'), // Intended audience shown on the home and fees cards.
   audienceEn: text('audience_en'),
   pricePerMonth: integer('price_per_month').notNull(), // VND
-  features: text('features'), // mỗi dòng 1 ý
+  features: text('features'), // One benefit per line.
   featuresEn: text('features_en'),
   badge: text('badge'), // vd. "BEST CHOICE"
   isFeatured: integer('is_featured', { mode: 'boolean' }).notNull().default(false),
@@ -139,9 +139,9 @@ export const posts = sqliteTable('posts', {
   titleEn: text('title_en'),
   content: text('content').notNull(),
   contentEn: text('content_en'),
-  // 'html' = soạn bằng trình soạn thảo (đã lọc ở server); 'text' = bài cũ chữ thường.
+  // HTML is sanitized editor content. Text is the legacy plain-text format.
   format: text('format', { enum: ['text', 'html'] }).notNull().default('text'),
-  publishedAt: integer('published_at').notNull(), // > now = hẹn giờ đăng
+  publishedAt: integer('published_at').notNull(), // A future value schedules publication.
   isPublic: isPublic(),
   createdBy: integer('created_by').references(() => users.id, { onDelete: 'set null' }),
   createdAt: createdAt(),
@@ -160,7 +160,7 @@ export const postImages = sqliteTable('post_images', {
 export const galleryItems = sqliteTable('gallery_items', {
   id: id(),
   type: text('type', { enum: ['photo', 'video'] }).notNull(),
-  key: text('key'), // ảnh
+  key: text('key'), // Image key.
   videoUrl: text('video_url'), // link YouTube / Facebook
   caption: text('caption'),
   captionEn: text('caption_en'),
@@ -173,7 +173,7 @@ export const galleryItems = sqliteTable('gallery_items', {
 export const testimonials = sqliteTable('testimonials', {
   id: id(),
   authorName: text('author_name').notNull(),
-  authorRole: text('author_role'), // vd. "Phụ huynh bé Minh"
+  authorRole: text('author_role'), // Relationship or role of the testimonial author.
   authorRoleEn: text('author_role_en'),
   content: text('content').notNull(),
   contentEn: text('content_en'),
@@ -206,7 +206,7 @@ export const achievements = sqliteTable('achievements', {
   sort: sort(),
 });
 
-// ───────────── Học viên (riêng tư — không bao giờ trả ra public) ─────────────
+// Private student records. Never expose them on public routes.
 
 export const students = sqliteTable('students', {
   id: id(),
@@ -217,7 +217,7 @@ export const students = sqliteTable('students', {
   parentName: text('parent_name'),
   parentPhone: text('parent_phone'),
   locationId: integer('location_id').references(() => locations.id, { onDelete: 'set null' }),
-  feePlanId: integer('fee_plan_id').references(() => feePlans.id, { onDelete: 'set null' }), // gói đang đóng → gợi ý số tiền khi thu
+  feePlanId: integer('fee_plan_id').references(() => feePlans.id, { onDelete: 'set null' }), // Current plan used to suggest the amount at collection.
   joinedAt: text('joined_at').notNull(),
   status: text('status', { enum: ['active', 'paused', 'quit'] }).notNull().default('active'),
   note: text('note'),
@@ -247,16 +247,16 @@ export const trialRegistrations = sqliteTable('trial_registrations', {
   id: id(),
   fullName: text('full_name').notNull(),
   phone: text('phone').notNull(),
-  age: integer('age'), // tính từ birth_date lúc đăng ký (đăng ký cũ chỉ có tuổi)
+  age: integer('age'), // Age at sign-up. Older entries may not have a birth date.
   birthDate: text('birth_date'), // 'YYYY-MM-DD'
   disciplineId: integer('discipline_id').references(() => disciplines.id, { onDelete: 'set null' }),
   locationId: integer('location_id').references(() => locations.id, { onDelete: 'set null' }),
-  feePlanId: integer('fee_plan_id').references(() => feePlans.id, { onDelete: 'set null' }), // gói khách quan tâm → thành gói của học viên khi chuyển
+  feePlanId: integer('fee_plan_id').references(() => feePlans.id, { onDelete: 'set null' }), // Plan of interest carried into the student record on conversion.
   preferredTime: text('preferred_time'),
-  // Buổi học thử khách chọn trong danh sách gợi ý: lớp + ngày ('YYYY-MM-DD'). Chuyển thành học viên thì lớp này được gán luôn.
+  // Selected trial class and date. Conversion can assign the class to the student.
   classId: integer('class_id').references(() => classes.id, { onDelete: 'set null' }),
   trialDate: text('trial_date'),
-  // Đồng ý Quy định CLB ở form học thử: lúc nào (ms) và bản nào (thời điểm lưu quy định trong CMS). Dưới 18 tuổi = phụ huynh xác nhận.
+  // Consent timestamp and rules version. A guardian confirms for minors.
   agreedAt: integer('agreed_at'),
   policyVersion: text('policy_version'),
   note: text('note'),

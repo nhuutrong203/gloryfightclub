@@ -1,5 +1,5 @@
-// Mật khẩu: PBKDF2-SHA256 qua WebCrypto (Workers giới hạn tối đa 100k vòng).
-// Session: token ngẫu nhiên trong cookie HttpOnly, DB chỉ lưu SHA-256 của token.
+// Passwords use Web Crypto PBKDF2-SHA256 with 100,000 iterations.
+// Store a random token in an HttpOnly cookie and only its hash in D1.
 
 export const SESSION_COOKIE = 'glory_session';
 export const SESSION_DAYS = 30;

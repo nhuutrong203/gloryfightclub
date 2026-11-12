@@ -1,5 +1,5 @@
--- DỮ LIỆU DEMO — CHỈ DÙNG Ở LOCAL để xem giao diện. KHÔNG nạp lên cloud.
--- Nội dung có chữ "(mẫu)" là giả, thầy sẽ thay bằng nội dung thật qua CMS.
+-- Demo data for local use only. Never load it into production.
+-- Entries marked "(mẫu)" are examples to replace through the CMS.
 
 DELETE FROM faqs;
 INSERT INTO faqs (question, question_en, answer, answer_en, sort) VALUES
@@ -46,7 +46,7 @@ INSERT INTO trial_registrations (full_name, phone, age, discipline_id, location_
 
 DELETE FROM sessions;
 DELETE FROM users;
--- Tài khoản demo LOCAL (mật khẩu: glory2026). Trên cloud tạo tài khoản thật bằng scripts/create-user.mjs.
+-- Local demo accounts use glory2026. Use scripts/create-user.mjs for real accounts.
 INSERT INTO users (username, password_hash, full_name, role, permissions, coach_id) VALUES
 ('admin', 'pbkdf2$100000$EZmGHvaH3JLyA/ix8D84Fw==$+d9G+IMEQ0kwiJpI7CX9XNOSui73COSFkTxS7Io5hpw=', 'Lê Thành Trung (demo)', 'owner', '[]', 1),
 ('hlv', 'pbkdf2$100000$/qX8E2vuA80gBSCJ0h4L6w==$80yxSzbQ6bxL0SKGE5uvh7vVQYE8WRGMZi+j1IFA9HY=', 'Nguyễn Tiến Đăng Phong (demo)', 'coach', '["students.view","students.edit","posts"]', 2);

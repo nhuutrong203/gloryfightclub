@@ -7,11 +7,11 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   site: 'https://gloryfightclub.vn',
   output: 'server',
-  // Ảnh đã được nén ở trình duyệt trước khi upload R2 → không cần dịch vụ resize (tránh binding IMAGES).
+  // The browser compresses images before upload, so no IMAGES binding is needed.
   adapter: cloudflare({ imageService: 'passthrough' }),
-  // Session đăng nhập CMS tự quản lý trong D1, không cần KV của Astro.
+  // CMS sessions live in D1 and do not need Astro KV.
   session: false,
-  // Thanh công cụ dev của Astro che nút ở cuối màn hình điện thoại khi thử CMS.
+  // The dev toolbar covers the CMS bottom actions on phones.
   devToolbar: { enabled: false },
   integrations: [react()],
   vite: { plugins: [tailwindcss()] },

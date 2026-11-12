@@ -16,7 +16,7 @@ export function Users({ me }: { me: Me }) {
   return (
     <Page title="Tài khoản" back="/admin/them" actions={!adding && <Button icon="plus" onClick={() => setAdding(true)}>Thêm</Button>}>
       <p className="-mt-2 mb-4 text-neutral-600">Tạo tài khoản cho các HLV và chọn họ được làm gì. Chủ CLB luôn có toàn quyền.</p>
-      {/* Chỉ chủ CLB đặt lại được mật khẩu → chỉ có 1 chủ CLB mà quên mật khẩu là kẹt (phải nhờ người lập trình chạy lệnh). */}
+      {/* Only an owner can reset another user's password. Use the CLI if the sole owner loses access. */}
       {data.users.filter((u) => u.role === 'owner' && u.isActive).length < 2 && (
         <div className="mb-4 border border-amber-300 bg-amber-50 p-4 text-amber-900">
           <b className="block">Nên có thêm 1 tài khoản Chủ CLB dự phòng</b>

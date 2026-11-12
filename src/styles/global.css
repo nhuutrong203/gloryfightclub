@@ -6,17 +6,17 @@
 @theme {
   --color-ink: #0a0a0a;
   --color-coal: #161616;
-  --color-ash: #9a9a9a; /* ≥4.5:1 trên nền ink */
+  --color-ash: #9a9a9a; /* At least 4.5:1 contrast on ink. */
   --color-bone: #f4f2ee;
   --color-glory: #e10600;
-  --color-glory-dark: #b80500; /* chữ đỏ trên nền sáng, đạt 4.5:1 */
-  --color-glory-bright: #ff3b30; /* chữ đỏ CỠ NHỎ trên nền tối: 5.6:1 (glory chỉ 4:1) */
+  --color-glory-dark: #b80500; /* Red for light backgrounds with at least 4.5:1 contrast. */
+  --color-glory-bright: #ff3b30; /* Red for small text on dark backgrounds, with 5.6:1 contrast. */
   --font-display: 'Anton', 'Impact', sans-serif;
   --font-sans: 'Be Vietnam Pro', system-ui, sans-serif;
   --animate-marquee: marquee 28s linear infinite;
 }
 
-/* Huy chương (Medal.astro dùng qua var(), không qua class) → static để Tailwind luôn xuất biến. */
+/* Always emit medal colors because components use them through var(). */
 @theme static {
   --color-gold: #e8b923;
   --color-gold-light: #ffe27a;
@@ -33,11 +33,11 @@
 
 @layer base {
   html { @apply bg-ink text-bone font-sans antialiased; scroll-behavior: smooth; scroll-padding-top: 5rem; -webkit-tap-highlight-color: transparent; }
-  /* overflow-wrap: chữ siêu dài không dấu cách (link, "supercalifragilistic…") tự xuống dòng thay vì tràn khỏi thẻ. */
+  /* Wrap long links and words to prevent card overflow. */
   body { @apply text-base leading-relaxed; overflow-wrap: break-word; }
-  /* Trừ chữ to kiểu Anton (giá, số liệu, tiêu đề): bẻ giữa từ thì thành "1.000.00 / 0". Chỗ nào cần thì tự thêm break-words. */
+  /* Keep display text such as prices intact unless wrapping is enabled explicitly. */
   h1, h2, h3, .font-display { overflow-wrap: normal; }
-  /* Chữ in hoa tiếng Việt có dấu chồng (Ổ, Ầ, Ấ) cao hơn chữ hoa: cần ≥1.12 để dấu không đâm vào dòng trên. */
+  /* Allow extra line height for stacked Vietnamese diacritics. */
   h1, h2, h3, .display { @apply font-display uppercase leading-[1.12] tracking-wide; text-wrap: balance; }
   p, li { text-wrap: pretty; }
   :focus-visible { @apply outline-2 outline-offset-2 outline-glory; }
@@ -51,7 +51,7 @@
 }
 @utility btn-red {
   @apply btn bg-glory text-white hover:bg-white hover:text-ink relative isolate overflow-hidden;
-  /* Vệt đỏ quét chéo qua nút (nút đã chuyển trắng) khi rê chuột (chỉ máy có chuột, xem phần chuyển động bên dưới). */
+  /* Sweep a red stripe across hovered buttons on pointer devices. */
   &::after { content: ''; position: absolute; inset: 0 auto 0 -60%; width: 40%; z-index: -1; pointer-events: none;
     background: linear-gradient(100deg, transparent, rgb(225 6 0 / .35), transparent); transform: skewX(-20deg); translate: 0; }
 }
@@ -67,7 +67,7 @@
 @utility eyebrow {
   @apply block font-display uppercase tracking-[0.2em] text-glory-bright text-sm leading-normal mb-3;
 }
-/* Chữ viền rỗng cho số thứ tự / chữ trang trí cỡ lớn */
+/* Outlined display text for decorative labels. */
 @utility text-outline {
   color: transparent;
   -webkit-text-stroke: 1.5px currentColor;
@@ -77,20 +77,20 @@
   -webkit-text-stroke: 1.5px rgb(255 255 255 / 0.35);
 }
 
-/* Hero trang chủ: chữ trượt lên lần lượt khi tải trang. */
+/* Stagger the home hero text on entry. */
 .hero-in { animation: hero-in .8s cubic-bezier(.2,.7,.2,1) both; animation-delay: var(--d, 0ms); }
 @keyframes hero-in { from { opacity: 0; transform: translateY(32px); } }
-/* Tiêu đề lớn trồi lên từ sau một "mép cắt" (clip-path chừa -0.35em phía trên cho dấu chồng Ổ/Ầ không bị cắt). */
+/* Leave space above the clipping edge for Vietnamese accents. */
 .hero-line { animation: line-up .9s cubic-bezier(.16,1,.3,1) both; animation-delay: var(--d, 0ms); }
 @keyframes line-up {
   from { clip-path: inset(-0.35em -0.1em 100% -0.1em); translate: 0 0.5em; }
   to { clip-path: inset(-0.35em -0.1em -0.35em -0.1em); translate: 0 0; }
 }
-/* Sọc đỏ chéo ở hero: phóng ra từ mép khi tải trang. */
+/* Expand the diagonal stripe on entry. */
 .stripe-in { animation: stripe-in .9s cubic-bezier(.7,0,.2,1) .15s both; }
 @keyframes stripe-in { from { scale: 0 1; } }
 
-/* Menu điện thoại: trượt xuống + các mục hiện lần lượt. */
+/* Slide in the mobile menu and stagger its links. */
 #mnav[open] > div { animation: menu-in .28s cubic-bezier(.2,.7,.2,1) both; }
 #mnav[open] li { animation: menu-item .4s cubic-bezier(.2,.7,.2,1) both; }
 #mnav[open] li:nth-child(2) { animation-delay: 40ms; } #mnav[open] li:nth-child(3) { animation-delay: 80ms; }
@@ -98,14 +98,14 @@
 @keyframes menu-in { from { opacity: 0; transform: translateY(-12px); } }
 @keyframes menu-item { from { opacity: 0; transform: translateX(-16px); } }
 
-/* Chuyển trang mượt (trình duyệt hỗ trợ cross-document View Transitions; không hỗ trợ thì đổi trang bình thường). */
+/* Use cross-document view transitions when supported. */
 @view-transition { navigation: auto; }
 ::view-transition-old(root) { animation: vt-out .18s ease-in both; }
 ::view-transition-new(root) { animation: vt-in .32s cubic-bezier(.2,.7,.2,1) both; }
 @keyframes vt-out { to { opacity: 0; } }
 @keyframes vt-in { from { opacity: 0; transform: translateY(10px); } }
 
-/* Nội dung nhật ký soạn bằng trình soạn thảo (HTML đã lọc ở server, src/lib/html.ts). */
+/* Diary rich text has already been sanitized on the server. */
 .rich { @apply text-lg leading-relaxed text-white/85; }
 .rich > * + * { margin-top: 1em; }
 .rich h2 { @apply mt-8 text-3xl text-white sm:text-4xl; }
@@ -118,20 +118,20 @@
 .rich a { @apply break-words underline decoration-glory underline-offset-4 hover:text-white; }
 .rich strong, .rich b { @apply font-semibold text-white; }
 
-/* ───── Chuyển động khi cuộn (src/scripts/motion.ts thêm .is-in khi phần tử vào màn hình) ───── */
-/* Dùng translate/opacity (không dùng transform) để không giành transform với hiệu ứng nghiêng thẻ [data-tilt]. */
+/* Scroll reveals are triggered by src/scripts/motion.ts. */
+/* Use translate and opacity so reveal does not override tilt transforms. */
 .reveal { transition: opacity .6s cubic-bezier(.2,.7,.2,1), translate .6s cubic-bezier(.2,.7,.2,1); transition-delay: calc(var(--i, 0) * 70ms); }
-/* Chỉ đặt translate khi CHƯA hiện: hiện rồi thì trả lại cho class của phần tử (vd. hover:-translate-y ở thẻ học phí). */
+/* Apply reveal translation only before entry to preserve later hover effects. */
 .reveal:not(.is-in) { opacity: 0; translate: 0 28px; }
-/* Tiêu đề h2: trồi lên sau mép cắt khi cuộn tới (script tự gắn cho mọi h2 trong <main>). */
+/* Reveal public headings as they enter the viewport. */
 .reveal-title { clip-path: inset(-0.35em -0.1em 100% -0.1em); translate: 0 0.45em; transition: clip-path .85s cubic-bezier(.16,1,.3,1), translate .85s cubic-bezier(.16,1,.3,1); }
 .reveal-title.is-in { clip-path: inset(-0.35em -0.1em -0.35em -0.1em); translate: 0 0; }
-/* Ảnh trong khối .reveal: thu từ 1.15 về 1 khi hiện (cảm giác "zoom vào"). */
+/* Scale revealed images from 1.15 to 1. */
 .reveal [data-zoom] { scale: 1.15; transition: scale 1.2s cubic-bezier(.16,1,.3,1), opacity .3s; }
 .reveal.is-in [data-zoom] { scale: 1; }
 .reveal.is-in:hover [data-zoom] { scale: 1.06; transition-duration: .5s; }
 
-/* Thanh đỏ chạy theo tiến độ cuộn trang, nằm dưới header (CSS scroll-driven; trình duyệt chưa hỗ trợ thì không hiện). */
+/* Show scroll progress below the header where supported. */
 .scroll-progress { display: none; }
 @supports (animation-timeline: scroll()) {
   .scroll-progress { display: block; position: absolute; inset: auto 0 -1px; height: 3px; background: var(--color-glory); transform-origin: left; scale: 0 1;
@@ -139,14 +139,14 @@
   @keyframes progress { to { scale: 1 1; } }
 }
 
-/* Header: cuộn xuống thì ẩn cho rộng chỗ đọc, cuộn lên thì hiện lại. */
+/* Hide the header on downward scroll and restore it on upward scroll. */
 #site-header { transition: translate .35s cubic-bezier(.2,.7,.2,1), background-color .3s, box-shadow .3s; }
 #site-header[data-hidden] { translate: 0 -100%; }
-/* Thanh dính dưới header (mục lục Nhật ký): header ẩn thì trượt lên sát mép trên, không để hở 64px. */
+/* Move the archive filters up when the header hides. */
 .stick-under-header { transition: top .35s cubic-bezier(.2,.7,.2,1); }
 #site-header[data-hidden] ~ main .stick-under-header { top: 0; }
 
-/* Ảnh hero trang chủ: zoom chậm (Ken Burns) + trôi chậm hơn trang khi cuộn (parallax, chỉ khi trình duyệt hỗ trợ). */
+/* Slow hero zoom with optional scroll-driven parallax. */
 .hero-media { animation: kenburns 24s ease-in-out infinite alternate; }
 @keyframes kenburns { from { scale: 1.02; } to { scale: 1.14; } }
 @supports (animation-timeline: scroll()) {
@@ -154,15 +154,15 @@
   @keyframes parallax { to { translate: 0 22vh; } }
 }
 
-/* Dải chữ chạy: chữ nghiêng theo cú cuộn (script đặt --skew trên .animate-marquee). */
+/* Skew marquee text with scroll velocity. */
 .animate-marquee > * { transform: skewX(var(--skew, 0deg)); }
 
-/* Mũi tên "cuộn xuống" ở hero (chỉ màn rộng). */
+/* Desktop hero scroll cue. */
 .scroll-cue { animation: cue 1.8s cubic-bezier(.6,0,.4,1) infinite; }
 @keyframes cue { 0% { translate: 0 -6px; opacity: 0; } 40% { opacity: 1; } 100% { translate: 0 10px; opacity: 0; } }
 
-/* Nghiêng 3D + quầng sáng theo con trỏ ([data-tilt]; script đặt --rx --ry --mx --my, chỉ máy có chuột). */
-/* Liệt kê từng thuộc tính để giữ độ trễ lần lượt (--i) của .reveal cho translate/opacity. */
+/* Pointer-driven tilt and glow. Motion code sets the custom properties. */
+/* List properties individually so reveal stagger delays still apply. */
 [data-tilt] { transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
   transition-property: transform, translate, opacity, border-color, box-shadow, background-color;
   transition-duration: .5s, .6s, .6s, .3s, .3s, .3s; transition-timing-function: cubic-bezier(.2,.7,.2,1);
@@ -172,17 +172,17 @@
   background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), rgb(255 255 255 / .13), transparent 60%); }
 [data-tilt].is-tilting::after { opacity: 1; }
 
-/* Nút nam châm ([data-magnetic]): nhích theo con trỏ — chỉ 1–2 nút chính mỗi màn hình. */
+/* Use magnetic movement for a small number of primary buttons. */
 [data-magnetic] { translate: var(--tx, 0) var(--ty, 0); transition: translate .5s cubic-bezier(.2,.7,.2,1), background-color .2s, color .2s, scale .2s; }
 
-/* Chữ lộ ra sau một khối trắng quét ngang (dòng "NO GLORY" ở hero): khối phóng ra, chữ hiện, khối rút đi. */
+/* Reveal the second hero line behind a sweeping white block. */
 .block-reveal { position: relative; display: inline-block; animation: br-text 1ms step-end calc(var(--d, 0ms) + .45s) both; }
 .block-reveal::after { content: ''; position: absolute; inset: .1em -.06em .06em; background: #fff; scale: 0 1; transform-origin: left;
   animation: br-block .9s cubic-bezier(.7,0,.2,1) var(--d, 0ms) both; }
 @keyframes br-text { from { color: transparent; } }
 @keyframes br-block { 0% { scale: 0 1; transform-origin: left; } 50% { scale: 1 1; transform-origin: left; } 50.01% { transform-origin: right; } 100% { scale: 0 1; transform-origin: right; } }
 
-/* Hero: hạt phim nhẹ (chất "phòng tập") + quầng đỏ đi theo con trỏ (máy có chuột; máy khác đứng yên ở góc phải). */
+/* Add subtle grain and a pointer-driven glow with a static fallback. */
 .spot::before { content: ''; position: absolute; inset: 0; z-index: -5; pointer-events: none;
   background: radial-gradient(640px circle at var(--sx, 72%) var(--sy, 28%), rgb(225 6 0 / .22), transparent 62%); transition: background .2s; }
 .grain::after { content: ''; position: absolute; inset: -50%; z-index: 1; pointer-events: none; opacity: .07;
@@ -190,13 +190,13 @@
   animation: grain .9s steps(4) infinite; }
 @keyframes grain { 0% { translate: 0 0; } 25% { translate: -4% 3%; } 50% { translate: 3% -5%; } 75% { translate: -2% 6%; } 100% { translate: 0 0; } }
 
-/* Chữ chìm khổng lồ trôi ngang theo cuộn trang (CSS scroll-driven, trình duyệt chưa hỗ trợ thì đứng yên). */
+/* Move large decorative text with scrolling where supported. */
 @supports (animation-timeline: view()) {
   .drift-x { animation: drift-x linear both; animation-timeline: view(); }
   @keyframes drift-x { from { translate: 12% 0; } to { translate: -22% 0; } }
 }
 
-/* Link menu máy tính: chữ cuộn lên, bản đỏ trồi từ dưới (bản sao là chữ trang trí: "/ ''" để trình đọc màn hình không đọc 2 lần). */
+/* Roll desktop menu text and keep the decorative copy out of accessible names. */
 .roll { position: relative; display: inline-block; overflow: hidden; vertical-align: top; }
 .roll > span { display: inline-block; transition: translate .4s cubic-bezier(.7,0,.2,1); }
 .roll::before { content: attr(data-text); content: attr(data-text) / ''; position: absolute; inset: 0; translate: 0 100%; color: var(--color-glory);
@@ -204,7 +204,7 @@
 a:hover .roll > span, a:focus-visible .roll > span { translate: 0 -100%; }
 a:hover .roll::before, a:focus-visible .roll::before { translate: 0 0; }
 
-/* Gói nổi bật: viền đỏ có vệt sáng chạy vòng quanh thẻ. */
+/* Animate the highlight around the featured plan border. */
 @property --spin { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
 .premium-glow { border-color: transparent;
   background: linear-gradient(to bottom, color-mix(in srgb, var(--color-glory) 20%, var(--color-ink)), var(--color-ink)) padding-box,

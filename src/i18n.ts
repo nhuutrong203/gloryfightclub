@@ -32,7 +32,7 @@ export const dict = {
     fees_plan_for: 'Phù hợp với',
     fees_plan_details: 'Xem chi tiết gói',
     open_mat: 'Open mat – Sparring miễn phí',
-    open_mat_name: 'Open mat – Sparring', // đi kèm chữ "Free" đỏ (trang chủ, lịch học) → không lặp "miễn phí"
+    open_mat_name: 'Open mat – Sparring', // A separate badge already indicates that it is free.
     open_mat_time: 'Chủ nhật 18:00 – 21:00',
     free: 'Free',
     locations_title: 'Hai cơ sở',
@@ -363,7 +363,7 @@ export const dict = {
 
 export type DictKey = keyof (typeof dict)['vi'];
 
-/** Chữ thầy sửa trong CMS (Cài đặt → Chữ trên website); middleware nạp mỗi request. */
+/** Website text overrides are loaded from the CMS on each request. */
 export type TextOverrides = Partial<Record<Lang, Partial<Record<DictKey, string>>>>;
 // Biến cấp module dùng chung giữa các request: an toàn vì mọi request nạp cùng một giá trị (cài đặt chung).
 let overrides: TextOverrides = {};
@@ -371,19 +371,19 @@ export const setTextOverrides = (o: TextOverrides | null | undefined) => { overr
 
 export const t = (lang: Lang, key: DictKey) => overrides[lang]?.[key] || dict[lang][key];
 
-/** Lấy cột song ngữ: tr(row, 'name', 'en') → row.nameEn, trống thì row.name. */
+/** Read the English field when present and fall back to Vietnamese. */
 export function tr<T extends object>(row: T, field: string, lang: Lang): string {
   const r = row as Record<string, unknown>;
   const vi = (r[field] as string | null) ?? '';
   return lang === 'en' ? ((r[`${field}En`] as string | null) || vi) : vi;
 }
 
-/** Đường dẫn theo ngôn ngữ: href('/hoc-phi', 'en') → '/en/hoc-phi'. */
+/** Prefix the path with the selected language. */
 export const href = (path: string, lang: Lang) => (lang === 'en' ? `/en${path === '/' ? '' : path}` : path);
 
 export const formatVnd = (n: number) => n.toLocaleString('vi-VN');
 
-// Ngày trong tuần theo cách gọi VN: '2'..'7' = Thứ 2..Thứ 7, '8' = Chủ nhật.
+// Vietnamese day codes 2 through 7 are Monday through Saturday. Code 8 is Sunday.
 export const DAYS = ['2', '3', '4', '5', '6', '7', '8'] as const;
 const DAY_SHORT = { vi: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'], en: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] };
 const DAY_LONG = {

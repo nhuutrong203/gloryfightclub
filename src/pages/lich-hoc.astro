@@ -21,7 +21,7 @@ const byDay = DAYS.map((d) => ({ d, items: classes.filter((c) => c.days.includes
 const today = vnNow().weekday;
 const image = mediaUrl(loc?.scheduleImageKey);
 const coachName = (id: number | null) => coaches.find((c) => c.id === id)?.fullName;
-// Môn đầu tiên của lớp (đang hiện trên web) → bấm vào lớp mở trang môn đó. Open mat không thuộc môn nào → không có link.
+// Link each class to its first public discipline. Open mat has no discipline link.
 const discOf = (c: (typeof classes)[number]) => disciplines.find((d) => c.disciplineIds.includes(d.id));
 const link = (params: Record<string, string | undefined>) => {
   const u = new URLSearchParams();
@@ -29,14 +29,14 @@ const link = (params: Record<string, string | undefined>) => {
   for (const [k, v] of Object.entries(merged)) if (v) u.set(k, v);
   return `${href('/lich-hoc', lang)}?${u}`;
 };
-// Đầu trang: số liệu nhanh của cơ sở đang xem + thẻ "Hôm nay" (lớp tiếp theo, các ca hôm nay) → trang mở ra là thấy lịch, không chỉ chữ.
+// Show location statistics and today's sessions above the full schedule.
 const locClasses = allClasses.filter((c) => c.locationId === loc?.id);
 const weekly = locClasses.reduce((n, c) => n + c.days.length, 0);
 const discCount = new Set(locClasses.flatMap((c) => c.disciplineIds).filter((id) => disciplines.some((d) => d.id === id))).size;
 const hours = locClasses.length ? `${locClasses.map((c) => c.startTime).sort()[0]}–${locClasses.map((c) => c.endTime).sort().at(-1)}` : null;
 const todayItems = classes.filter((c) => c.days.includes(today)).sort((a, b) => a.startTime.localeCompare(b.startTime));
-// Nhóm ngày đang có ở cơ sở này (vd. 246, 357, 78) cho chú giải ở đầu trang, theo thứ tự ngày đầu tiên.
-// '8' chỉ là mã lưu trong DB cho Chủ nhật — CLB không gọi "8", nên hiện "CN" (vd. 78 → 7·CN, 8 → CN).
+// Build the day legend from classes at the selected location.
+// Display Sunday as CN in Vietnamese even though the database stores 8.
 const groupCode = (g: string) => (g === '8' ? 'CN' : g.replace('8', '·CN'));
 const dayGroups = [...new Set(locClasses.map((c) => c.days))].sort((a, b) => a[0].localeCompare(b[0]) || a.localeCompare(b));
 Astro.response.headers.set('cache-control', 'public, max-age=60');
@@ -45,7 +45,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
   <PageHero eyebrow={t(lang, 'eb_schedule')} title={t(lang, 'schedule_title')} subtitle={t(lang, 'schedule_sub')}>
     {locClasses.length > 0 && (
       <>
-        <!-- Chú giải nhóm ngày (thay câu "246 = Thứ 2·4·6…"): lấy từ chính các lớp đang có. -->
+        <!-- Generate the day-group legend from the current schedule. -->
         <div class="mt-6 hidden flex-wrap items-center gap-2 sm:flex">
           <span class="mr-1 text-sm text-ash">{t(lang, 'schedule_legend')}</span>
           {dayGroups.map((g) => (
@@ -62,7 +62,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
         </dl>
       </>
     )}
-    <!-- Hôm nay (cột phải trên máy tính): dòng lớn = lớp đang tập / lớp tiếp theo (script tính theo giờ VN vì trang được cache), chip = các ca hôm nay. -->
+    <!-- Compute the live or next class in Vietnam time on the client. -->
     {locClasses.length > 0 && (
       <div slot="aside" class="border-l-4 border-glory bg-coal/90 p-4 sm:p-6" data-today
         data-next={t(lang, 'schedule_next')} data-live={t(lang, 'today_live')} data-done={t(lang, 'schedule_done_today')}>
@@ -87,20 +87,20 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
   </PageHero>
 
   <section class="container-x py-6 sm:py-10">
-    <!-- Chọn cơ sở -->
+    <!-- Location selector -->
     <div class="grid grid-cols-2 gap-px bg-white/10 border border-white/10" role="tablist" aria-label={t(lang, 'f_location')}>
       {locations.map((l) => (
         <a href={link({ 'co-so': String(l.id) })} role="tab" aria-selected={l.id === loc?.id ? 'true' : 'false'}
           class:list={['flex min-h-16 flex-col justify-start px-4 py-3 transition-colors', l.id === loc?.id ? 'bg-glory text-white' : 'bg-ink hover:bg-coal']}>
           <span class="font-display text-xl sm:text-2xl uppercase leading-[1.12]">{tr(l, 'name', lang)}</span>
-          <!-- Địa chỉ đầy đủ (trước bị cắt "…" ở cơ sở 2): khách cần đọc hết để tìm đường. -->
+          <!-- Keep the full address visible for directions. -->
           <span class:list={['mt-1 hidden text-sm leading-snug sm:block', l.id === loc?.id ? 'text-white/85' : 'text-ash']}>{l.address}</span>
         </a>
       ))}
     </div>
 
-    <!-- Lọc môn -->
-    <!-- Vuốt ngang trên điện thoại; ẩn thanh cuộn xám (chip bị cắt ở mép đã cho biết còn nữa). -->
+    <!-- Discipline filter -->
+    <!-- Allow horizontal swipe on phones and use partial chips as the scroll cue. -->
     <div class="mt-4 sm:mt-6 -mx-4 px-4 flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label={t(lang, 'f_discipline')}>
       <a href={link({ mon: '' })} class:list={['shrink-0 min-h-11 inline-flex items-center px-4 border font-display uppercase tracking-wider text-sm', !mon ? 'bg-white text-ink border-white' : 'border-white/20 hover:border-white']}>{t(lang, 'schedule_all')}</a>
       {disciplines.map((d) => (
@@ -108,7 +108,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
       ))}
     </div>
 
-    <!-- Lịch có thể đổi (chủ CLB dặn): nhắc nhỏ ngay trên bảng, kèm cách hỏi lại. -->
+    <!-- Place the schedule-change reminder above the timetable. -->
     <p class="mt-6 flex items-start gap-2 text-sm text-ash"><Icon name="clock" class="mt-0.5 size-4 shrink-0 text-glory-bright" />{t(lang, 'schedule_note')}</p>
 
     {image && <img src={image} alt={`${t(lang, 'schedule_image_alt')} — ${loc ? tr(loc, 'name', lang) : ''}`} class="mt-8 w-full h-auto border border-white/10" />}
@@ -126,7 +126,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
 
     {classes.length > 0 && (
       <>
-        <!-- Desktop: bảng tuần như poster -->
+        <!-- Desktop weekly grid -->
         <div class="mt-8 hidden lg:block border border-white/10">
           <table class="w-full table-fixed border-collapse">
             <thead>
@@ -144,7 +144,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
                   {DAYS.map((d) => (
                     <td class:list={['border-l border-white/10 p-2 align-top', d === today && 'bg-glory/[0.07]']}>
                       {cell(slot, d).map((c) => {
-                        // Bấm vào lớp → trang môn đó. Cột hôm nay: ca đang tập sáng đỏ, ca đã xong mờ đi (script trong PublicLayout).
+                        // Link classes to their disciplines and highlight live sessions in today's column.
                         const disc = discOf(c);
                         const Tag = disc ? 'a' : 'div';
                         return (
@@ -168,7 +168,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
           </table>
         </div>
 
-        <!-- Mobile/tablet: theo từng ngày -->
+        <!-- Daily view for phones and tablets. -->
         <div class="lg:hidden" data-days>
           <div class="sticky top-16 z-20 -mx-4 mt-5 grid grid-cols-7 border-y border-white/10 bg-ink/95 backdrop-blur" role="tablist" aria-label={t(lang, 'schedule_title')}>
             {DAYS.map((d) => (
@@ -226,7 +226,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
 </PublicLayout>
 
 <script>
-  // Thẻ "Hôm nay" ở đầu trang: dòng lớn = lớp đang tập, không thì lớp tiếp theo, hết lớp thì lời hẹn ngày mai (giờ VN, cập nhật mỗi phút).
+  // Refresh the live or next session every minute in Vietnam time.
   const card = document.querySelector<HTMLElement>('[data-today]');
   const head = card?.querySelector<HTMLElement>('[data-today-head]');
   if (card && head) {
@@ -244,7 +244,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
     setInterval(update, 60_000);
   }
 
-  // Điện thoại: chỉ hiện ngày đang chọn (mặc định hôm nay). Không có JS thì hiện cả tuần như cũ.
+  // Show the selected day on phones. Without JavaScript, show the full week.
   const root = document.querySelector<HTMLElement>('[data-days]');
   if (root) {
     const tabs = [...root.querySelectorAll<HTMLAnchorElement>('[data-day]')];

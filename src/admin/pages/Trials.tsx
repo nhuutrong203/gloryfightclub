@@ -13,7 +13,7 @@ const ST: Record<string, { label: string; tone: 'red' | 'amber' | 'green' | 'gra
 };
 
 const DAY: Record<string, string> = { '2': 'Thứ 2', '3': 'Thứ 3', '4': 'Thứ 4', '5': 'Thứ 5', '6': 'Thứ 6', '7': 'Thứ 7', '8': 'Chủ nhật' };
-/** Tuổi hôm nay (có ngày sinh) hoặc tuổi lúc đăng ký (đăng ký cũ). */
+/** Use age today when a birth date exists, otherwise age at registration. */
 const ageNow = (t: { birthDate: string | null; age: number | null }) => (t.birthDate ? ageOn(t.birthDate, todayVN()) : t.age);
 
 export function Trials({ me }: { me: Me }) {
@@ -46,7 +46,7 @@ export function Trials({ me }: { me: Me }) {
                   <b className="text-lg">{t.fullName}</b>{ageNow(t) != null && <span className="text-neutral-500"> · {ageNow(t)} tuổi</span>}
                   {t.birthDate && <span className="text-sm text-neutral-500"> (sinh {t.birthDate.split('-').reverse().join('/')})</span>}
                   <p className="text-sm text-neutral-500">Gửi {fmtDate(t.createdAt)}</p>
-                  {/* Đăng ký cũ (trước khi có ô đồng ý) không có dòng này. */}
+                  {/* Older registrations may predate the consent field. */}
                   {t.agreedAt && (
                     <p className="mt-0.5 flex items-center gap-1 text-sm text-green-700">
                       <Icon name="check" className="size-4" />Đã đồng ý Quy định CLB{t.policyVersion ? ` (bản ${policyVersionText(t.policyVersion)})` : ''}
@@ -56,7 +56,7 @@ export function Trials({ me }: { me: Me }) {
                 </div>
                 <Badge tone={ST[t.status].tone}>{ST[t.status].label}</Badge>
               </div>
-              {/* Buổi học thử khách đã chọn trên web: nổi bật nhất để gọi xác nhận. */}
+              {/* Highlight the selected trial session for the confirmation call. */}
               {t.classId && t.trialDate && (() => {
                 const k = lk?.classes.find((c) => c.id === t.classId);
                 const past = t.trialDate < todayVN();

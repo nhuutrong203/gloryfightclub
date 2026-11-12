@@ -6,9 +6,9 @@ import { toText } from '../../lib/html';
 import { vnNow, youtubeId } from '../../lib/util';
 import { thumbSrcset, thumbUrl } from '../../lib/site';
 
-// Một trang nhật ký lớp: ô ngày (như tờ lịch), chữ, ảnh / video / YouTube.
-// Thẻ (trang chủ): đoạn trích + lưới 1–4 ô, ">4" hiện "+N". full (trang chi tiết): nội dung đủ, video phát được.
-// compact (lưới trang Nhật ký): 1 ảnh bìa + "+N", trích 3 dòng — thẻ thấp, nhiều bài vẫn lướt nhanh.
+// Diary entry with a calendar date, text, and media.
+// Home cards show an excerpt and up to four media tiles. Full mode shows all content.
+// Compact archive cards show a cover, media count, and short excerpt.
 interface Props {
   post: { slug: string; title: string | null; titleEn: string | null; content: string; contentEn: string | null; format: 'text' | 'html'; publishedAt: number; media: PostMedia[] };
   lang: Lang;
@@ -26,14 +26,14 @@ const part = (o: Intl.DateTimeFormatOptions) => date.toLocaleString(lang === 'en
 const shown = p.media.slice(0, 4);
 const extra = p.media.length - shown.length;
 const src = (m: PostMedia) => `/media/${m.key}`;
-const thumb = (m: PostMedia) => thumbUrl(m.key)!; // ô ảnh trên thẻ (trang chủ, danh sách) → bản 800px; trang bài dùng ảnh gốc
+const thumb = (m: PostMedia) => thumbUrl(m.key)!; // Use thumbnails in lists and originals on the post page.
 const ytThumb = (m: PostMedia) => `https://i.ytimg.com/vi/${youtubeId(m.key)}/hqdefault.jpg`;
 const cover = p.media[0];
 ---
-<!-- compact trên điện thoại: 1 hàng ngang (ảnh vuông bên trái) cho 12 bài vẫn ngắn; từ sm: thẻ đứng, ảnh bìa trên. -->
+<!-- Show horizontal archive cards on phones and stacked cards from sm. -->
 {compact ? (
   <article class="reveal group relative flex border border-white/10 bg-coal transition-colors duration-300 hover:border-glory sm:flex-col" style={`--i:${i}`}>
-    {/* Bài chỉ có chữ: bìa thay thế (ngày to chữ viền) để lưới thẻ đều nhau. */}
+    {/* Use a date cover for text-only posts to keep card sizes consistent. */}
     {!cover && (
       <div class="relative w-28 shrink-0 overflow-hidden bg-[radial-gradient(circle_at_80%_20%,#3a0d0b,#0a0a0a_70%)] sm:aspect-[16/10] sm:w-auto" aria-hidden="true">
         <span class="absolute -bottom-2 right-2 font-display text-6xl leading-none sm:-bottom-4 sm:right-3 sm:text-[7rem] text-outline-white transition-colors duration-300 group-hover:[-webkit-text-stroke-color:var(--color-glory)]">{part({ day: '2-digit' })}</span>

@@ -4,7 +4,7 @@ import { A, Badge, Button, Chips, Empty, ErrorBox, Icon, ImageInput, LinkButton,
 import { DAY_LABEL, RESOURCES, type Field, type ResourceKey } from '../resources';
 import type { Lookups } from './Students';
 
-// Trang danh sách + form sinh tự động từ src/admin/resources.ts.
+// Lists and forms are generated from src/admin/resources.ts.
 
 const imageField = (res: ResourceKey) => RESOURCES[res].fields.find((f) => f.type === 'image')?.name;
 
@@ -13,7 +13,7 @@ export function ResourceList({ res, me }: { res: ResourceKey; me: Me }) {
   const { data, error, reload } = useApi<any[]>(`/admin/content/${res}`);
   const lk = useApi<Lookups>('/admin/lookups').data;
   const img = imageField(res);
-  // Đổi thứ tự bằng nút ↑↓: hiện ngay trên màn hình, lỗi thì quay về thứ tự cũ.
+  // Show reordered items immediately and revert on failure.
   const reorder = r.orderBy === 'sort' && can(me, 'content');
   const [local, setLocal] = useState<any[] | null>(null);
   useEffect(() => setLocal(null), [data]);
@@ -25,7 +25,7 @@ export function ResourceList({ res, me }: { res: ResourceKey; me: Me }) {
     try { await api(`/admin/content/${res}/order`, { method: 'PUT', body: { ids: next.map((x) => x.id) } }); }
     catch (e: any) { toast(e.message, 'err'); setLocal(null); }
   }
-  // Lớp: nhóm theo cơ sở. Cấp đai: nhóm theo môn, báo rõ môn nào không hiện trên web (giống trang Cấp đai).
+  // Group classes by location and belts by discipline. Flag hidden disciplines.
   const groups: { title: string; note?: string; rows: any[] }[] = res === 'classes' && list && lk
     ? lk.locations.map((l) => ({ title: l.name, rows: list.filter((x) => x.locationId === l.id) }))
     : res === 'belts' && list && lk
@@ -60,7 +60,7 @@ export function ResourceList({ res, me }: { res: ResourceKey; me: Me }) {
                         </span>
                         {row.isPublic === false && <Badge>Ẩn</Badge>}
                         {row.isActive === false && <Badge>Ngưng</Badge>}
-                        {/* Lịch học trên web chỉ hiện tên HLV khi lớp đã gán HLV → nhắc thầy gán. */}
+                        {/* Remind staff to assign a coach so the public schedule can display one. */}
                         {res === 'classes' && !row.coachId && <Badge tone="amber">Chưa có HLV</Badge>}
                         {!reorder && <Icon name="chevron" className="text-neutral-400" />}
                       </A>
@@ -213,7 +213,7 @@ export function ResourceEdit({ res, id, me }: { res: ResourceKey; id: string; me
   );
 }
 
-/** Thư viện: chọn nhiều ảnh một lần → mỗi ảnh thành 1 mục (album tuỳ chọn). */
+/** Each selected image creates a separate gallery item. */
 function GalleryBulk({ onDone }: { onDone: () => void }) {
   const ref = useRef<HTMLInputElement>(null);
   const [album, setAlbum] = useState('');

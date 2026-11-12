@@ -5,7 +5,7 @@ import { href } from '../i18n';
 const STATIC = ['/', '/gioi-thieu', '/mon-hoc', '/lich-hoc', '/huan-luyen-vien', '/hoc-phi', '/nhat-ky', '/thu-vien',
   '/cap-dai', '/thanh-tich', '/cam-nhan', '/hoi-dap', '/lien-he', '/dang-ky-hoc-thu'];
 
-// shortcut: lấy tối đa 1000 bài mới nhất; đủ cho nhiều năm đăng hằng ngày, tách sitemap index khi vượt.
+// shortcut: include the latest 1,000 posts; use a sitemap index if the archive exceeds that.
 export const GET: APIRoute = async ({ site, locals }) => {
   const [disciplines, coaches, posts] = await Promise.all([publicDisciplines(), publicCoaches(), publishedSlugs(1000)]);
   const paths = [

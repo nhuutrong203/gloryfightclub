@@ -1,7 +1,7 @@
 ---
 import { policySections } from '../../lib/html';
 
-// Một phần quy định CLB (chữ thường trong CMS): "1. …" là tiêu đề mục, mỗi dòng khác là một ý. Dùng ở /quy-dinh và hộp thoại ở form học thử.
+// Parse numbered rules headings and list items for the rules page and trial dialog.
 interface Props { text: string | null | undefined; tone?: 'page' | 'dialog' }
 const { text, tone = 'page' } = Astro.props;
 const sections = policySections(text);

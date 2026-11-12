@@ -4,26 +4,26 @@ import TestimonialAuthor from './TestimonialAuthor.astro';
 import { t, tr, type Lang } from '../../i18n';
 import type { schema } from '../../db';
 
-// Cảm nhận học viên = băng chuyền vô tận (kiểu băng chuyền sushi): thẻ trôi đều liên tục 1-2-3-4-1-2… không có điểm "quay về đầu".
-// Script nhân bản dãy thẻ đủ phủ màn hình rồi dịch cả dải; hết một vòng thì lùi đúng một vòng (mắt không thấy).
-// Rê chuột / focus / đang đọc "Đọc tiếp" / bấm Dừng → băng chuyền chậm dần rồi đứng (không phanh gấp); thả ra thì tăng tốc lại.
-// Kéo bằng chuột hoặc vuốt tay để quay băng chuyền (có quán tính); ← → đẩy đúng một thẻ. Giảm chuyển động → dải cuộn tay bình thường.
+// Scroll testimonials continuously without a visible jump at the end.
+// Clone enough cards to fill the viewport, then wrap by one full cycle.
+// Ease to a stop on hover, focus, dialog, or pause, then resume smoothly.
+// Support drag, swipe, and arrow keys. Reduced motion uses manual scrolling.
 type Item = typeof schema.testimonials.$inferSelect;
 interface Props { items: Item[]; lang: Lang; tone?: 'coal' | 'ink' }
 const { items, lang, tone = 'coal' } = Astro.props;
 ---
 <div data-tm role="region" aria-roledescription="carousel" aria-label={t(lang, 'testimonials_title')}>
-  <!-- @container: bề ngang thẻ tính theo bề ngang dải (cqi), vì dải là w-max nên % không dùng được. Hai mép mờ dần như băng chuyền chạy ra / vào. -->
+  <!-- Use container units for card widths because the strip uses max-content. -->
   <div data-tm-view class="@container overflow-hidden [mask-image:linear-gradient(90deg,transparent,#000_5%,#000_95%,transparent)] touch-pan-y select-none motion-reduce:overflow-x-auto motion-reduce:snap-x motion-reduce:snap-mandatory motion-reduce:[mask-image:none] motion-reduce:touch-auto motion-reduce:select-auto">
     <ul data-tm-track class="flex w-max items-start gap-5 px-4 pt-3 pb-8 will-change-transform sm:px-6 lg:gap-6 motion-reduce:will-change-auto">
       {items.map((x, i) => (
         <li class="flex w-[82cqi] shrink-0 snap-start sm:w-[44cqi] lg:w-[min(30rem,30cqi)]" aria-roledescription="slide" aria-label={`${i + 1} / ${items.length}`}>
           <figure class:list={['group/tm flex min-h-64 w-full flex-col border-l-4 border-glory p-6 transition-[border-color,translate,box-shadow] duration-300 ease-out hover:-translate-y-1.5 hover:border-white hover:shadow-[0_24px_50px_-24px_rgb(225_6_0/0.6)] sm:p-7', tone === 'coal' ? 'bg-coal' : 'bg-ink']}>
-            <!-- Gương mặt trước, lời nói sau: thẻ ngắn không bị khoảng trống giữa lời và tên. -->
+            <!-- Put the author above the quote so short cards do not leave a gap between them. -->
             <TestimonialAuthor item={x} lang={lang} large class="" />
             <Icon name="quote" filled class="mt-5 size-7 shrink-0 text-glory/40 transition-colors duration-300 group-hover/tm:text-glory" />
             <blockquote class="mt-2 line-clamp-5 whitespace-pre-line break-words text-lg text-white/90">{tr(x, 'content', lang)}</blockquote>
-            <!-- Chỉ hiện khi chữ thật sự bị cắt (script đo), kể cả cảm nhận ngắn mà nhiều dòng. -->
+            <!-- Show Read more only when text is actually clipped. -->
             <button type="button" data-tm-more hidden class="mt-2 min-h-11 items-center gap-1 self-start font-display text-sm uppercase tracking-wider text-glory-bright hover:text-white [&:not([hidden])]:inline-flex">
               {t(lang, 'read_more')}<Icon name="arrow-right" class="size-4" />
             </button>
@@ -33,7 +33,7 @@ const { items, lang, tone = 'coal' } = Astro.props;
     </ul>
   </div>
 
-  <!-- Thanh điều khiển: thẻ đang ở đầu dải + vạch đi hết một vòng + Dừng + ← →. -->
+  <!-- Show the active card, progress, pause, and navigation controls. -->
   <div class="container-x mt-6 flex items-center gap-4">
     <p class="shrink-0 font-display text-lg tracking-wider text-white/85 tabular-nums"><span data-tm-pos>1</span><span class="text-ash"> / {items.length}</span></p>
     <div class="h-0.5 flex-1 overflow-hidden bg-white/10" aria-hidden="true"><div data-tm-bar class="h-full origin-left scale-x-0 bg-glory"></div></div>
@@ -59,7 +59,7 @@ const { items, lang, tone = 'coal' } = Astro.props;
 </style>
 
 <script>
-  const SECONDS_PER_CARD = 4.5; // tốc độ trôi: một thẻ đi qua mỗi 4,5 giây
+  const SECONDS_PER_CARD = 4.5; // Time for one card to pass.
 
   document.querySelectorAll<HTMLElement>('[data-tm]').forEach((root) => {
     const view = root.querySelector<HTMLElement>('[data-tm-view]')!;
@@ -72,7 +72,7 @@ const { items, lang, tone = 'coal' } = Astro.props;
     const dlg = root.querySelector<HTMLDialogElement>('[data-tm-dialog]')!;
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    // "Đọc tiếp" (cả trên bản sao): mở cảm nhận đầy đủ trong hộp thoại.
+    // Open the full quote from originals and cloned cards.
     const markMore = () => track.querySelectorAll<HTMLButtonElement>('[data-tm-more]').forEach((b) => {
       const q = b.closest('figure')!.querySelector('blockquote')!;
       b.hidden = q.scrollHeight <= q.clientHeight + 1;
@@ -87,12 +87,12 @@ const { items, lang, tone = 'coal' } = Astro.props;
       dlg.querySelector('[data-tm-body]')!.replaceChildren(fig);
       dlg.showModal();
     });
-    dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); }); // bấm ra ngoài để đóng
+    dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); }); // Close when clicking the backdrop.
 
     const stepOf = () => (n > 1 ? originals[1].offsetLeft - originals[0].offsetLeft : originals[0].offsetWidth + parseFloat(getComputedStyle(track).columnGap));
     const setPos = (i: number) => { pos.textContent = String(((i % n) + n) % n + 1); };
 
-    // Giảm chuyển động: không trôi, không nhân bản — dải cuộn tay, ← → cuộn một thẻ.
+    // Reduced motion uses manual scrolling without cloned cards.
     if (reduced) {
       markMore();
       root.querySelectorAll<HTMLButtonElement>('[data-tm-go]').forEach((b) => b.addEventListener('click', () => view.scrollBy({ left: Number(b.dataset.tmGo) * stepOf() })));
@@ -104,9 +104,9 @@ const { items, lang, tone = 'coal' } = Astro.props;
       return;
     }
 
-    // Nhân bản dãy thẻ cho tới khi dải dài hơn màn hình + 1 vòng → trượt bao lâu cũng không hở.
-    let step = 0; // khoảng cách 2 thẻ liền nhau, px (đo lại khi đổi cỡ màn hình, không đo mỗi khung hình)
-    let loop = 0; // bề dài một vòng (n thẻ + khe), px
+    // Clone enough cards to cover the viewport plus one full cycle.
+    let step = 0; // Distance between neighboring cards in pixels, measured on resize.
+    let loop = 0; // Length of one complete cycle, including gaps.
     const build = () => {
       track.querySelectorAll('[data-tm-clone]').forEach((c) => c.remove());
       step = stepOf();
@@ -122,10 +122,10 @@ const { items, lang, tone = 'coal' } = Astro.props;
       markMore();
     };
 
-    let offset = 0; // quãng đã trôi trong vòng hiện tại, px
-    let rate = 1; // 1 = chạy đủ tốc, 0 = đứng; đổi dần cho mượt
-    let push = 0; // phần còn phải đẩy do bấm ← → (tiêu dần, kiểu ease-out)
-    let fling = 0; // vận tốc quán tính sau khi thả tay, px/s
+    let offset = 0; // Distance traveled within the current cycle.
+    let rate = 1; // One is full speed and zero is stopped. Ease between them.
+    let push = 0; // Remaining eased movement from the arrow controls.
+    let fling = 0; // Release velocity in pixels per second.
     let paused = false, hovering = false, dragging = false, onScreen = false, raf = 0, last = 0;
     const wantRun = () => !paused && !hovering && !dragging && !dlg.open && !root.matches(':focus-within') && !document.hidden;
 
@@ -138,7 +138,7 @@ const { items, lang, tone = 'coal' } = Astro.props;
     const frame = (t: number) => {
       const dt = Math.min(0.05, (t - last) / 1000 || 0);
       last = t;
-      rate += ((wantRun() ? 1 : 0) - rate) * (1 - Math.exp(-dt * 3)); // tăng / giảm tốc êm trong ~1 giây
+      rate += ((wantRun() ? 1 : 0) - rate) * (1 - Math.exp(-dt * 3)); // Ease speed changes over about one second.
       const pushNow = push * (1 - Math.exp(-dt * 7));
       push -= pushNow;
       fling *= Math.exp(-dt * 3.5);
@@ -148,7 +148,7 @@ const { items, lang, tone = 'coal' } = Astro.props;
     };
     const wake = () => { if (!raf && onScreen) { last = performance.now(); raf = requestAnimationFrame(frame); } };
 
-    // Chỉ chạy vòng lặp khi băng chuyền đang trên màn hình (đỡ tốn pin).
+    // Animate only while the strip is visible.
     new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; wake(); }).observe(root);
     root.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') hovering = true; });
     root.addEventListener('pointerleave', () => { hovering = false; });
@@ -159,7 +159,7 @@ const { items, lang, tone = 'coal' } = Astro.props;
       toggle.setAttribute('aria-label', (paused ? toggle.dataset.play : toggle.dataset.pause) ?? '');
     });
 
-    // Kéo / vuốt: dải bám theo ngón tay, thả ra thì trôi tiếp theo đà. Vuốt dọc vẫn cuộn trang (touch-action: pan-y).
+    // Follow drag or swipe movement and preserve vertical page scrolling.
     let startX = 0, lastX = 0, lastT = 0, vel = 0, pid = -1;
     view.addEventListener('pointerdown', (e) => {
       if (e.button !== 0) return;
@@ -179,12 +179,12 @@ const { items, lang, tone = 'coal' } = Astro.props;
       if (e.pointerId !== pid) return;
       pid = -1;
       if (dragging) { dragging = false; fling = Math.max(-4000, Math.min(4000, vel)); }
-      setTimeout(() => { dragged = false; }, 0); // chặn cú click ngay sau khi kéo ("Đọc tiếp" không tự mở)
+      setTimeout(() => { dragged = false; }, 0); // Suppress the click immediately after a drag.
     };
     view.addEventListener('pointerup', end);
     view.addEventListener('pointercancel', end);
 
-    // Đổi cỡ màn hình: dựng lại bản sao, giữ nguyên vị trí theo tỉ lệ vòng.
+    // Rebuild clones on resize and preserve relative position.
     let w = view.clientWidth;
     new ResizeObserver(() => {
       if (Math.abs(view.clientWidth - w) < 2) return;

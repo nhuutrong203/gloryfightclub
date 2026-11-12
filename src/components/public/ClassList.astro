@@ -3,7 +3,7 @@ import Icon from './Icon.astro';
 import { tr, t, dayShort, type Lang, type DictKey } from '../../i18n';
 import type { PublicClass } from '../../lib/public';
 
-// Danh sách ca tập gọn (trang môn học, HLV, trang chủ). Không có ca nào thì không hiện gì.
+// Compact schedule for discipline, coach, and home pages. Hide when empty.
 interface Props {
   classes: PublicClass[];
   lang: Lang;

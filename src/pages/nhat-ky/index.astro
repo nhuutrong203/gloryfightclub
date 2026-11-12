@@ -8,16 +8,16 @@ import { postArchive, publishedPosts } from '../../lib/public';
 import { pageList, vnNow, vnRange } from '../../lib/util';
 import { t, href, type Lang } from '../../i18n';
 
-// Nhật ký lớp học, làm cho nhiều năm bài: thanh mục lục Năm → Tháng (có số bài) để nhảy thẳng tới tháng cần xem,
-// lưới thẻ gọn 1/2/3 cột (mỗi thẻ 1 ảnh bìa), 12 bài mỗi trang, phân trang có số. Lọc bằng ?nam=2026 hoặc ?thang=2026-11.
+// Group diary posts by year and month for browsing.
+// Show 12 compact cards per page and support year and month filters.
 const PER_PAGE = 12;
 const lang: Lang = Astro.locals.lang;
 const q = Astro.url.searchParams;
-const archive = await postArchive(); // [{ month: '2026-11', n }] mới nhất trước
+const archive = await postArchive(); // Monthly counts, newest first.
 const years = [...new Set(archive.map((a) => a.month.slice(0, 4)))];
 const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(q.get('thang') ?? '') ? q.get('thang')! : null;
 const year = month ? month.slice(0, 4) : /^\d{4}$/.test(q.get('nam') ?? '') ? q.get('nam')! : null;
-const period = month ?? year; // null = tất cả
+const period = month ?? year; // Null includes all dates.
 const countOf = (prefix: string | null) => archive.filter((a) => !prefix || a.month.startsWith(prefix)).reduce((s, a) => s + a.n, 0);
 const total = countOf(period);
 const pages = Math.max(1, Math.ceil(total / PER_PAGE));
@@ -37,11 +37,11 @@ const link = (o: { nam?: string | null; thang?: string | null; trang?: number })
   return `${href('/nhat-ky', lang)}${qs ? `?${qs}` : ''}`;
 };
 const pageLink = (n: number) => link({ nam: year, thang: month, trang: n });
-// Hàng tháng: của năm đang chọn; đang xem "Tất cả" thì của năm mới nhất.
+// Show the selected year's months, or the latest year's months in the all view.
 const chipYear = year ?? years[0];
 const yearMonths = archive.filter((a) => a.month.startsWith(chipYear ?? '-'));
 
-// Gom bài theo tháng (giờ VN) để chèn tiêu đề tháng giữa lưới; đang lọc 1 tháng thì không cần.
+// Insert month headings unless the list already filters to one month.
 const groups: { month: string; items: typeof posts }[] = [];
 for (const p of posts) {
   const m = vnNow(new Date(p.publishedAt)).month;
@@ -60,7 +60,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
     ? <p class="container-x py-20 text-center text-white/75">{t(lang, 'news_empty')}</p>
     : (
     <>
-      <!-- Mục lục: dính dưới header khi cuộn (header ẩn thì dính sát mép trên). Vuốt ngang trên điện thoại. -->
+      <!-- Keep the archive filters below the header and allow swiping on phones. -->
       <nav class="stick-under-header sticky top-16 z-20 border-b border-white/10 bg-ink/90 backdrop-blur-md" aria-label={t(lang, 'news_browse')}>
         <div class="container-x space-y-2 py-3">
           <div class="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

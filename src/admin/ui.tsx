@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode, type ButtonHTMLAttributes, type InputHTMLAttributes } from 'react';
 import { mediaUrl, navigate, toast, uploadImage } from './lib';
 
-// ───────── Icon (đường nét kiểu Lucide) ─────────
+// Lucide-style outline icons
 const PATHS: Record<string, string> = {
   home: 'M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z',
   users: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8m13 10v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8',
@@ -35,7 +35,7 @@ const PATHS: Record<string, string> = {
   'eye-off': 'M10.7 5.1A10.4 10.4 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-2.2 3.2M6.6 6.6C3.9 8.4 2 12 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6M2 2l20 20M9.9 9.9a3 3 0 0 0 4.2 4.2',
 };
 export function Icon({ name, className = '' }: { name: keyof typeof PATHS | string; className?: string }) {
-  // Giữ cỡ mặc định size-5 khi chỉ truyền màu (vd. "text-glory"), tránh icon phình to.
+  // Keep the default size when the supplied class only sets color.
   return (
     <svg viewBox="0 0 24 24" className={/size-/.test(className) ? className : `size-5 ${className}`} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d={PATHS[name]} />
@@ -43,7 +43,7 @@ export function Icon({ name, className = '' }: { name: keyof typeof PATHS | stri
   );
 }
 
-// ───────── Nút ─────────
+// Buttons
 type BtnProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'dark' | 'ghost' | 'danger'; loading?: boolean; icon?: string };
 export function Button({ variant = 'primary', loading, icon, className = '', children, disabled, ...rest }: BtnProps) {
   const styles = {
@@ -73,7 +73,7 @@ export function LinkButton({ to, children, icon, variant = 'ghost', className = 
   );
 }
 
-/** Mở trang tương ứng trên website (tab mới). */
+/** Open the matching public page in a new tab. */
 export function ViewOnSite({ href, label = 'Xem trên web' }: { href: string; label?: string }) {
   return (
     <a href={href} target="_blank" rel="noopener" className="inline-flex min-h-12 items-center gap-1.5 border border-neutral-300 bg-white px-3 font-semibold hover:bg-neutral-100" title={label}>
@@ -147,7 +147,7 @@ export function TextInput({ label, help, error, ...rest }: InputHTMLAttributes<H
   return <Field label={label} help={help} error={error} htmlFor={id}><input id={id} className={inputCls} {...rest} /></Field>;
 }
 
-/** Ô mật khẩu có nút con mắt: gõ trên điện thoại hay sai mà không thấy sai ở đâu. */
+/** Allow mobile users to reveal the password while typing. */
 export function PasswordInput({ label, help, ...rest }: InputHTMLAttributes<HTMLInputElement> & { label: string; help?: string }) {
   const id = useId();
   const [show, setShow] = useState(false);
@@ -164,16 +164,16 @@ export function PasswordInput({ label, help, ...rest }: InputHTMLAttributes<HTML
   );
 }
 
-/** Ô giờ kiểu 24 giờ ("19:30"), giống nhau trên mọi máy. Ô time gốc của trình duyệt hiện theo ngôn ngữ máy:
- *  máy tiếng Anh thành "07:30 PM" → dễ nhầm sáng / tối. value / onChange dạng "HH:MM" ('' = chưa chọn). */
+/** Use a 24-hour time field on all devices.
+ *  Native inputs may show AM/PM. Values use HH:MM, or an empty string. */
 export function TimeInput({ label, value, onChange, required, help }: { label: string; value: string; onChange: (v: string) => void; required?: boolean; help?: string }) {
   const id = useId();
   const [h = '', m = ''] = value ? value.split(':') : [];
   const pad = (n: number) => String(n).padStart(2, '0');
-  // Phút cách 5; giờ cũ lẻ phút (vd. 07:20 thì có sẵn, 07:17) vẫn hiện đúng.
+  // Use five-minute increments and preserve existing off-grid times.
   const mins = [...new Set([...Array.from({ length: 12 }, (_, i) => pad(i * 5)), ...(m ? [m] : [])])].sort();
   const pick = (hh: string, mm: string) => onChange(hh ? `${hh}:${mm || '00'}` : '');
-  const sel = `${inputCls.replace('w-full', 'w-24')} cursor-pointer text-center font-semibold`; // gọn như đồng hồ, không kéo full ngang
+  const sel = `${inputCls.replace('w-full', 'w-24')} cursor-pointer text-center font-semibold`; // Keep the controls compact.
   return (
     <Field label={label} help={help} htmlFor={id}>
       <div className="flex items-center gap-2">
@@ -191,13 +191,13 @@ export function TimeInput({ label, value, onChange, required, help }: { label: s
   );
 }
 
-/** Ô tiền VND: gõ "1.500.000", "1500000" hay "1 500 000" đều được (ô số của trình duyệt hiểu "1.500.000" là 1,5).
- *  value / onChange chỉ là chữ số; dòng dưới ô luôn đọc lại "= 1.500.000 đ" để khỏi gõ thiếu / thừa số 0. */
+/** Accept common VND grouping separators and keep only digits.
+ *  Show the formatted amount underneath so extra or missing zeros are visible. */
 export function MoneyInput({ label, value, onChange, required, help }: { label: string; value: string; onChange: (digits: string) => void; required?: boolean; help?: string }) {
   const id = useId();
   const fmt = (d: string) => (d ? Number(d).toLocaleString('vi-VN') : '');
   const [text, setText] = useState(fmt(value));
-  // Giá trị đổi từ ngoài (vd. chọn gói → tự điền tiền): hiện lại cho khớp.
+  // Refresh the display when a parent control changes the amount.
   useEffect(() => { if (text.replace(/\D/g, '') !== value) setText(fmt(value)); }, [value]);
   const read = value ? `= ${Number(value).toLocaleString('vi-VN')} đ` : undefined;
   return (
@@ -245,7 +245,7 @@ export function Toggle({ label, checked, onChange, help }: { label: string; chec
   );
 }
 
-/** Chọn nhiều bằng các "chip" to, dễ bấm trên điện thoại. */
+/** Large selection chips for touch screens. */
 export function Chips({ label, options, value, onChange, help }: { label: string; options: { value: number | string; label: string }[]; value: (number | string)[]; onChange: (v: any[]) => void; help?: string }) {
   return (
     <Field label={label} help={help}>
@@ -267,10 +267,10 @@ export function Chips({ label, options, value, onChange, help }: { label: string
 
 export function ImageInput({ label, value, onChange, help }: { label: string; value: string | null; onChange: (key: string | null) => void; help?: string }) {
   const ref = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<string | null>(null); // ảnh xem trước ngay khi chọn (chưa cần đợi upload)
+  const [preview, setPreview] = useState<string | null>(null); // Preview the image before the upload finishes.
   const [pct, setPct] = useState<number | null>(null);
   const [over, setOver] = useState(false);
-  // Form đã đóng khi ảnh tải xong → bỏ qua (kẻo bật cờ "chưa lưu" ở trang khác).
+  // Ignore an upload that finishes after the form closes.
   const alive = useRef(true);
   useEffect(() => () => { alive.current = false; }, []);
 
@@ -279,7 +279,7 @@ export function ImageInput({ label, value, onChange, help }: { label: string; va
     const local = URL.createObjectURL(f);
     setPreview(local);
     setPct(0);
-    try { const key = await uploadImage(f, setPct); if (alive.current) { onChange(key); toast('Đã tải ảnh — bấm Lưu để giữ ảnh này'); } } // ảnh chưa gắn vào nội dung tới khi bấm Lưu
+    try { const key = await uploadImage(f, setPct); if (alive.current) { onChange(key); toast('Đã tải ảnh — bấm Lưu để giữ ảnh này'); } } // The image is attached to the record only after Save.
     catch (err: any) { toast(err.message, 'err'); }
     finally { setPct(null); setPreview(null); URL.revokeObjectURL(local); }
   }
@@ -316,10 +316,10 @@ export function ImageInput({ label, value, onChange, help }: { label: string; va
   );
 }
 
-/** Hộp xác nhận đơn giản (dùng confirm của trình duyệt: rõ ràng, quen thuộc trên điện thoại). */
+/** Use the browser's familiar confirmation dialog. */
 export const confirmDanger = (msg: string) => window.confirm(msg);
 
-/** Ô song ngữ: hiện ô tiếng Việt, bản tiếng Anh gập lại. */
+/** Show Vietnamese first and collapse the English field. */
 export function EnHint() {
   return <p className="text-xs text-neutral-500">Ô <b>English</b> có thể bỏ trống — trang tiếng Anh sẽ dùng bản tiếng Việt.</p>;
 }

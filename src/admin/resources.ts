@@ -1,41 +1,41 @@
-// Định nghĩa các mục nội dung "đơn giản" của CMS. Một nguồn duy nhất cho:
-//  - API (src/api/content.ts): sinh zod schema + danh sách cột được phép ghi
-//  - giao diện CMS (ResourcePage): sinh danh sách + form
-// Học viên, học phí, học thử, tin tức, cài đặt, tài khoản có màn hình riêng.
+// Shared definitions for simple CMS content resources:
+//  The API derives validation and writable columns from these definitions.
+//  The CMS uses them to build lists and forms.
+// Students, fees, trials, diary posts, settings, and accounts have dedicated screens.
 
 export type FieldType = 'text' | 'textarea' | 'number' | 'money' | 'bool' | 'image' | 'select' | 'multi' | 'color' | 'time' | 'date' | 'days' | 'url';
 
 export type Field = {
-  name: string; // tên property Drizzle (camelCase)
+  name: string; // Drizzle property name in camelCase.
   label: string;
   type: FieldType;
   required?: boolean;
-  /** Có bản tiếng Anh `${name}En` không */
+  /** Whether the field has an English companion named ${name}En. */
   en?: boolean;
-  /** select/multi: lấy lựa chọn từ resource khác hoặc danh sách cố định */
+  /** Select options come from another resource or a fixed list. */
   ref?: ResourceKey;
   options?: { value: string; label: string }[];
   help?: string;
-  /** Chỉ hiện ô này khi điều kiện đúng (ô ẩn được lưu là trống). */
+  /** Show this field when the condition matches. Hidden fields are saved empty. */
   showIf?: (row: Record<string, any>) => boolean;
 };
 
 export type Resource = {
   key: ResourceKey;
   title: string;
-  /** cột hiển thị ở danh sách */
+  /** Value shown in the list. */
   listTitle: (row: any) => string;
   listSub?: (row: any) => string;
   fields: Field[];
-  /** sinh slug tự động từ cột này nếu bảng có slug */
+  /** Field used to generate the slug. */
   slugFrom?: string;
-  /** 'sort' = sắp xếp bằng nút ↑↓ trong danh sách; server tự đặt sort cho mục mới. */
+  /** Use list arrows for sort order. The server assigns the initial position. */
   orderBy?: string;
-  /** Mục mới lên đầu danh sách thay vì xuống cuối. */
+  /** Put new items at the start of the list. */
   newFirst?: boolean;
-  /** Trang web hiện mục này (nút "Xem trên web"); mục có slug mở thẳng `${publicPath}/${slug}`. */
+  /** Public preview path. Append the item slug when present. */
   publicPath?: string;
-  /** Kiểm tra giữa các ô (chạy ở cả CMS lẫn API); trả câu lỗi hoặc null. */
+  /** Cross-field validation shared by the CMS and API. Return an error or null. */
   check?: (row: Record<string, any>) => string | null;
 };
 
@@ -229,8 +229,8 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
   },
 };
 
-/** Tên cột → nhãn tiếng Việt, để báo lỗi dễ hiểu. */
+/** Map columns to Vietnamese field labels for readable errors. */
 export const fieldLabels = (r: Resource) => Object.fromEntries(r.fields.flatMap((f) => (f.en ? [[f.name, f.label], [`${f.name}En`, `${f.label} (English)`]] : [[f.name, f.label]])));
 
-/** Tất cả cột được phép ghi (kể cả bản EN). */
+/** All writable columns, including English companions. */
 export const writableColumns = (r: Resource) => r.fields.flatMap((f) => (f.en ? [f.name, `${f.name}En`] : [f.name]));

@@ -2,7 +2,7 @@
 import '../../styles/global.css';
 import App from '../../admin/App';
 import { env } from 'cloudflare:workers';
-// Vỏ của CMS (React SPA). Dữ liệu đều lấy qua /api/admin/* sau khi đăng nhập.
+// CMS shell. React loads its data from authenticated admin APIs.
 Astro.response.headers.set('cache-control', 'no-store');
 Astro.response.headers.set('x-robots-tag', 'noindex, nofollow');
 ---
@@ -22,6 +22,6 @@ Astro.response.headers.set('x-robots-tag', 'noindex, nofollow');
   </body>
 </html>
 <style is:global>
-  /* CMS dùng nền sáng cho dễ đọc, khác website public. */
+  /* Use a light background for CMS readability. */
   html:has(body.admin) { background: #f5f5f5; color: #0a0a0a; }
 </style>

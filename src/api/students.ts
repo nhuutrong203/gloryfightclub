@@ -39,14 +39,14 @@ export const STUDENT_LABELS = {
   locationId: 'Cơ sở', feePlanId: 'Gói học phí', joinedAt: 'Ngày nhập học', status: 'Trạng thái', note: 'Ghi chú', classIds: 'Lớp',
 };
 
-/** Ghi lớp cho học viên theo mã (dùng được trong cùng batch với lệnh tạo học viên, khi chưa biết id). */
+/** Assign classes by student code so creation and assignment can share a batch. */
 const classesByCode = (code: string, classIds: number[]) => db.insert(schema.studentClasses).select(
   db.select({ studentId: s.id, classId: schema.classes.id }).from(s).innerJoin(schema.classes, inArray(schema.classes.id, classIds)).where(eq(s.code, code)),
 );
 
 export const isUnique = (e: unknown) => /UNIQUE constraint failed/.test(String((e as any)?.cause?.message ?? e));
 
-/** Tạo học viên + lớp trong 1 lần ghi. Hai người thêm cùng lúc trùng mã → lấy mã mới, thử lại. */
+/** Create the student and class links atomically. Retry on a duplicate code. */
 export async function createStudent(values: Omit<typeof s.$inferInsert, 'code'>, classIds: number[] = []) {
   for (let attempt = 0; ; attempt++) {
     const code = await nextStudentCode();
@@ -74,8 +74,8 @@ function filters(q: Record<string, string | undefined>) {
   return w.length ? and(...w) : undefined;
 }
 
-/** Lọc theo ô tìm kiếm (tên không dấu, mã, SĐT) — làm trong JS vì SQLite không bỏ dấu được.
- *  shortcut: tải mọi học viên khớp bộ lọc khác rồi lọc; ổn tới vài nghìn học viên, nhiều hơn thì thêm cột search_text. */
+/** Match names without accents in JavaScript.
+ *  shortcut: scan filtered students; add a normalized search column beyond a few thousand rows. */
 function matchQuery<T extends { fullName: string; code: string; phone: string | null; parentPhone: string | null; parentName: string | null }>(rows: T[], q?: string) {
   const term = fold(q?.trim() ?? '');
   if (!term) return rows;
@@ -98,9 +98,9 @@ studentRoutes.get('/', need('students.view'), async (c) => {
   const [links, due] = ids.length
     ? await Promise.all([
         db.select().from(schema.studentClasses).where(inArray(schema.studentClasses.studentId, ids)),
-        // Badge "Đã đóng / Chưa đóng" chỉ cho người phải đóng tháng này (owesIn) và chỉ khi có quyền xem học phí.
+        // Show fee badges only for eligible students and users with fee view permission.
         fees
-          ? db.select({ id: s.id, paid: sql<number>`exists (select 1 from payments p where p.student_id = students.id and p.month = ${month})` }) // ghi rõ students.id: ${s.id} trong cột select ra "id" trơn → trùng p.id
+          ? db.select({ id: s.id, paid: sql<number>`exists (select 1 from payments p where p.student_id = students.id and p.month = ${month})` }) // Qualify students.id to distinguish it from payments.id.
               .from(s).where(and(inArray(s.id, ids), owesIn(month)))
           : [],
       ])
@@ -113,7 +113,7 @@ studentRoutes.get('/', need('students.view'), async (c) => {
   });
 });
 
-// ── Nhập học viên từ Excel/CSV (client đọc file, gửi các dòng dạng chữ theo cột của file xuất) ──
+// Import spreadsheet rows using the same columns as the export.
 const importRow = z.object({
   code: z.string().trim().max(20).optional(),
   fullName: z.string().trim().max(100).optional(),
@@ -136,7 +136,7 @@ studentRoutes.post('/import', need('students.edit'), async (c) => {
     db.select().from(schema.locations), db.select().from(schema.feePlans), db.select().from(schema.classes),
     db.select({ id: s.id, code: s.code, fullName: s.fullName }).from(s),
   ]);
-  // Lớp ghi giống file xuất: "MMA 246 18:30; Kudo 357 20:00"
+  // Use the exported format for class names, days, and start times.
   const classOf = (x: string) => classes.find((k) => fold(`${k.name} ${k.days} ${k.startTime}`) === fold(x))?.id;
   const codes = new Map<string, number>(existing.map((e) => [e.code.toUpperCase(), e.id]));
   let next = Number((await nextStudentCode()).slice(2));
@@ -144,8 +144,8 @@ studentRoutes.post('/import', need('students.edit'), async (c) => {
   const todo: { row: number; isNew: boolean; stmts: BatchItem<'sqlite'>[] }[] = [];
 
   for (const [i, r] of data.rows.entries()) {
-    const rowNo = i + 2; // dòng 1 là tiêu đề
-    // Chữ gõ sai thì báo lỗi, không ghi đè bằng "trống" / hôm nay / Đang học (mất dữ liệu cũ).
+    const rowNo = i + 2; // Row 1 contains headers.
+    // Reject unrecognized input so it cannot overwrite existing data with defaults.
     const locationId = byName(locations, r.location);
     const feePlanId = byName(plans, r.plan);
     const joinedAt = parseDate(r.joinedAt);
@@ -178,22 +178,22 @@ studentRoutes.post('/import', need('students.edit'), async (c) => {
     }
     const { classIds: cls, ...values } = parsed.data;
     const id = r.code ? codes.get(r.code.toUpperCase()) : undefined;
-    // Mã có ghi mà không thấy (đã xoá / tự đặt) → báo lỗi; thêm mới với mã khác thì mỗi lần nhập lại sẽ sinh thêm học viên trùng.
+    // Reject unknown codes so retrying an import cannot silently create a new student.
     if (r.code && !id) { errors.push({ row: rowNo, error: `không thấy mã học viên "${r.code}" — học viên mới thì để trống ô Mã` }); continue; }
     if (id) {
-      // Cập nhật: chỉ đổi cột có trong file (quy tắc + test ở updatableColumns). Cột Lớp có mà ô trống = bỏ hết lớp.
+      // Update only supplied columns. A present but blank Classes column removes all class links.
       const stmts: BatchItem<'sqlite'>[] = [db.update(s).set({ ...updatableColumns(values, r), updatedAt: Date.now() }).where(eq(s.id, id))];
       if (r.classes !== undefined) stmts.push(db.delete(schema.studentClasses).where(eq(schema.studentClasses.studentId, id)));
       if (r.classes !== undefined && cls.length) stmts.push(db.insert(schema.studentClasses).values(cls.map((classId) => ({ studentId: id, classId }))));
       todo.push({ row: rowNo, isNew: false, stmts });
     } else {
-      // Học viên mới chưa có id → nối lớp qua mã học viên ngay trong cùng đợt ghi.
+      // Use the reserved code to assign classes in the same batch as student creation.
       const code = `GF${String(next++).padStart(4, '0')}`;
       todo.push({ row: rowNo, isNew: true, stmts: [db.insert(s).values({ ...values, code }), ...(cls.length ? [classesByCode(code, cls)] : [])] });
     }
   }
-  // Ghi theo đợt 60 dòng (≤ 180 lệnh), mỗi đợt là 1 transaction và chỉ tính 1 lần gọi D1 (gói Free: 50 lần / request → đủ 2000 dòng).
-  // Một đợt lỗi (vd. trùng mã vì có người vừa thêm học viên) → dừng, báo các dòng chưa ghi để nhập lại riêng, không nhân đôi dòng đã ghi.
+  // Write 60 rows per D1 transaction to stay within the request query budget.
+  // Stop at the first failed batch and report only rows that were not committed.
   let created = 0, updated = 0;
   for (let k = 0; k < todo.length; k += 60) {
     const part = todo.slice(k, k + 60);
@@ -237,7 +237,7 @@ studentRoutes.get('/:id', need('students.view'), async (c) => {
   if (!row) return c.notFound();
   const [links, payments] = await Promise.all([
     db.select().from(schema.studentClasses).where(eq(schema.studentClasses.studentId, id)),
-    // Lịch sử học phí chỉ trả cho người có quyền xem học phí (quyền chặn ở API, không chỉ ẩn ở giao diện).
+    // Enforce fee history visibility in the API.
     can(c.get('user'), 'fees.view') ? db.select().from(schema.payments).where(eq(schema.payments.studentId, id)).orderBy(desc(schema.payments.month)) : [],
   ]);
   return c.json({ ...row, classIds: links.map((l) => l.classId), payments });
@@ -256,7 +256,7 @@ studentRoutes.put('/:id', need('students.edit'), async (c) => {
   const [data, err] = await body(c, studentSchema, STUDENT_LABELS);
   if (err) return err;
   const { classIds, ...values } = data;
-  // Người khác vừa xoá học viên này → báo rõ thay vì lỗi khoá ngoại 500.
+  // Return a clear 404 if the student was already deleted.
   if (!(await db.select({ id: s.id }).from(s).where(eq(s.id, id)).get())) return c.json({ error: 'Học viên này đã bị xoá' }, 404);
   await db.batch([
     db.update(s).set({ ...values, updatedAt: Date.now() }).where(eq(s.id, id)),
@@ -269,7 +269,7 @@ studentRoutes.put('/:id', need('students.edit'), async (c) => {
 studentRoutes.delete('/:id', need('students.edit'), need('delete'), async (c) => {
   const id = idParam(c);
   if (!id) return c.notFound();
-  // Đăng ký học thử đã chuyển thành học viên này → về "Đã liên hệ", để chuyển lại được (không kẹt ở "Đã nhập học").
+  // Reset the linked trial to contacted so it can be converted again.
   const tr = schema.trialRegistrations;
   await db.batch([
     db.update(tr).set({ status: 'contacted', studentId: null }).where(eq(tr.studentId, id)),

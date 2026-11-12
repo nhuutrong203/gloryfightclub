@@ -20,7 +20,7 @@ if (!c) return Astro.rewrite('/404');
 const achievementRows = await db.select().from(schema.achievements)
   .where(and(eq(schema.achievements.coachId, c.id), eq(schema.achievements.isPublic, true))).orderBy(asc(schema.achievements.sort));
 const achievements = lines(tr(c, 'achievements', lang));
-// Mục Thành tích (bảng) mà ô chữ chưa ghi → hiện thêm sau các dòng chữ (thêm huy chương mới ở mục Thành tích là thấy ngay).
+// Append linked awards missing from the written achievements.
 const extraRows = extraAwards(achievements, achievementRows, (r) => ({ title: tr(r, 'title', lang), event: r.eventName }));
 const myClasses = classes.filter((x) => x.coachId === c.id);
 const myDisciplines = disciplines.filter((d) => c.disciplineIds.includes(d.id));
@@ -71,7 +71,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
               <span class="font-display text-2xl sm:text-3xl uppercase leading-tight">{a}</span>
             </li>
           ))}
-          {/* Mục bảng chưa có trong ô chữ (extraAwards đã bỏ dòng trùng). */}
+          {/* Linked awards not already included in the written achievements. */}
           {extraRows.map((r, i) => (
             <li class="reveal flex items-start gap-4 bg-bone p-6 transition-colors hover:bg-white" style={`--i:${i}`}>
               <AchievementIcon line={tr(r, 'title', lang)} class="size-10" />

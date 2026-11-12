@@ -9,7 +9,7 @@ import { body, idParam, need } from './guard';
 import { deleteMedia } from './media';
 import type { Env } from '.';
 
-// CRUD chung cho các mục nội dung khai báo trong src/admin/resources.ts.
+// Shared CRUD for resources declared in src/admin/resources.ts.
 const TABLES: Record<ResourceKey, SQLiteTable & Record<string, any>> = {
   locations: schema.locations,
   disciplines: schema.disciplines,
@@ -59,7 +59,7 @@ const schemas = Object.fromEntries(
 export const contentRoutes = new Hono<Env>();
 
 const resolve = (key: string) => (key in RESOURCES ? (key as ResourceKey) : null);
-/** Giá trị các ô ảnh của 1 dòng (để dọn file R2 khi đổi ảnh / xoá mục). */
+/** Collect R2 keys to clean up after an update or deletion. */
 const imagesOf = (key: ResourceKey, row: Record<string, any> | undefined) =>
   row ? RESOURCES[key].fields.filter((f) => f.type === 'image').map((f) => row[f.name] as string | null) : [];
 
@@ -84,7 +84,7 @@ contentRoutes.post('/:res', need('content'), async (c) => {
   const values: Record<string, unknown> = pick(data, writableColumns(RESOURCES[key]));
   const slugFrom = RESOURCES[key].slugFrom;
   if (slugFrom) values.slug = `${slugify(String(data[slugFrom]))}-${crypto.randomUUID().slice(0, 4)}`;
-  // Thứ tự hiển thị không nhập tay: mục mới nằm cuối (thư viện: đầu) danh sách, đổi bằng nút ↑↓.
+  // Assign new items an initial position. Use the list arrows to change it.
   const t = TABLES[key];
   if (t.sort) {
     const r = await db.select({ n: RESOURCES[key].newFirst ? sql<number>`coalesce(min(${t.sort}), 1) - 1` : sql<number>`coalesce(max(${t.sort}), 0) + 1` }).from(t).get();
@@ -95,7 +95,7 @@ contentRoutes.post('/:res', need('content'), async (c) => {
   return c.json(row, 201);
 });
 
-/** Bậc đai trong 1 môn luôn là 1, 2, 3…: chèn đai vào giữa thì các đai sau tự lùi (xem rerank). */
+/** Renumber belts when inserting or moving one within a discipline. */
 async function rerankBelts(disciplineId: number, editedId = 0, oldRank?: number) {
   const b = schema.belts;
   const changes = rerank(await db.select({ id: b.id, rank: b.rank }).from(b).where(eq(b.disciplineId, disciplineId)), editedId, oldRank);
@@ -104,7 +104,7 @@ async function rerankBelts(disciplineId: number, editedId = 0, oldRank?: number)
   await db.batch([first, ...rest]);
 }
 
-// Sắp xếp lại: client gửi id theo thứ tự mới → sort = 1, 2, 3… (luôn khác nhau).
+// Assign consecutive sort values in the submitted order.
 contentRoutes.put('/:res/order', need('content'), async (c) => {
   const key = resolve(c.req.param('res') ?? '');
   if (!key || RESOURCES[key].orderBy !== 'sort') return c.notFound();
@@ -132,7 +132,7 @@ contentRoutes.put('/:res/:id', need('content'), async (c) => {
   if (row && old && key === 'belts') {
     const sameDiscipline = old.disciplineId === row.disciplineId;
     await rerankBelts(row.disciplineId, id, sameDiscipline ? old.rank : undefined);
-    if (!sameDiscipline) await rerankBelts(old.disciplineId); // đổi sang môn khác → môn cũ dồn lại, không hở bậc
+    if (!sameDiscipline) await rerankBelts(old.disciplineId); // Close the rank gap in the old discipline after a move.
   }
   return row ? c.json(row) : c.notFound();
 });
@@ -141,7 +141,7 @@ contentRoutes.delete('/:res/:id', need('content'), need('delete'), async (c) => 
   const key = resolve(c.req.param('res') ?? '');
   const id = idParam(c);
   if (!key || !id) return c.notFound();
-  // Môn học: xoá sẽ kéo theo mọi cấp đai (cascade) và để lại lớp trỏ tới môn không còn → chặn, gợi ý ẩn.
+  // Block deletion while belts or classes still reference the discipline.
   if (key === 'disciplines') {
     const u = await db.get<{ belts: number; classes: number }>(sql`select
       (select count(*) from belts where discipline_id = ${id}) as belts,
@@ -153,8 +153,8 @@ contentRoutes.delete('/:res/:id', need('content'), need('delete'), async (c) => 
   }
   const old = await db.select().from(TABLES[key]).where(eq(TABLES[key].id, id)).get();
   try {
-    // Migration 0002 thêm trial_registrations.fee_plan_id thiếu "ON DELETE SET NULL" (SQLite không sửa được khoá ngoại cũ
-    // nếu không dựng lại bảng) → tự bỏ gói khỏi các đăng ký học thử trong cùng transaction, kẻo không xoá được gói nào khách từng chọn.
+    // Migration 0002 omitted ON DELETE SET NULL for trial_registrations.fee_plan_id.
+    // Clear trial plan references in the same transaction before deleting the plan.
     const tr = schema.trialRegistrations;
     const del = db.delete(TABLES[key]).where(eq(TABLES[key].id, id));
     if (key === 'feePlans') await db.batch([db.update(tr).set({ feePlanId: null }).where(eq(tr.feePlanId, id)), del]);
@@ -163,7 +163,7 @@ contentRoutes.delete('/:res/:id', need('content'), need('delete'), async (c) => 
     return c.json({ error: 'Không xoá được vì mục này đang được dùng ở nơi khác (vd. cơ sở đang có lớp).' }, 409);
   }
   await deleteMedia(imagesOf(key, old));
-  if (key === 'belts' && old) await rerankBelts(old.disciplineId); // xoá đai giữa → các đai sau dồn lên
+  if (key === 'belts' && old) await rerankBelts(old.disciplineId); // Close the gap left by the deleted belt.
   return c.json({ ok: true });
 });
 

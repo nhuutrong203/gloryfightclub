@@ -3,10 +3,10 @@ import { z, type ZodType } from 'zod';
 import { can, type Permission } from '../lib/auth';
 import type { Env } from '.';
 
-// Câu báo lỗi mặc định của zod bằng tiếng Việt ("Quá nhỏ: …" thay vì "Too small: …").
+// Use Vietnamese for default Zod validation messages.
 z.config(z.locales.vi());
 
-/** Middleware: yêu cầu ít nhất một trong các quyền. */
+/** Require at least one listed permission. */
 export const need = (...perms: Permission[]) => async (c: Context<Env>, next: Next) => {
   const u = c.get('user');
   if (!perms.some((p) => can(u, p))) return c.json({ error: 'Bạn không có quyền làm việc này' }, 403);
@@ -18,8 +18,8 @@ export const ownerOnly = async (c: Context<Env>, next: Next) => {
   await next();
 };
 
-/** Đọc + validate JSON body; trả về [data, null] hoặc [null, Response lỗi].
- *  labels: tên cột → nhãn trên form, để báo "Năm sinh: …" thay vì "birthYear: …". */
+/** Validate a JSON body and return either data or an error response.
+ *  Map field keys to labels so errors use the names shown in the form. */
 export async function body<T>(c: Context<any>, schema: ZodType<T>, labels: Record<string, string> = {}): Promise<[T, null] | [null, Response]> {
   const raw = await c.req.json().catch(() => null);
   const r = schema.safeParse(raw);
@@ -37,7 +37,7 @@ export const idParam = (c: Context<any>) => {
   return Number.isInteger(n) && n > 0 ? n : null;
 };
 
-/** CSV có BOM UTF-8 để Excel hiển thị đúng tiếng Việt. */
+/** Include a UTF-8 BOM so Excel displays Vietnamese correctly. */
 export function csv(filename: string, header: string[], rows: unknown[][]) {
   const cell = (v: unknown) => {
     const s = v == null ? '' : String(v);

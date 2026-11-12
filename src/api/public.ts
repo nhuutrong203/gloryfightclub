@@ -14,48 +14,48 @@ export const publicRoutes = new Hono();
 const trialSchema = z.object({
   fullName: z.string().trim().min(2).max(100),
   phone: z.string().trim().max(20),
-  age: z.coerce.number().int().min(3).max(90).nullish(), // trang cũ còn trong cache (trước khi có ngày sinh)
+  age: z.coerce.number().int().min(3).max(90).nullish(), // Compatibility with older forms that only sent age.
   birthDate: z.string().max(10).nullish(),
-  classId: z.coerce.number().int().positive().nullish(), // buổi học thử chọn trong danh sách gợi ý
+  classId: z.coerce.number().int().positive().nullish(), // Trial session chosen from the suggestions.
   trialDate: z.string().max(10).nullish(),
-  agree: z.boolean().optional(), // đã đánh dấu đồng ý Quy định CLB
+  agree: z.boolean().optional(), // Consent to the club rules.
   disciplineId: z.coerce.number().int().positive().nullish(),
   locationId: z.coerce.number().int().positive().nullish(),
   feePlanId: z.coerce.number().int().positive().nullish(),
   preferredTime: z.string().trim().max(100).nullish(),
   note: z.string().trim().max(1000).nullish(),
-  website: z.string().max(200).optional(), // honeypot: người thật không thấy ô này
+  website: z.string().max(200).optional(), // Honeypot hidden from visitors.
 });
 
-// Form đăng ký học thử trên website → bảng trial_registrations (hiện trong CMS).
-// Chống spam: honeypot + tối đa 5 lần / phút / IP (wrangler.jsonc). shortcut: bot đổi IP liên tục vẫn lọt → thêm Cloudflare Turnstile.
+// Public trial requests are stored for the CMS.
+// Honeypot and per-IP limit. shortcut: add Turnstile if rotating IPs bypass them.
 publicRoutes.post('/trial', async (c) => {
   const ip = c.req.header('cf-connecting-ip') ?? 'local';
   if (!(await env.TRIAL_LIMITER.limit({ key: ip })).success) return c.json({ ok: false, code: 'too_many' }, 429);
   const [data, err] = await body(c, trialSchema);
   if (err) return c.json({ ok: false, code: 'invalid' }, 400);
-  if (data.website) return c.json({ ok: true }); // bot: giả vờ thành công
+  if (data.website) return c.json({ ok: true }); // Return apparent success for the honeypot.
   const phone = normalizePhone(data.phone);
   if (!phone) return c.json({ ok: false, code: 'phone' }, 400);
-  // Ngày sinh: ngày có thật, 3–90 tuổi. Client báo lỗi bằng câu đúng ngôn ngữ theo code (server không trả chữ tiếng Việt cho trang EN).
+  // Accept real birth dates and ages 3 to 90. The client translates error codes.
   const today = vnNow().date;
   const birthDate = data.birthDate ? parseDate(data.birthDate) : null;
   const age = birthDate ? ageOn(birthDate, today) : (data.age ?? null);
   if ((data.birthDate && !birthDate) || (age != null && (age < 3 || age > 90))) return c.json({ ok: false, code: 'birth' }, 400);
-  // Có Quy định CLB thì bắt buộc đồng ý; ghi lại lúc nào + bản nào (ngày lưu quy định) để đối chiếu khi cần.
+  // Require consent when rules exist and record the accepted version and time.
   const policyRow = await db.select({ value: schema.settings.value }).from(schema.settings).where(eq(schema.settings.key, 'policy')).get();
   const policy = policyRow?.value as Policy | undefined;
   const hasPolicy = !!(policy?.fees || policy?.safety);
   if (hasPolicy && data.agree !== true) return c.json({ ok: false, code: 'agree' }, 400);
 
-  // Bỏ id không tồn tại thay vì báo lỗi khóa ngoại.
+  // Validate the selected IDs before inserting.
   const [d, l, p, k] = await Promise.all([
     data.disciplineId ? db.query.disciplines.findFirst({ where: (t, { eq }) => eq(t.id, data.disciplineId!), columns: { id: true } }) : null,
     data.locationId ? db.query.locations.findFirst({ where: (t, { eq }) => eq(t.id, data.locationId!), columns: { id: true } }) : null,
     data.feePlanId ? db.query.feePlans.findFirst({ where: (t, { eq }) => eq(t.id, data.feePlanId!), columns: { id: true } }) : null,
     data.classId ? db.query.classes.findFirst({ where: (t, { and, eq }) => and(eq(t.id, data.classId!), eq(t.isPublic, true), eq(t.isActive, true)) }) : null,
   ]);
-  // Dùng cùng quy tắc với form: buổi bắt đầu trong <=60 phút hoặc đã qua không còn đặt được.
+  // Use the same 60-minute booking cutoff as the form.
   const trialDate = data.trialDate ? parseDate(data.trialDate) : null;
   const slot = k && trialDate && upcomingSessions([k], new Date(), { age }).some((s) => s.date === trialDate)
     ? { classId: k.id, trialDate } : null;
@@ -68,7 +68,7 @@ publicRoutes.post('/trial', async (c) => {
     phone,
     age,
     birthDate,
-    // Chọn buổi học thử mà chưa chọn môn / cơ sở → lấy theo lớp đó.
+    // Infer missing discipline and location from the selected class.
     disciplineId: d?.id ?? (slot ? k!.disciplineIds[0] ?? null : null),
     locationId: l?.id ?? (slot ? k!.locationId : null),
     classId: slot?.classId ?? null,

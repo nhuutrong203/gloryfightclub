@@ -18,13 +18,13 @@ export const cookieOpts = (c: { req: { url: string } }) => ({
 });
 
 authRoutes.post('/login', async (c) => {
-  // Chống dò mật khẩu: tối đa 10 lần / phút / IP (cấu hình ở wrangler.jsonc).
+  // Limit password attempts to 10 per minute per IP.
   const ip = c.req.header('cf-connecting-ip') ?? 'local';
   if (!(await env.LOGIN_LIMITER.limit({ key: ip })).success) return c.json({ error: 'Thử quá nhiều lần, đợi 1 phút rồi thử lại' }, 429);
   const [data, err] = await body(c, z.object({ username: z.string().trim().min(1).max(64), password: z.string().min(1).max(200) }));
   if (err) return err;
   const user = await db.select().from(schema.users).where(eq(schema.users.username, data.username.toLowerCase())).get();
-  // Vẫn băm khi không có user để thời gian phản hồi giống nhau.
+  // Hash a placeholder even for unknown users to reduce timing differences.
   const ok = await verifyPassword(data.password, user?.passwordHash ?? 'pbkdf2$100000$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=');
   if (!user || !ok || !user.isActive) return c.json({ error: 'Sai tên đăng nhập hoặc mật khẩu' }, 401);
 

@@ -2,15 +2,15 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { THUMB, THUMB_W } from '../../lib/site';
 
-// Phục vụ ảnh/video public từ R2. Key do CMS sinh ra (không đoán được tên file gốc).
-// Key không bao giờ bị ghi đè (mỗi lần upload một uuid mới) nhưng có thể bị XOÁ (vd. phụ huynh xin gỡ ảnh)
-// → cache 1 ngày (edge + trình duyệt), không phải 1 năm, để ảnh đã xoá hết mở được trong tối đa 1 ngày.
+// Serve public R2 media under CMS-generated keys.
+// Each upload gets a new key, but existing media can be deleted.
+// Cache for one day so deleted media cannot remain available indefinitely.
 export const GET: APIRoute = async ({ params, request, locals }) => {
-  // Chỉ phục vụ thư mục public/ của bucket.
+  // Serve only the public prefix.
   if (!params.key?.startsWith('public/')) return new Response('Not found', { status: 404 });
   const headers = new Headers({ 'cache-control': 'public, max-age=86400', 'x-content-type-options': 'nosniff', 'accept-ranges': 'bytes' });
 
-  // Video: trình duyệt (nhất là iPhone) xin từng đoạn (Range) để phát và tua → trả 206 từ R2, không qua Cache API.
+  // Serve byte ranges directly from R2 for video playback and seeking.
   if (request.headers.has('range')) {
     const obj = await env.MEDIA.get(params.key, { range: request.headers });
     if (!obj) return new Response('Not found', { status: 404 });
@@ -26,14 +26,14 @@ export const GET: APIRoute = async ({ params, request, locals }) => {
   const cache = (caches as unknown as { default: Cache }).default;
   const hit = await cache.match(request);
   if (hit) return hit;
-  // ?w=800: bản nhỏ (thẻ, lưới ảnh); chưa có thì trả ảnh gốc.
+  // Request the 800px thumbnail, with the original as fallback.
   const wantSmall = new URL(request.url).searchParams.get('w') === String(THUMB_W);
   const small = wantSmall ? await env.MEDIA.get(params.key + THUMB) : null;
   const obj = small ?? (await env.MEDIA.get(params.key));
   if (!obj) return new Response('Not found', { status: 404 });
   obj.writeHttpMetadata(headers);
   headers.set('etag', obj.httpEtag);
-  // Xin bản nhỏ mà chưa có (ảnh cũ / bản nhỏ đang upload ngay sau ảnh gốc): trả ảnh gốc nhưng KHÔNG cache, kẻo bản gốc bị giữ 1 ngày dưới địa chỉ ?w=800.
+  // Skip edge caching for thumbnail fallbacks so the actual thumbnail can replace them.
   const fallback = wantSmall && !small;
   if (fallback) headers.set('cache-control', 'public, max-age=300');
   const res = new Response(obj.body, { headers });

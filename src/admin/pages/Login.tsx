@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { api } from '../lib';
 import { Button, PasswordInput, TextInput } from '../ui';
 
-/** overlay: phiên hết hạn giữa chừng → ô đăng nhập nằm ĐÈ lên trang đang mở, đăng nhập lại là làm tiếp, không mất gì. */
+/** Overlay login preserves the open page and unsaved input after session expiry. */
 export function Login({ onLogin, overlay = false }: { onLogin: () => void; overlay?: boolean }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');

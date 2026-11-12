@@ -3,7 +3,7 @@ import Icon from './Icon.astro';
 import Medal from './Medal.astro';
 import { beltColor, classify, type Tier } from '../../lib/medals';
 
-// Icon cho 1 dòng thành tích: huy chương đúng màu (nhiều hạng thì xếp chồng), danh hiệu = cúp vàng, đai = đai.
+// Show medals, a trophy, or a belt to match the achievement.
 interface Props { line: string; class?: string }
 const { line, class: className = 'size-6' } = Astro.props;
 const { kind, medals } = classify(line);

@@ -1,9 +1,9 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Field } from './ui';
 
-// Trình soạn thảo đơn giản cho nhật ký lớp: contentEditable + execCommand, không cần thư viện.
-// shortcut: execCommand bị đánh dấu deprecated nhưng mọi trình duyệt vẫn hỗ trợ; trình duyệt nào gỡ thì thay bằng Tiptap.
-// HTML ra chỉ là bản nháp — server lọc lại theo danh sách thẻ cho phép (src/lib/html.ts) trước khi lưu.
+// The diary editor uses contentEditable and execCommand.
+// shortcut: execCommand is deprecated; replace it if supported browsers remove it.
+// The server sanitizes draft HTML with the allowlist in src/lib/html.ts.
 
 type Tool = { label: string; title: string; run: () => void; state?: string; cls?: string };
 
@@ -12,10 +12,10 @@ export function RichEditor({ label, value, onChange, placeholder, help }: { labe
   const id = useId();
   const [active, setActive] = useState<Record<string, boolean | string>>({});
 
-  // Chỉ ghi vào ô khi giá trị đổi từ ngoài (nạp bài cũ); lúc đang gõ thì innerHTML đã bằng value.
+  // Set innerHTML only when the value changes outside the editor.
   useEffect(() => { const el = ref.current; if (el && el.innerHTML !== value) el.innerHTML = value; }, [value]);
 
-  // Nút đang bật (đậm, nghiêng, tiêu đề…) theo vị trí con trỏ.
+  // Match toolbar state to the current selection.
   useEffect(() => {
     const update = () => {
       if (!ref.current?.contains(document.getSelection()?.anchorNode ?? null)) return;
@@ -61,7 +61,7 @@ export function RichEditor({ label, value, onChange, placeholder, help }: { labe
         <div className="flex gap-1 overflow-x-auto border-b border-neutral-200 bg-neutral-50 p-1" role="toolbar" aria-label={`Định dạng: ${label}`}>
           {tools.map((t) => (
             <button key={t.title} type="button" title={t.title} aria-label={t.title} aria-pressed={t.state ? on(t) : undefined}
-              onMouseDown={(e) => e.preventDefault() /* giữ vùng chọn trong ô soạn thảo */} onClick={t.run}
+              onMouseDown={(e) => e.preventDefault() /* Keep the editor selection */} onClick={t.run}
               className={`min-h-11 min-w-11 shrink-0 whitespace-nowrap px-2.5 text-sm cursor-pointer transition-colors duration-150 ${on(t) ? 'bg-ink text-white' : 'hover:bg-neutral-200'} ${t.cls ?? 'font-semibold'}`}>
               {t.label}
             </button>
@@ -71,7 +71,7 @@ export function RichEditor({ label, value, onChange, placeholder, help }: { labe
           data-placeholder={placeholder}
           onFocus={() => document.execCommand('defaultParagraphSeparator', false, 'p')}
           onInput={emit}
-          // Dán chữ thường: bỏ định dạng rối từ Facebook/Word, vẫn giữ emoji.
+          // Paste plain text to remove foreign formatting while preserving emoji.
           onPaste={(e) => { e.preventDefault(); document.execCommand('insertText', false, e.clipboardData.getData('text/plain')); emit(); }}
           className="min-h-56 px-3 py-2.5 text-base leading-relaxed text-ink outline-none empty:before:pointer-events-none empty:before:text-neutral-400 empty:before:content-[attr(data-placeholder)]
             [&_a]:text-red-700 [&_a]:underline [&_blockquote]:my-3 [&_blockquote]:border-l-4 [&_blockquote]:border-glory [&_blockquote]:pl-3 [&_blockquote]:italic

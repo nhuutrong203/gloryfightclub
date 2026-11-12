@@ -1,9 +1,9 @@
-// Chuyển động của web public (PublicLayout nạp file này). Mọi hiệu ứng tự tắt khi người dùng bật "giảm chuyển động";
-// nghiêng thẻ / nút nam châm chỉ chạy trên máy có chuột (điện thoại không có hover, chạm vào không bị lệch).
+// Public motion effects respect reduced motion preferences.
+// Tilt and magnetic controls require a pointing device.
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const finePointer = matchMedia('(hover: hover) and (pointer: fine)').matches;
 
-// Giá giữ nguyên trong HTML để đọc được khi JS tắt; chỉ đếm khi thẻ vào khung nhìn.
+// Keep the price in HTML and animate it only when visible.
 if (!reduced) {
   const prices = new IntersectionObserver((entries) => {
     for (const entry of entries) {
@@ -24,7 +24,7 @@ if (!reduced) {
   document.querySelectorAll<HTMLElement>('[data-count-price]').forEach((el) => prices.observe(el));
 }
 
-// ── Hiện dần khi cuộn tới: .reveal (khối), .reveal-title (mọi h2 trong <main>) ──
+// Reveal blocks and headings as they enter the viewport.
 document.querySelectorAll<HTMLElement>('main h2').forEach((h) => {
   if (!h.closest('.reveal, dialog, [data-no-reveal]')) h.classList.add('reveal-title');
 });
@@ -33,27 +33,27 @@ const show = (el: HTMLElement) => {
   if (!pending.delete(el)) return;
   io.unobserve(el);
   el.classList.add('is-in');
-  // Hết lượt hiện thì bỏ độ trễ lần lượt, để hiệu ứng rê chuột sau đó không bị chậm theo thứ tự thẻ.
+  // Clear stagger delays after reveal so hover effects respond immediately.
   setTimeout(() => el.style.setProperty('--i', '0'), 1300);
 };
 const io = new IntersectionObserver((entries) => {
   for (const e of entries) if (e.isIntersecting) show(e.target as HTMLElement);
 }, { rootMargin: '0px 0px -8% 0px' });
 document.querySelectorAll<HTMLElement>('.reveal, .reveal-title').forEach((el) => { pending.add(el); io.observe(el); });
-// Vuốt thật nhanh / bấm link #neo có thể nhảy qua cả khối giữa hai khung hình (observer không kịp thấy):
-// cuộn xong thì hiện luôn mọi khối đã ở phía trên mép dưới màn hình, không để khối nào tàng hình.
+// A fast scroll or anchor jump can skip the observer threshold.
+// Reveal any element already above the bottom of the viewport.
 let settle = 0;
 addEventListener('scroll', () => {
   clearTimeout(settle);
   settle = window.setTimeout(() => { for (const el of pending) if (el.getBoundingClientRect().top < innerHeight) show(el); }, 150);
 }, { passive: true });
 
-// ── Header: đậm hơn khi đã cuộn; cuộn xuống thì ẩn, cuộn lên thì hiện. Dải chữ chạy nhanh / đảo chiều theo cú cuộn. ──
+// Hide the header on downward scroll and adjust marquee speed with scrolling.
 const header = document.getElementById('site-header');
 const nav = document.getElementById('mnav') as HTMLDetailsElement | null;
 const marquees = [...document.querySelectorAll<HTMLElement>('.animate-marquee')];
 let lastY = scrollY;
-let boost = 0; // tốc độ thêm của dải chữ, giảm dần về 0
+let boost = 0; // Extra marquee speed that decays to zero.
 let dir = 1;
 let spinning = false;
 const spin = () => {
@@ -86,13 +86,13 @@ addEventListener('scroll', onScroll, { passive: true });
 onScroll();
 header?.addEventListener('focusin', () => header.removeAttribute('data-hidden'));
 
-// Menu mobile: đóng khi bấm link hoặc Esc; khoá cuộn trang khi mở.
+// Close the mobile menu on link activation or Escape and lock scroll while open.
 nav?.addEventListener('toggle', () => { document.documentElement.style.overflow = nav.open ? 'hidden' : ''; });
 nav?.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => { nav.open = false; }));
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && nav?.open) nav.open = false; });
 
-// ── Máy có chuột: thẻ [data-tilt] nghiêng theo con trỏ + quầng sáng; nút [data-magnetic] nhích theo con trỏ;
-//    quầng đỏ [data-spot] (hero) đi theo con trỏ. Con trỏ chuột để bình thường (vòng tròn đuổi theo chuột đã bỏ theo ý chủ web). ──
+// Add pointer-driven tilt, highlights, and magnetic controls.
+//    Move the hero glow without changing the native cursor.
 if (finePointer && !reduced) {
 
   let tilt: HTMLElement | null = null;
@@ -130,7 +130,7 @@ if (finePointer && !reduced) {
     }
     if (m) {
       const r = m.getBoundingClientRect();
-      // Kẹp ±10px / ±6px: nút rộng cả màn hình mà nhân theo tỉ lệ thì trượt quá xa khỏi chỗ bấm.
+      // Clamp the offset so wide buttons do not move away from the pointer.
       const clamp = (v: number, max: number) => Math.max(-max, Math.min(max, v));
       m.style.setProperty('--tx', `${clamp((ev.clientX - r.left - r.width / 2) * 0.25, 10)}px`);
       m.style.setProperty('--ty', `${clamp((ev.clientY - r.top - r.height / 2) * 0.35, 6)}px`);

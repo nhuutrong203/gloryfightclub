@@ -16,7 +16,7 @@ const [disciplines, belts] = await Promise.all([
 const groups = disciplines.filter((d) => d.hasBelts)
   .map((d) => ({ d, belts: belts.filter((b) => b.disciplineId === d.id) }))
   .filter((g) => g.belts.length);
-// Viền sáng cho đai tối màu, viền tối cho đai sáng — để đai nào cũng nhìn rõ trên nền đen.
+// Use a contrasting border so every belt is visible on black.
 const isDark = (hex: string) => { const n = parseInt(hex.slice(1), 16); return ((n >> 16) * 299 + ((n >> 8) & 255) * 587 + (n & 255) * 114) / 1000 < 60; };
 Astro.response.headers.set('cache-control', 'public, max-age=60');
 ---

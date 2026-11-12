@@ -1,10 +1,10 @@
-// Xoá database D1 local (.wrangler/state) trước khi tạo lại bằng `npm run db:reset`.
+// Remove local D1 state before rebuilding it with npm run db:reset.
 import { rmSync } from 'node:fs';
 
 try {
   rmSync('.wrangler/state', { recursive: true, force: true });
 } catch (e) {
-  console.error(`\nKhông xoá được database local (${e.code}).`);
-  console.error('Database đang bị dev server giữ. Tắt `npm run dev` (Ctrl+C) hoặc chạy `npx astro dev stop`, rồi chạy lại.\n');
+  console.error(`\nCould not remove the local database (${e.code}).`);
+  console.error('Stop the dev server with Ctrl+C or `npx astro dev stop`, then retry.\n');
   process.exit(1);
 }

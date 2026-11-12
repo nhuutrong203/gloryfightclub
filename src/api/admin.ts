@@ -16,8 +16,8 @@ export const adminRoutes = new Hono<Env>();
 
 adminRoutes.get('/me', (c) => c.json(c.get('user')));
 
-/** Đổi mật khẩu của chính mình (cần mật khẩu cũ). Đăng xuất các thiết bị khác.
- *  Nằm sau middleware đăng nhập: phiên hết hạn / tài khoản bị khoá thì không đổi được. */
+/** Change the current user's password and sign out other devices.
+ *  Authentication middleware blocks expired sessions and locked accounts. */
 adminRoutes.post('/password', async (c) => {
   const [data, err] = await body(c, z.object({ current: z.string().min(1), next: z.string().min(8, 'Mật khẩu mới tối thiểu 8 ký tự').max(200) }));
   if (err) return err;
@@ -32,7 +32,7 @@ adminRoutes.post('/password', async (c) => {
   return c.json({ ok: true });
 });
 
-/** Danh mục nhỏ dùng cho các ô chọn trong CMS (ai đăng nhập cũng xem được). */
+/** Small lookup lists for any signed-in CMS user. */
 adminRoutes.get('/lookups', async (c) => {
   const [locations, disciplines, classes, coaches, feePlans] = await Promise.all([
     db.select({ id: schema.locations.id, name: schema.locations.name }).from(schema.locations).orderBy(asc(schema.locations.sort)),
@@ -56,7 +56,7 @@ adminRoutes.get('/dashboard', async (c) => {
     students ? db.select({ n: sql<number>`count(*)` }).from(st).where(and(gte(st.joinedAt, `${month}-01`), lte(st.joinedAt, `${month}-31`))).get() : null,
     students ? db.select({ n: sql<number>`count(*)` }).from(schema.trialRegistrations).where(eq(schema.trialRegistrations.status, 'new')).get() : null,
     db.select().from(schema.classes).where(and(eq(schema.classes.isActive, true), sql`instr(${schema.classes.days}, ${weekday}) > 0`)).orderBy(asc(schema.classes.startTime)),
-    // Cùng quy tắc với trang Học phí (owesIn).
+    // Use the same owesIn rule as the Fees page.
     fees
       ? db.select({ n: sql<number>`count(*)` }).from(st)
           .where(and(owesIn(month), sql`not exists (select 1 from payments p where p.student_id = ${st.id} and p.month = ${month})`)).get()
@@ -75,11 +75,11 @@ adminRoutes.get('/dashboard', async (c) => {
   });
 });
 
-// ── Cài đặt chung (key/value JSON) ──
+// Shared JSON settings
 const SETTING_KEYS = ['club', 'hero', 'about', 'texts', 'policy'] as const;
-// texts = { vi: { key: 'chữ' }, en: {...} } — chỉ chuỗi, để trang public render an toàn.
+// Restrict dictionary override values to strings.
 const textsSchema = z.object({ vi: z.record(z.string().max(64), z.string().max(1000)), en: z.record(z.string().max(64), z.string().max(1000)) });
-// club: mọi trang public dùng name/slogan/hotlines → thiếu là sập cả web, nên bắt buộc ở đây.
+// Public pages require the club name, slogan, and hotlines.
 const required = (label: string) => z.string({ error: `Nhập ${label}` }).trim().min(1, `Nhập ${label}`).max(500);
 const link = z.string().trim().max(500).regex(/^https?:\/\//i, 'Link phải bắt đầu bằng https://').nullish().or(z.literal('')).transform((v) => v || null);
 const clubSchema = z.looseObject({
@@ -90,7 +90,7 @@ const clubSchema = z.looseObject({
   facebook: link,
   instagram: link,
 });
-// policy: quy định CLB (trang /quy-dinh + ô đồng ý ở form học thử). updated do server đặt mỗi lần lưu = "phiên bản" khách đã đồng ý.
+// Each rules save records a new version for trial consent.
 const policyText = z.string().max(20000).nullish().transform((v) => v?.trim() || null);
 const policySchema = z.object({ fees: policyText, fees_en: policyText, safety: policyText, safety_en: policyText })
   .transform((v) => ({ ...v, updated: new Date().toISOString() }));
@@ -107,11 +107,11 @@ adminRoutes.put('/settings/:key', need('content'), async (c) => {
   if (JSON.stringify(value).length > 50_000) return c.json({ error: 'Nội dung quá dài' }, 400);
   const old = key === 'hero' ? await db.select({ value: schema.settings.value }).from(schema.settings).where(eq(schema.settings.key, 'hero')).get() : undefined;
   await db.insert(schema.settings).values({ key, value }).onConflictDoUpdate({ target: schema.settings.key, set: { value } });
-  if (old) await deleteMedia([(old.value as { image_key?: string })?.image_key]); // ảnh nền trang chủ cũ (còn dùng thì giữ)
+  if (old) await deleteMedia([(old.value as { image_key?: string })?.image_key]); // Keep the old hero image if another record still uses it.
   return c.json({ ok: true });
 });
 
-// ── Upload ảnh lên R2 (ảnh đã nén ở trình duyệt) ──
+// Upload browser-compressed images to R2.
 const TYPES: Record<string, string> = { 'image/webp': 'webp', 'image/jpeg': 'jpg', 'image/png': 'png' };
 adminRoutes.post('/upload', need('posts', 'content'), async (c) => {
   const form = await c.req.formData().catch(() => null);
@@ -133,13 +133,13 @@ adminRoutes.post('/upload', need('posts', 'content'), async (c) => {
   await env.MEDIA.put(key, bytes, { httpMetadata: { contentType: file.type } });
   if (smallBytes) {
     try { await env.MEDIA.put(key + THUMB, smallBytes, { httpMetadata: { contentType: (small as File).type } }); }
-    catch (e) { console.error('Không lưu được ảnh nhỏ', key, e); } // ảnh gốc vẫn dùng được
+    catch (e) { console.error('Không lưu được ảnh nhỏ', key, e); } // The original image is still usable.
   }
   return c.json({ key }, 201);
 });
 
-// ── Upload video cho nhật ký lớp: client gửi thẳng file (không multipart), Worker chuyển luồng sang R2. ──
-// Giới hạn request của Workers là 100MB → tối đa 95MB. iPhone .mov (H.264) phát được như MP4.
+// Stream raw diary video uploads to R2.
+// Allow 95 MB within the 100 MB Workers limit. Serve iPhone MOV files as MP4.
 const VIDEO: Record<string, [ext: string, serveAs: string]> = { 'video/mp4': ['mp4', 'video/mp4'], 'video/quicktime': ['mov', 'video/mp4'], 'video/webm': ['webm', 'video/webm'] };
 export const MAX_VIDEO = 95 * 1024 * 1024;
 adminRoutes.post('/upload-video', need('posts', 'content'), async (c) => {
@@ -153,7 +153,7 @@ adminRoutes.post('/upload-video', need('posts', 'content'), async (c) => {
   return c.json({ key }, 201);
 });
 
-/** Kiểm tra chữ ký file (magic bytes) để không nhận file giả đuôi ảnh. */
+/** Check file signatures before accepting images. */
 function isImage(b: Uint8Array, ext: string) {
   const ascii = (from: number, to: number) => String.fromCharCode(...b.slice(from, to));
   if (ext === 'jpg') return b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff;
@@ -161,7 +161,7 @@ function isImage(b: Uint8Array, ext: string) {
   return ascii(0, 4) === 'RIFF' && ascii(8, 12) === 'WEBP';
 }
 
-// ── Tài khoản (chỉ chủ CLB) ──
+// Owner-only account management
 const permEnum = z.enum(Object.keys(PERMISSIONS) as [keyof typeof PERMISSIONS, ...(keyof typeof PERMISSIONS)[]]);
 const USER_LABELS = { username: 'Tên đăng nhập', fullName: 'Họ tên', password: 'Mật khẩu', role: 'Vai trò', permissions: 'Quyền', coachId: 'HLV' };
 const userCols = { id: schema.users.id, username: schema.users.username, fullName: schema.users.fullName, role: schema.users.role, permissions: schema.users.permissions, coachId: schema.users.coachId, isActive: schema.users.isActive };
@@ -201,7 +201,7 @@ adminRoutes.put('/users/:id', ownerOnly, async (c) => {
     password: z.string().min(8, 'Mật khẩu tối thiểu 8 ký tự').max(200).optional(),
   }), USER_LABELS);
   if (err) return err;
-  // Không cho tự khoá / tự hạ quyền chính mình (tránh mất quyền chủ CLB).
+  // Prevent owners from locking or demoting themselves.
   if (id === c.get('user').id && (data.isActive === false || data.role === 'coach')) {
     return c.json({ error: 'Không thể tự khoá hoặc tự hạ quyền tài khoản đang dùng' }, 400);
   }
@@ -210,7 +210,7 @@ adminRoutes.put('/users/:id', ownerOnly, async (c) => {
   if (password) set.passwordHash = await hashPassword(password);
   await db.batch([
     db.update(schema.users).set(set).where(eq(schema.users.id, id)),
-    // Đổi mật khẩu / khoá tài khoản → đăng xuất mọi thiết bị của người đó.
+    // Password resets and account locks revoke existing sessions.
     ...(password || data.isActive === false ? [db.delete(schema.sessions).where(eq(schema.sessions.userId, id))] : []),
   ]);
   return c.json({ ok: true });

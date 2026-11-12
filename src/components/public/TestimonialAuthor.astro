@@ -3,11 +3,11 @@ import { thumbUrl } from '../../lib/site';
 import { tr, type Lang } from '../../i18n';
 import type { schema } from '../../db';
 
-// Tên + ảnh người viết cảm nhận (trang chủ và /cam-nhan). Chưa có ảnh → ô chữ cái đầu, để các thẻ đều nhau.
-// large: ảnh to (dải cảm nhận) — ảnh là "gương mặt" của lời khen, nhỏ quá thì không ai nhìn.
+// Show an author photo or initials in testimonial cards.
+// The testimonial band gives the author photo more space.
 interface Props { item: typeof schema.testimonials.$inferSelect; lang: Lang; large?: boolean; class?: string }
 const { item: x, lang, large = false, class: className = 'mt-6' } = Astro.props;
-const photo = thumbUrl(x.photoKey); // ảnh 88px → bản nhỏ
+const photo = thumbUrl(x.photoKey); // Use a thumbnail for the 88px author photo.
 const initials = x.authorName.replace(/\s*\(.*\)$/, '').trim().split(/\s+/).slice(-2).map((w) => w[0]).join('').toUpperCase();
 const px = large ? 88 : 56;
 ---

@@ -24,7 +24,7 @@ export function StudentList({ me }: { me: Me }) {
   const params = new URLSearchParams(location.search);
   const [f, setF] = useState({ q: params.get('q') ?? '', status: params.get('status') ?? 'active', location: params.get('location') ?? '', class: params.get('class') ?? '', sort: params.get('sort') ?? 'name', page: 1 });
   const [q, setQ] = useState(f.q);
-  // Gõ tìm kiếm: đợi 300ms rồi mới tải (đỡ gọi API liên tục).
+  // Debounce searches by 300 ms.
   useEffect(() => { const t = setTimeout(() => setF((x) => ({ ...x, q, page: 1 })), 300); return () => clearTimeout(t); }, [q]);
   const qs = new URLSearchParams(Object.entries(f).filter(([, v]) => v !== '' && v != null).map(([k, v]) => [k, String(v)])).toString();
   useEffect(() => { history.replaceState(null, '', `/admin/hoc-vien?${qs}`); }, [qs]);
@@ -68,7 +68,7 @@ export function StudentList({ me }: { me: Me }) {
                         {s.classIds.length > 0 && lk && ` · ${s.classIds.map((id: number) => lk.classes.find((k) => k.id === id)?.name).filter(Boolean).join(', ')}`}
                       </span>
                     </span>
-                    {/* Người vào học từ tháng sau chưa có học phí tháng này (cùng quy tắc trang Học phí). */}
+                    {/* Students joining next month do not owe fees this month. */}
                     {s.fee && (s.fee === 'paid' ? <Badge tone="green">Đã đóng</Badge> : <Badge tone="red">Chưa đóng</Badge>)}
                   </A>
                 </li>
@@ -115,7 +115,7 @@ export function StudentEdit({ id, me }: { id: string; me: Me }) {
   const set = (k: keyof typeof form) => (v: any) => { setForm((x) => ({ ...x, [k]: v })); markDirty(true); };
   const age = form.birthYear ? new Date().getFullYear() - Number(form.birthYear) : null;
   const isKid = age != null && age < 16;
-  // Lớp đang chọn luôn hiện (kể cả lớp cơ sở cũ / lớp đã ngưng) để bỏ chọn được; không thì vẫn bị lưu mà không thấy.
+  // Keep selected inactive or old-location classes visible so staff can remove them.
   const classOpts = lk.classes.filter((k) => form.classIds.includes(k.id) || (k.isActive && (!form.locationId || k.locationId === Number(form.locationId))));
 
   async function save(e: React.FormEvent) {
@@ -160,7 +160,7 @@ export function StudentEdit({ id, me }: { id: string; me: Me }) {
           <div className="sm:col-span-2"><TextInput label="Họ và tên *" required value={form.fullName} onChange={(e) => set('fullName')(e.target.value)} /></div>
           <TextInput label="Số điện thoại" type="tel" inputMode="tel" value={form.phone} onChange={(e) => set('phone')(e.target.value)} help={isKid ? 'Trẻ nhỏ có thể bỏ trống, dùng SĐT phụ huynh' : undefined} />
           <TextInput label="Năm sinh" type="number" inputMode="numeric" min={1940} max={2030} value={form.birthYear} onChange={(e) => set('birthYear')(e.target.value)} help={age != null ? `${age} tuổi` : undefined} />
-          {/* Phụ huynh không bắt buộc ở mọi độ tuổi (chủ CLB chọn): trẻ em chỉ gợi ý nên ghi để tiện liên lạc. */}
+          {/* Parent details are optional. Suggest them for children so staff can reach a guardian. */}
           <TextInput label="Tên phụ huynh" value={form.parentName} onChange={(e) => set('parentName')(e.target.value)} help={isKid ? 'Nên ghi để tiện liên lạc' : undefined} />
           <TextInput label="SĐT phụ huynh" type="tel" inputMode="tel" value={form.parentPhone} onChange={(e) => set('parentPhone')(e.target.value)} />
           <Select label="Cơ sở" value={form.locationId} onChange={set('locationId')} placeholder="Chọn cơ sở" options={lk.locations.map((l) => ({ value: l.id, label: l.name }))} />

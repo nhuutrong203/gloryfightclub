@@ -7,19 +7,19 @@ import { telHref } from '../lib/site';
 import { publicClasses, publicCoaches, publicDisciplines, publicPlans } from '../lib/public';
 import { t, tr, href, formatVnd, dayLong, DAYS, type Lang } from '../i18n';
 
-// Đăng ký học thử, cá nhân hoá: ngày sinh (3 ô chọn) → biết tuổi để ưu tiên lớp trẻ em / người lớn; chọn môn (+ cơ sở) →
-// 2 buổi học thử có sẵn gần nhất (tính ngay trên trình duyệt theo giờ VN vì trang được cache); cảm ơn có tên, buổi đã chọn,
-// nút Google Calendar + chỉ đường. Logic gợi ý dùng chung với server và test: src/lib/schedule.ts.
+// Personalize trial suggestions by age, discipline, and location.
+// Calculate the two nearest sessions client-side in Vietnam time because the page is cached.
+// Share the scheduling logic with the server through src/lib/schedule.ts.
 const lang: Lang = Astro.locals.lang;
 const [{ club, locations, policy }, disciplines, plans, classes, coaches] = await Promise.all([
   Astro.locals.site, publicDisciplines(), publicPlans(), publicClasses(), publicCoaches(),
 ]);
 const preselect = disciplines.find((d) => d.slug === Astro.url.searchParams.get('mon'))?.id;
-// ?goi=<id> từ nút "Đăng ký học thử" trên thẻ gói (trang Học phí) → chọn sẵn gói đó.
+// Preselect the membership plan from the fees page link.
 const planPre = plans.find((p) => String(p.id) === Astro.url.searchParams.get('goi'))?.id;
 const keys = ['f_ok', 'f_err', 'f_too_many', 'f_phone_err', 'f_sending', 'f_submit', 'f_birth_err', 'f_slot_expired', 'f_age_hint', 'f_kid_hint', 'f_today', 'f_tomorrow',
   'f_ok_hi', 'f_ok_title', 'trial_title', 'f_agree_err', 'level_kids', 'level_beginner', 'level_intermediate', 'level_advanced'] as const;
-// Dữ liệu cho script gợi ý buổi học (chỉ thông tin public). "<" thoát thành < để chữ trong CMS không đóng được thẻ <script>.
+// Escape less-than signs in the public data so CMS text cannot close the script tag.
 const data = {
   lang,
   club: club.name,
@@ -52,7 +52,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
             pattern="^(\+?84|0)[\s.\-]?[35789](?:[\s.\-]?\d){8}$" aria-describedby="f-phone-err" class={field} />
           <p id="f-phone-err" class="mt-2 hidden text-sm font-semibold text-glory-bright" role="alert">{t(lang, 'f_phone_err')}</p>
         </div>
-        <!-- Ngày sinh: 3 ô chọn (gõ / cuộn lịch tìm năm sinh trên điện thoại rất mệt; ô ngày của trình duyệt hiện kiểu Mỹ trên máy tiếng Anh). -->
+        <!-- Separate birth date fields avoid scrolling through years in the native picker. -->
         <fieldset aria-describedby="f-birth-why f-birth-hint">
           <legend class={label}>{t(lang, 'f_birth')}</legend>
           <div class="grid grid-cols-[1fr_1fr_1.4fr] gap-2">
@@ -87,7 +87,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
           </select>
         </div>
 
-        <!-- Buổi học thử có sẵn: hiện sau khi chọn môn, chỉ 2 buổi gần nhất (nhiều quá thì rối mắt). Không có JS thì khối này ẩn, khách ghi giờ ở ô bên dưới. -->
+        <!-- Show the two nearest sessions after a discipline is selected. -->
         <fieldset id="slots" class="hidden sm:col-span-2" aria-describedby="slots-sub">
           <legend class={label}>{t(lang, 'f_slots')}</legend>
           <p id="slots-sub" class="-mt-1 mb-3 text-sm text-ash">{t(lang, 'f_slots_sub')}</p>
@@ -128,12 +128,12 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
           <label for="f-note" class={label}>{t(lang, 'f_note')}</label>
           <textarea id="f-note" name="note" rows="3" maxlength="500" class={field}></textarea>
         </div>
-        <!-- Bẫy bot: người thật không thấy ô này -->
+        <!-- Honeypot hidden from visitors. -->
         <div class="absolute -left-[9999px]" aria-hidden="true">
           <label for="f-web">Website</label><input id="f-web" name="website" tabindex="-1" autocomplete="off" />
         </div>
-        <!-- Đồng ý Quy định CLB: tóm tắt 1 dòng (đọc lướt được) + nút mở toàn văn trong hộp thoại (không rời form, không mất chữ đã gõ).
-             Dưới 18 tuổi (theo ngày sinh) câu đồng ý đổi thành lời của phụ huynh (mục 6 quy định an toàn). -->
+        <!-- Show a short rules summary and open the full text without leaving the form.
+             For visitors under 18, show the consent wording for a parent or guardian. -->
         {policy && (
           <div class="sm:col-span-2 border-l-4 border-glory bg-coal p-4 sm:p-5">
             <p class="text-sm leading-relaxed text-white/80">{t(lang, 'f_policy_summary')}</p>
@@ -167,7 +167,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
         </dialog>
       )}
 
-      <!-- Cảm ơn: gọi tên, nhắc buổi học thử đã chọn (thêm vào lịch, chỉ đường), dặn mang gì. -->
+      <!-- Personalize confirmation with the selected session, calendar link, and directions. -->
       <div id="trial-ok" class="hidden border-2 border-glory bg-glory/10 p-8 sm:p-12" role="status" tabindex="-1">
         <Icon name="check-circle" class="size-14 text-glory" />
         <h2 id="ok-title" class="mt-4 text-5xl">{t(lang, 'f_ok_title')}</h2>
@@ -224,7 +224,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
     const locName = (id: number) => D.locations.find((l) => l.id === id);
     const dm = (date: string) => `${+date.slice(8)}/${+date.slice(5, 7)}`;
 
-    // ── Ngày sinh → tuổi (null khi chưa chọn đủ; NaN khi ngày không có thật như 31/02) ──
+    // Derive age from a complete, valid birth date.
     const birth = () => {
       const [d, m, y] = ['bday', 'bmonth', 'byear'].map((n) => Number(pick(n).value));
       if (!d && !m && !y) return null;
@@ -233,7 +233,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
       const real = new Date(Date.UTC(y, m - 1, d)).getUTCDate() === d;
       return { iso, age: real ? ageOn(iso, vnNow().date) : NaN };
     };
-    // ── Quy định CLB: hộp thoại toàn văn, nút "Tôi đã đọc và đồng ý" đánh dấu luôn ô đồng ý ──
+    // Accepting the rules in the dialog checks the consent box.
     const agree = form.elements.namedItem('agree') as HTMLInputElement | null;
     const agreeErr = document.getElementById('f-agree-err');
     const dlg = document.getElementById('policy-dlg') as HTMLDialogElement | null;
@@ -243,12 +243,12 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
       dlg?.close();
       agree?.focus();
     });
-    dlg?.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); }); // bấm ra ngoài để đóng
+    dlg?.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); }); // Close when clicking the backdrop.
     agree?.addEventListener('change', () => { if (agree.checked) agreeErr?.classList.add('hidden'); });
 
     const showBirth = () => {
       const b = birth();
-      // Dưới 18 tuổi: câu đồng ý là lời của cha mẹ / người giám hộ.
+      // Ask the parent or guardian to confirm for visitors under 18.
       const minor = !!b && !Number.isNaN(b.age) && b.age < 18;
       document.getElementById('agree-self')?.classList.toggle('hidden', minor);
       document.getElementById('agree-guardian')?.classList.toggle('hidden', !minor);
@@ -256,12 +256,12 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
       hint.textContent = !b ? '' : Number.isNaN(b.age) ? M.f_birth_err : (b.age < 16 ? M.f_kid_hint : M.f_age_hint).replace('{n}', String(b.age));
     };
 
-    // ── Buổi học thử gợi ý ──
+    // Suggested trial sessions
     const box = el('slots');
     const list = el('slot-list');
     const none = el('slot-none');
     const tpl = el<HTMLTemplateElement>('slot-tpl');
-    const LIMIT = 2; // chỉ 2 buổi gần nhất: đủ để chọn nhanh, không rối mắt
+    const LIMIT = 2; // Show only the two nearest sessions.
     let slots: { cls: Cls; date: string }[] = [];
     const dayLabel = (date: string) => {
       const today = vnNow().date;
@@ -273,7 +273,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
       const chosen = (form.querySelector('input[name=slot]:checked') as HTMLInputElement | null)?.value ?? '';
       const b = birth();
       const disciplineId = Number(pick('disciplineId').value) || null;
-      box.classList.toggle('hidden', !disciplineId); // chưa chọn môn thì chưa hiện (tránh một loạt lớp không liên quan)
+      box.classList.toggle('hidden', !disciplineId); // Wait for a discipline before showing sessions.
       slots = upcomingSessions(D.classes, new Date(), {
         disciplineId,
         locationId: Number(pick('locationId').value) || null,
@@ -291,14 +291,14 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
         if (lv && cls.level !== 'all') { const b = node.querySelector<HTMLElement>('[data-level]')!; b.textContent = lv; b.classList.remove('hidden'); }
         return node;
       }));
-      // Buổi đang chọn biến khỏi danh sách (đổi môn / cơ sở) → về "Giờ khác".
+      // Fall back to a preferred time when the selected session is no longer available.
       if (!form.querySelector('input[name=slot]:checked')) (form.querySelector('input[name=slot][value=""]') as HTMLInputElement).checked = true;
       none.classList.toggle('hidden', slots.length > 0);
       el('preferred-time').classList.toggle('hidden', !!(form.querySelector('input[name=slot]:checked') as HTMLInputElement | null)?.value);
     };
     for (const n of ['disciplineId', 'locationId']) pick(n).addEventListener('change', renderSlots);
     for (const n of ['bday', 'bmonth', 'byear']) pick(n).addEventListener('change', () => { showBirth(); renderSlots(); });
-    // Chọn một buổi khi chưa chọn cơ sở → điền cơ sở của buổi đó (CMS thấy ngay khách tới đâu).
+    // Fill the session's location when the visitor has not selected one.
     box.addEventListener('change', (e) => {
       const [id] = (e.target as HTMLInputElement).value.split('|');
       const cls = D.classes.find((c) => c.id === Number(id));
@@ -308,7 +308,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
     });
     renderSlots();
 
-    // ── Gửi form ──
+    // Form submission
     const checkPhone = () => {
       const ok = phone.checkValidity();
       phoneErr.classList.toggle('hidden', ok || !phone.value);
@@ -326,7 +326,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
       return `https://calendar.google.com/calendar/render?${q}`;
     };
     const showThanks = (name: string, slot: { cls: Cls; date: string } | undefined) => {
-      // Gọi bằng tên (chữ cuối của họ tên VN), bỏ phần ghi chú trong ngoặc: "Nguyễn Văn An (bố bé Na)" → "An".
+      // Use the final name word and drop parenthetical notes.
       const given = name.replace(/\(.*?\)/g, '').trim().split(/\s+/).pop() || name.trim();
       el('ok-title').textContent = M.f_ok_hi.replace('{name}', given);
       if (slot) {
@@ -376,14 +376,14 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
       try {
         const res = await fetch('/api/public/trial', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
         const data = (await res.json().catch(() => ({}))) as { ok?: boolean; code?: string };
-        // Câu báo lỗi lấy theo ngôn ngữ của trang (server chỉ trả code).
+        // Translate API error codes in the page language.
         if (!res.ok || !data.ok) {
           if (data.code === 'slot') renderSlots();
           throw new Error(({ too_many: M.f_too_many, phone: M.f_phone_err, birth: M.f_birth_err, agree: M.f_agree_err, slot: M.f_slot_expired } as Record<string, string>)[data.code ?? ''] ?? M.f_err);
         }
         showThanks(body.fullName ?? '', slot);
       } catch (ex) {
-        // Mất mạng: fetch báo "Failed to fetch" (tiếng Anh thô) → câu lỗi chung của trang.
+        // Show a localized error on network failure.
         err.textContent = ex instanceof TypeError || !(ex instanceof Error) || !ex.message ? M.f_err : ex.message;
         err.classList.remove('hidden');
       } finally {

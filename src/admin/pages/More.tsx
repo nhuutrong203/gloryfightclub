@@ -6,8 +6,8 @@ import { RESOURCES, type ResourceKey } from '../resources';
 type Item = { to: string; label: string; icon: string; sub?: string };
 
 export function menuGroups(me: Me): { title: string; items: Item[] }[] {
-  // label = tên mục như khách thấy trên web; sub = phần đó sửa ở đâu / gồm gì.
-  // Tên = tiêu đề trang trong resources.ts (cũng là tên trên web) → menu và trang luôn khớp.
+  // Labels match the public sections. Subtitles describe what each item edits.
+  // Use the resource title so the menu and page stay in sync.
   const res = (k: ResourceKey, icon: string, sub: string): Item => ({ to: `/admin/noi-dung/${k}`, label: RESOURCES[k].title, icon, sub });
   const content = can(me, 'content');
   return [
@@ -57,13 +57,13 @@ export function menuGroups(me: Me): { title: string; items: Item[] }[] {
 
 async function logout() {
   await api('/auth/logout', { method: 'POST' }).catch(() => {});
-  location.assign('/admin'); // tải lại hẳn → màn hình đăng nhập (glory:logout chỉ dành cho phiên hết hạn: hiện ô đăng nhập đè lên trang)
+  location.assign('/admin'); // Explicit logout returns to login. The overlay is for expired sessions.
 }
 
-/** Trang "Thêm" trên điện thoại; `compact` = phần dưới menu trái trên máy tính. */
+/** Mobile More page. Compact mode renders the desktop sidebar links. */
 export function More({ me, compact, path }: { me: Me; compact?: boolean; path?: string }) {
   const groups = menuGroups(me);
-  // Hai mục cùng trang Cài đặt (#hero, #club) → chỉ sáng mục đang xem.
+  // Highlight only the settings link matching the current hash.
   const isActive = (to: string) => { const [base, hash] = to.split('#'); return !!path?.startsWith(base) && (!hash || location.hash === `#${hash}`); };
   if (compact) {
     return (

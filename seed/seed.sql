@@ -1,6 +1,6 @@
--- DỮ LIỆU THẬT của CLB (nguồn: ảnh lịch tập, Facebook, gloryfightclub.vn).
--- Chỉ nạp vào D1 local: các lệnh DELETE bên dưới sẽ xoá nội dung đã sửa trong CMS trên cloud.
--- Dữ liệu demo (tin tức, cảm nhận, học viên…) nằm ở seed/sample.sql — CHỈ dùng ở local.
+-- Club data from schedule photos, Facebook, and the club website.
+-- Local D1 only. The DELETE statements below would erase live CMS edits.
+-- seed/sample.sql contains local demo posts, testimonials, and students.
 
 DELETE FROM settings;
 INSERT INTO settings (key, value) VALUES
@@ -21,7 +21,7 @@ INSERT INTO settings (key, value) VALUES
   "subtitle_en": "Train MMA, Kudo, Muay Thai and BJJ with black-belt coaches and active fighters. Two gyms in Ho Chi Minh City.",
   "image_key": null
 }')),
--- Quy định CLB (trang /quy-dinh + ô "Tôi đồng ý" ở form học thử). Mỗi dòng một ý; dòng bắt đầu bằng "1. " là tiêu đề mục.
+-- Club rules appear on /quy-dinh and in the trial form. A line beginning with "1. " starts a section.
 ('policy', json('{
   "fees": "1. Quy định học phí\nHọc viên vui lòng đóng học phí đầy đủ trước khi tham gia tập luyện.\nHọc phí đã đóng không được hoàn trả dưới bất kỳ hình thức nào sau khi đăng ký.\nHọc phí không được chuyển nhượng cho người khác nếu không có sự chấp thuận từ Ban quản lý CLB.\n2. Chính sách bảo lưu\nHọc viên đăng ký các gói 3 tháng, 6 tháng hoặc 12 tháng được hỗ trợ bảo lưu tối đa 01 tháng trong trường hợp gặp vấn đề về sức khỏe, chấn thương hoặc các lý do y tế có xác nhận phù hợp.\nThời gian bảo lưu phải được thông báo trước cho CLB và được Ban quản lý xác nhận.\nSau thời gian bảo lưu, thời hạn thẻ tập sẽ được cộng thêm tương ứng với số ngày được bảo lưu.\nMỗi gói tập chỉ được áp dụng bảo lưu 01 lần trong suốt thời hạn gói.\n3. Quy định khác\nHọc viên có trách nhiệm tuân thủ nội quy, quy tắc an toàn và hướng dẫn của huấn luyện viên trong quá trình tập luyện.\nCLB có quyền từ chối phục vụ đối với các trường hợp vi phạm nội quy hoặc có hành vi ảnh hưởng đến môi trường tập luyện chung.\nTrong trường hợp bất khả kháng (thiên tai, dịch bệnh, sự cố cơ sở vật chất...), CLB sẽ có phương án hỗ trợ phù hợp cho học viên.",
   "fees_en": "1. Tuition fees\nPlease pay your tuition fee in full before you start training.\nFees that have been paid are non-refundable in any form once you have registered.\nFees cannot be transferred to another person without approval from the club management.\n2. Membership freeze\nMembers on 3-, 6- or 12-month packages may freeze their membership for up to 01 month in case of health problems, injury or other medical reasons with appropriate proof.\nThe freeze period must be notified to the club in advance and confirmed by the club management.\nAfter the freeze period, the membership is extended by the same number of days that were frozen.\nEach package can be frozen only 01 time during its validity.\n3. Other rules\nMembers must follow the club rules, safety rules and the coaches'' instructions during training.\nThe club reserves the right to refuse service to anyone who breaks the club rules or behaves in a way that harms the shared training environment.\nIn case of force majeure (natural disasters, epidemics, facility incidents...), the club will offer members suitable support.",
@@ -89,7 +89,7 @@ Gold medal, Open Jiujitsu Can Tho',
 (5, 'nguyen-huy-vinh-tam', 'Nguyễn Huy Vĩnh Tâm', 'HLV Striking – Kudo – Boxing – Kickboxing', 'Striking Coach – Kudo – Boxing – Kickboxing', NULL, NULL, '[2,5,3]', 0, 5),
 (6, 'nguyen-truong-nhi-thao', 'Nguyễn Trương Nhi Thảo', 'HLV Kudo Kids', 'Kudo Kids Coach', NULL, NULL, '[2]', 0, 6);
 
--- Lịch cơ sở 1 (theo ảnh "Khung giờ tập luyện"). HLV từng ca chưa rõ → để trống.
+-- Location 1 schedule from the club's timetable. Coach assignments are pending.
 DELETE FROM classes;
 INSERT INTO classes (name, name_en, discipline_ids, location_id, days, start_time, end_time) VALUES
 ('MMA', 'MMA', '[1]', 1, '246', '08:30', '09:30'),
@@ -105,7 +105,7 @@ INSERT INTO classes (name, name_en, discipline_ids, location_id, days, start_tim
 ('Kudo', 'Kudo', '[2]', 1, '357', '20:00', '21:30'),
 ('Open mat – Sparring', 'Open mat – Sparring', '[]', 1, '8', '18:00', '21:00');
 
--- Hệ thống đai: BJJ (chuẩn IBJJF người lớn). Kudo: bản rút gọn — CẦN THẦY XÁC NHẬN lại trong CMS.
+-- Adult IBJJF belts and a simplified Kudo list pending confirmation in the CMS.
 DELETE FROM belts;
 INSERT INTO belts (discipline_id, name, name_en, color, rank) VALUES
 (4, 'Đai trắng', 'White belt', '#F5F5F5', 1),
@@ -128,7 +128,7 @@ INSERT INTO achievements (title, title_en, event_name, event_date, coach_id, sor
 ('HCB Jujitsu', 'Silver medal — Jujitsu', 'Giải các CLB Jujitsu quốc gia', NULL, 2, 3),
 ('HCB, HCĐ', 'Silver & bronze medals', 'Đại hội TDTT ĐBSCL', NULL, 2, 4);
 
--- Gói tập (theo ảnh "Các gói tập"). Open mat – Sparring Chủ nhật 18:00–21:00 miễn phí.
+-- Membership plans from the club poster. Sunday open mat from 18:00 to 21:00 is free.
 DELETE FROM fee_plans;
 INSERT INTO fee_plans (id, name, name_en, headline, headline_en, condition, condition_en, price_per_month, features, features_en, badge, is_featured, sort) VALUES
 (1, 'Premium', 'Premium', 'Tập tất cả các môn', 'All disciplines',
@@ -175,7 +175,7 @@ Free Open mat – Sparring
 Special student price
 Student ID required at sign-up',
  NULL, 0, 4);
--- Phù hợp với ai (cột audience, migration 0005)
+-- Plan audience (migration 0005).
 UPDATE fee_plans SET audience = 'Người muốn tập nghiêm túc, tập nhiều môn mỗi tuần hoặc chuẩn bị thi đấu.', audience_en = 'Serious trainees who want several disciplines a week or are preparing to compete.' WHERE id = 1;
 UPDATE fee_plans SET audience = 'Người đi làm muốn kết hợp 2 môn (vd. đứng đòn + vật) với lịch tập linh hoạt.', audience_en = 'Working adults who want to combine 2 disciplines (e.g. striking + grappling) on a flexible schedule.' WHERE id = 2;
 UPDATE fee_plans SET audience = 'Bé 6–15 tuổi cần rèn thể lực, sự tự tin và tính kỷ luật trong môi trường an toàn.', audience_en = 'Kids aged 6–15 building fitness, confidence and discipline in a safe setting.' WHERE id = 3;

@@ -1,11 +1,11 @@
 ---
 
-// Dải chữ chạy ngang, mặc định là slogan CLB (sửa trong CMS → Thông tin CLB).
-// outline: chữ viền rỗng, cao vừa phải, chạy đều (không đổi màu khi rê chuột: dải to mà đổi màu cả dải trông như bị kẹt); reverse: chạy ngược chiều.
+// Scrolling text defaults to the club slogan from CMS settings.
+// Outline mode uses hollow letters. Reverse mode changes direction.
 interface Props { text?: string; class?: string; outline?: boolean; reverse?: boolean }
 const { club } = Astro.locals.site;
 const { text = club.slogan, class: className = 'bg-glory text-white', outline = false, reverse = false } = Astro.props;
-// Số bản lặp theo độ dài chữ: nửa dải luôn dài cỡ ~120 ký tự → chữ dài hay ngắn đều chạy cùng tốc độ.
+// Repeat short text more often to keep the marquee speed consistent.
 const items = Array.from({ length: Math.max(2, Math.ceil(120 / Math.max(1, text.length))) }, () => text);
 ---
 <div class:list={['overflow-hidden select-none', outline ? 'py-3 sm:py-4' : 'py-3', className]} aria-hidden="true">

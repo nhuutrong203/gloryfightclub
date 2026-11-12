@@ -1,23 +1,23 @@
-// Gợi ý buổi học thử (form Đăng ký học thử chạy ở trình duyệt; server dùng lại để kiểm tra; test chạy bằng node).
-// Chỉ import util (không đụng DB) để chạy được ở cả 3 nơi.
+// Share trial slot logic between the browser, server, and tests.
+// Import only utilities so the module stays independent of the database.
 import { vnNow } from './util.ts';
 
-/** Tuổi tròn vào ngày `today` ('YYYY-MM-DD'), sinh ngày `birth` ('YYYY-MM-DD'). Chưa tới sinh nhật năm nay thì chưa cộng tuổi. */
+/** Age in whole years on the given ISO date. */
 export function ageOn(birth: string, today: string) {
   const [by, bm, bd] = birth.split('-').map(Number);
   const [ty, tm, td] = today.split('-').map(Number);
   return ty - by - (tm < bm || (tm === bm && td < bd) ? 1 : 0);
 }
 
-/** Thứ theo cách gọi VN ('2'..'8') của một ngày 'YYYY-MM-DD'. */
+/** Map an ISO date to the club's weekday codes. */
 export const weekdayOf = (date: string) => vnNow(new Date(`${date}T12:00:00+07:00`)).weekday;
 
 type ClassLike = { id: number; days: string; startTime: string; disciplineIds: number[]; locationId: number; level?: string };
 export type SessionFilter = { disciplineId?: number | null; locationId?: number | null; age?: number | null; days?: number; leadMinutes?: number };
 
-/** Các buổi sắp diễn ra trong `days` ngày tới (giờ VN), sớm nhất trước: [{ cls, date }].
- *  Bỏ buổi hôm nay đã bắt đầu hoặc bắt đầu trong vòng `leadMinutes` phút (không kịp tới).
- *  Trẻ dưới 16 tuổi: ưu tiên lớp "Trẻ em" (nếu môn đó có); từ 16 tuổi: không gợi ý lớp trẻ em. */
+/** Return upcoming sessions in Vietnam time, earliest first.
+ *  Exclude sessions at or before the minimum lead time.
+ *  Prefer kids' classes when available for under-16s and exclude them for older visitors. */
 export function upcomingSessions<T extends ClassLike>(classes: T[], now: Date, f: SessionFilter = {}) {
   const days = f.days ?? 14;
   const lead = f.leadMinutes ?? 60;

@@ -12,12 +12,12 @@ interface Props {
   title?: string;
   description?: string;
   image?: string | null;
-  /** Đường dẫn bản tiếng Việt của trang này, dùng cho nút đổi ngôn ngữ. */
+  /** Vietnamese path used by the language switcher. */
   path?: string;
-  /** 'article' cho trang bài viết (Open Graph). */
+  /** Open Graph article type for post pages. */
   ogType?: string;
   noindex?: boolean;
-  /** Dữ liệu cấu trúc schema.org cho Google (trang chủ: CLB + cơ sở; Hỏi đáp: FAQPage). */
+  /** Optional schema.org structured data for the page. */
   jsonLd?: Record<string, unknown>;
 }
 
@@ -29,8 +29,8 @@ const description = Astro.props.description || (lang === 'en' ? club.tagline_en 
 const image = new URL(Astro.props.image ?? '/og-default.png', Astro.site).href;
 const canonical = new URL(href(path, lang), Astro.site).href;
 
-// Ẩn link tới mục chưa có nội dung (trang rỗng chỉ hiện "Chưa có…"); có nội dung là tự hiện lại.
-// Nhật ký lớp luôn hiện trên menu (chủ CLB muốn khách thấy mục này ngay cả khi chưa có bài).
+// Hide navigation links to sections without content.
+// Keep the class diary link visible even before the first post.
 const counts = (await db.get<Record<string, number>>(sql`select
   (select count(*) from testimonials where is_public = 1) as "/cam-nhan",
   (select count(*) from faqs where is_public = 1) as "/hoi-dap",
@@ -83,7 +83,7 @@ const onTrialPage = path === '/dang-ky-hoc-thu';
     <meta property="og:url" content={canonical} />
     <meta property="og:locale" content={lang === 'vi' ? 'vi_VN' : 'en_US'} />
     <meta name="twitter:card" content="summary_large_image" />
-    {/* "<" thoát thành <: chữ sửa trong CMS không đóng được thẻ <script>. */}
+    {/* Escape less-than signs so CMS text cannot close the script tag. */}
     {jsonLd && <script type="application/ld+json" set:html={JSON.stringify({ '@context': 'https://schema.org', ...jsonLd }).replace(/</g, '\\u003c')} />}
   </head>
   <body data-rendered-date={vnNow().date} class="min-h-dvh flex flex-col overflow-x-clip pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
@@ -146,7 +146,7 @@ const onTrialPage = path === '/dang-ky-hoc-thu';
             <a href={`https://zalo.me/${club.zalo}`} target="_blank" rel="noopener" aria-label="Zalo" class="grid size-11 place-items-center border border-white/20 hover:bg-glory hover:border-glory transition-colors font-display text-xs">Zalo</a>
           </div>
         </div>
-        <!-- Link cao ≥44px trên điện thoại (dễ bấm bằng ngón tay); máy tính gọn lại như cũ. -->
+        <!-- Keep links at least 44px tall on phones. -->
         <nav class="md:col-span-3 grid grid-cols-2 gap-x-4 content-start md:gap-y-2" aria-label="Footer">
           {[...main, ...more].map(([p, k]) => <a href={href(p, lang)} class="flex min-h-11 items-center text-white/75 hover:text-glory md:min-h-0 md:py-1">{t(lang, k)}</a>)}
           {Astro.locals.site.policy && <a href={href('/quy-dinh', lang)} class="flex min-h-11 items-center text-white/75 hover:text-glory md:min-h-0 md:py-1">{t(lang, 'policy_title')}</a>}
@@ -170,7 +170,7 @@ const onTrialPage = path === '/dang-ky-hoc-thu';
       <div class="container-x pb-8 text-sm text-ash">© {new Date().getFullYear()} {club.name}. {t(lang, 'footer_rights')}</div>
     </footer>
 
-    <!-- Xem ảnh lớn: mọi phần tử có data-lightbox="nhóm" (ảnh thư viện, thành tích, nhật ký). Vuốt / phím ← → để chuyển. -->
+    <!-- Group full-size images for swipe and arrow navigation. -->
     <dialog id="lightbox" class="m-0 h-dvh max-h-none w-screen max-w-none bg-ink/95 p-0 text-white backdrop:bg-black/80" aria-label={t(lang, 'gallery_title')}>
       <div class="relative grid h-full place-items-center p-4 sm:p-12">
         <img id="lb-img" alt="" class="max-h-[85dvh] max-w-full object-contain transition-opacity duration-200" />
@@ -181,7 +181,7 @@ const onTrialPage = path === '/dang-ky-hoc-thu';
       </div>
     </dialog>
 
-    <!-- Điện thoại: thanh hành động cố định dưới đáy (không che nội dung vì body có padding-bottom). -->
+    <!-- The mobile action bar uses bottom padding to avoid hiding page content. -->
     <nav class:list={['fixed inset-x-0 bottom-0 z-30 grid border-t border-white/10 bg-ink/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden', onTrialPage ? 'grid-cols-2' : 'grid-cols-[1fr_1fr_1.4fr]']} aria-label={t(lang, 'cta_call')}>
       <a href={telHref(hotline)} class="flex min-h-16 flex-col items-center justify-center gap-1 text-xs font-semibold text-white/90 active:bg-white/10">
         <Icon name="phone" class="size-5 text-glory" />{t(lang, 'cta_call')}
@@ -196,7 +196,7 @@ const onTrialPage = path === '/dang-ky-hoc-thu';
       )}
     </nav>
 
-    <!-- Máy tính: nút gọi + Zalo nổi -->
+    <!-- Floating desktop call and Zalo actions. -->
     <div class="fixed right-6 bottom-6 z-30 hidden flex-col gap-3 lg:flex">
       <a href={`https://zalo.me/${club.zalo}`} target="_blank" rel="noopener" aria-label="Zalo"
         class="grid size-14 place-items-center rounded-full bg-[#0068ff] font-display text-white shadow-lg shadow-black/50 transition-transform duration-200 hover:scale-110">Zalo</a>
@@ -208,10 +208,10 @@ const onTrialPage = path === '/dang-ky-hoc-thu';
     </div>
 
     <script>
-      // Hiện dần khi cuộn, số đếm, header ẩn/hiện, menu mobile, nghiêng thẻ, nút nam châm.
+      // Public reveals, count-ups, header, mobile menu, tilt, and magnetic buttons.
       import '../scripts/motion';
 
-      // Xem ảnh lớn (lightbox). Không có JS thì link vẫn mở ảnh gốc.
+      // Without JavaScript, links still open full-size images.
       const lb = document.getElementById('lightbox') as HTMLDialogElement;
       const lbImg = document.getElementById('lb-img') as HTMLImageElement;
       const lbCap = document.getElementById('lb-cap')!;
@@ -248,7 +248,7 @@ const onTrialPage = path === '/dang-ky-hoc-thu';
       lb.addEventListener('touchend', (e) => { const dx = e.changedTouches[0].clientX - touchX; if (Math.abs(dx) > 50 && group.length > 1) show(cur + (dx < 0 ? 1 : -1)); });
       lb.addEventListener('close', () => { lbImg.removeAttribute('src'); opener?.focus(); });
 
-      // Ca đang tập (trang chủ): so giờ Việt Nam ngay trên máy khách vì trang được cache.
+      // Compute the live class in Vietnam time on the client because pages are cached.
       const hhmm = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: false });
       const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit' });
       const loadedDay = document.body.dataset.renderedDate;

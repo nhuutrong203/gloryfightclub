@@ -1,7 +1,7 @@
 declare namespace App {
   interface Locals {
     lang: import('./i18n').Lang;
-    /** Nạp ở middleware cho mọi trang public (getSite). */
+    /** Shared site data loaded by middleware for public pages. */
     site: Awaited<ReturnType<typeof import('./lib/site').getSite>>;
   }
 }

@@ -16,9 +16,9 @@ import { More, Password } from './pages/More';
 
 export default function App() {
   const [me, setMe] = useState<Me | null | undefined>(undefined);
-  // Phiên hết hạn giữa chừng: hiện ô đăng nhập ĐÈ lên trang (không thay trang) → bài / form đang gõ dở vẫn còn.
+  // Show expired-session login over the current form so edits survive reauthentication.
   const [expired, setExpired] = useState(false);
-  // Đường dẫn cũ của Nhật ký (/admin/tin-tuc…) → đường dẫn mới, giữ link đã lưu.
+  // Rewrite old diary URLs to preserve saved links.
   if (location.pathname.startsWith('/admin/tin-tuc')) history.replaceState(null, '', location.pathname.replace('/admin/tin-tuc', '/admin/nhat-ky') + location.search);
   const path = usePath().split(/[?#]/)[0].replace(/\/+$/, '') || '/admin';
 
@@ -42,7 +42,7 @@ export default function App() {
 }
 
 function Route({ path, me }: { path: string; me: Me }) {
-  const seg = path.split('/').slice(2); // bỏ '' và 'admin'
+  const seg = path.split('/').slice(2); // Skip the leading empty segment and admin.
   const deny = <p className="p-6">Bạn chưa được cấp quyền xem mục này. Liên hệ chủ CLB.</p>;
   switch (seg[0]) {
     case undefined: return <Dashboard me={me} />;
@@ -77,7 +77,7 @@ function Shell({ me, path, children }: { me: Me; path: string; children: ReactNo
     { to: '/admin/nhat-ky', label: 'Nhật ký', icon: 'news', show: can(me, 'posts') && !can(me, 'fees.view') },
     { to: '/admin/them', label: 'Thêm', icon: 'menu', show: true },
   ].filter((t) => t.show);
-  // Số đăng ký học thử mới: hiện huy hiệu đỏ trên tab, cập nhật khi chuyển trang và mỗi phút.
+  // Refresh the new trial badge on navigation and every minute.
   const [newTrials, setNewTrials] = useState(0);
   useEffect(() => {
     if (!can(me, 'students.view')) return;
@@ -94,14 +94,14 @@ function Shell({ me, path, children }: { me: Me; path: string; children: ReactNo
 
   return (
     <div className="min-h-dvh bg-neutral-100 text-ink lg:pl-60">
-      {/* Thanh trên */}
+      {/* Top bar */}
       <header className="sticky top-0 z-30 flex h-14 items-center gap-3 bg-ink px-4 text-white lg:hidden">
         <img src="/logo.svg" alt="" className="h-8 w-auto" />
         <span className="font-display text-lg uppercase tracking-wider">Glory CMS</span>
         <span className="ml-auto truncate text-sm text-neutral-300">{me.fullName}</span>
       </header>
 
-      {/* Menu trái (máy tính) */}
+      {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col bg-ink text-white lg:flex">
         <A to="/admin" className="flex items-center gap-3 px-5 py-5">
           <img src="/logo.svg" alt="" className="h-10 w-auto" />
@@ -120,7 +120,7 @@ function Shell({ me, path, children }: { me: Me; path: string; children: ReactNo
 
       <main>{children}</main>
 
-      {/* Thanh dưới (điện thoại) */}
+      {/* Mobile bottom navigation */}
       <nav className="fixed inset-x-0 bottom-0 z-30 grid border-t border-neutral-800 bg-ink pb-[env(safe-area-inset-bottom)] text-white lg:hidden" style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }} aria-label="Menu chính">
         {tabs.map((t) => (
           <A key={t.to} to={t.to} className={`flex min-h-16 flex-col items-center justify-center gap-1 text-xs font-semibold ${active(t.to) ? 'text-glory' : 'text-neutral-300'}`}>

@@ -1,8 +1,8 @@
 ---
 import Logo from '../Logo.astro';
 
-// Đầu trang con: tiêu đề lớn, logo chìm, sọc đỏ chéo.
-// slot "aside" (tuỳ chọn): khối bên phải trên máy tính, ngang hàng với tiêu đề (vd. thẻ "Hôm nay" ở Lịch học); điện thoại xếp dưới.
+// Page hero with a title, watermark, and diagonal red stripe.
+// Place the optional aside next to the title on desktop and below it on phones.
 interface Props { eyebrow?: string; title: string; subtitle?: string }
 const { eyebrow, title, subtitle } = Astro.props;
 const aside = Astro.slots.has('aside');

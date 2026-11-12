@@ -20,15 +20,15 @@ const mediaItem = z.discriminatedUnion('type', [
   z.object({ type: z.literal('youtube'), key: z.string().trim().max(500).refine((u) => !!youtubeId(u), 'Link YouTube chưa đúng') }),
 ]);
 
-// Nội dung là HTML từ trình soạn thảo → lọc ở server trước khi lưu (không tin client).
+// Sanitize editor HTML on the server before saving.
 const postSchema = z.object({
   title: z.string().trim().max(200).nullish().transform((v) => v || null),
   titleEn: z.string().trim().max(200).nullish().transform((v) => v || null),
   content: z.string().max(50000).default(''),
   contentEn: z.string().max(50000).nullish(),
-  publishedAt: z.number().int().positive(), // > bây giờ = hẹn giờ đăng
+  publishedAt: z.number().int().positive(), // A future timestamp schedules publication.
   isPublic: z.boolean(),
-  media: z.array(mediaItem).max(24, 'Tối đa 24 ảnh / video mỗi bài').default([]), // 24 × 4 cột < 100 tham số D1
+  media: z.array(mediaItem).max(24, 'Tối đa 24 ảnh / video mỗi bài').default([]), // Four parameters per item, below D1's limit of 100.
 });
 
 const POST_LABELS = { title: 'Tiêu đề', titleEn: 'Title (English)', content: 'Nội dung', contentEn: 'Content (English)', publishedAt: 'Ngày đăng', media: 'Ảnh / video' };
@@ -40,13 +40,13 @@ async function clean(data: z.infer<typeof postSchema>) {
   return { media, values: { ...rest, content: html, contentEn: toText(htmlEn) ? htmlEn : null, format: 'html' as const } };
 }
 
-/** Key R2 (ảnh, video) đang gắn với bài — để dọn file khi bài đổi hoặc bị xoá. */
+/** Collect existing media keys for cleanup after updating or deleting a post. */
 const fileKeys = async (postId: number) =>
   (await db.select({ key: img.key, type: img.type }).from(img).where(eq(img.postId, postId))).filter((m) => m.type !== 'youtube').map((m) => m.key);
 
 const mediaRows = (postId: number, media: z.infer<typeof mediaItem>[]) => media.map((m, sort) => ({ postId, type: m.type, key: m.key, sort }));
 
-const PER_PAGE = 50; // ≤ 100: danh sách id bài đi vào inArray của withMedia (giới hạn tham số D1)
+const PER_PAGE = 50; // Keep the withMedia ID list below the D1 parameter limit.
 
 postRoutes.get('/', need('posts'), async (c) => {
   const page = Math.max(1, Number(c.req.query('page')) || 1);
@@ -82,7 +82,7 @@ postRoutes.put('/:id', need('posts'), async (c) => {
   if (err) return err;
   const { media, values } = await clean(data);
   if (!toText(values.content) && !media.length) return c.json({ error: 'Viết vài dòng hoặc thêm ảnh / video' }, 400);
-  // Người khác vừa xoá bài → báo rõ thay vì lỗi khoá ngoại 500.
+  // Return a clear 404 if the post was already deleted.
   if (!(await db.select({ id: p.id }).from(p).where(eq(p.id, id)).get())) return c.json({ error: 'Bài này đã bị xoá' }, 404);
   const before = await fileKeys(id);
   await db.batch([
@@ -90,7 +90,7 @@ postRoutes.put('/:id', need('posts'), async (c) => {
     db.delete(img).where(eq(img.postId, id)),
     ...(media.length ? [db.insert(img).values(mediaRows(id, media))] : []),
   ]);
-  await deleteMedia(before); // ảnh/video vừa bỏ khỏi bài (key còn dùng thì giữ)
+  await deleteMedia(before); // Preserve keys still referenced by another record.
   return c.json({ ok: true });
 });
 

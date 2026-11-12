@@ -1,26 +1,26 @@
-// Nội dung rich text của nhật ký lớp. Không import gì: toText/textToHtml chạy được cả ở CMS lẫn test (tests/).
+// Diary rich-text helpers shared by the CMS and Node tests.
 
-// Thẻ được giữ (bỏ hết thuộc tính, trừ href của <a>). Thẻ lạ thì bỏ thẻ nhưng giữ chữ bên trong.
+// Keep allowed tags and the href on links. Unwrap unknown tags.
 const KEEP = new Set(['p', 'br', 'div', 'span', 'strong', 'b', 'em', 'i', 'u', 's', 'h2', 'h3', 'ul', 'ol', 'li', 'blockquote', 'a']);
-// Thẻ bỏ cả nội dung (mã chạy được, nhúng, form…).
-// xmp/noembed/noframes/plaintext: bên trong là chữ thô chưa được lọc → bỏ thẻ mà giữ ruột thì ruột thành HTML thật (XSS).
+// Drop executable, embedded, and form elements with their contents.
+// Raw-text elements can expose executable HTML if their children are retained.
 const DROP = new Set(['script', 'style', 'iframe', 'object', 'embed', 'svg', 'math', 'form', 'input', 'button', 'textarea', 'select',
   'img', 'video', 'audio', 'source', 'picture', 'canvas', 'link', 'meta', 'base', 'template', 'noscript', 'title', 'head',
   'xmp', 'noembed', 'noframes', 'plaintext']);
 
-/** Quyết định cho 1 thẻ: bỏ cả nội dung / bỏ thẻ giữ chữ / giữ (không thuộc tính nào). Tách riêng để test bằng node. */
+/** Decide whether to drop, unwrap, or retain an element. Test this logic in Node. */
 export const tagAction = (tag: string): 'drop' | 'unwrap' | 'keep' => {
   const t = tag.toLowerCase();
   return DROP.has(t) ? 'drop' : KEEP.has(t) ? 'keep' : 'unwrap';
 };
 
-/** Link được giữ: chỉ http(s), không có dấu nháy / < > (setAttribute không thoát hết ký tự → tránh chèn thuộc tính lạ). */
+/** Allow only HTTP(S) links without quotes or angle brackets. */
 export const safeHref = (href: string | null | undefined) => {
   const h = (href ?? '').trim();
   return /^https?:\/\/[^\s"'<>]+$/i.test(h) ? h : null;
 };
 
-/** Lọc HTML từ trình soạn thảo theo danh sách cho phép (chạy ở Worker: dùng HTMLRewriter của Cloudflare). */
+/** Sanitize editor HTML using the Workers HTMLRewriter allowlist. */
 export async function sanitizeHtml(html: string): Promise<string> {
   const out = await new HTMLRewriter()
     .on('*', {
@@ -43,7 +43,7 @@ export async function sanitizeHtml(html: string): Promise<string> {
   return out.trim();
 }
 
-/** HTML → chữ thường (mô tả SEO, đoạn trích, tiêu đề tự động). */
+/** Extract plain text for SEO descriptions, excerpts, and generated titles. */
 export function toText(html: string) {
   return html
     .replace(/<(br|\/p|\/div|\/h[23]|\/li|\/blockquote)\b[^>]*>/gi, '\n')
@@ -53,14 +53,14 @@ export function toText(html: string) {
     .trim();
 }
 
-/** Bài cũ chữ thường → HTML để mở trong trình soạn thảo (mỗi dòng trống tách đoạn). */
+/** Convert legacy plain text to editor HTML, with blank lines separating paragraphs. */
 export function textToHtml(text: string) {
   const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   return text.split(/\n{2,}/).map((p) => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`).join('');
 }
 
-/** Văn bản quy định CLB (ô chữ trong CMS) → các mục: dòng bắt đầu bằng số ("1. Quy định học phí") là tiêu đề mục,
- *  mọi dòng khác là một ý trong mục đó; dòng trống bỏ qua. Ý trước tiêu đề đầu tiên thuộc mục không tên. */
+/** Parse numbered lines as club rule section headings.
+ *  Other nonempty lines become items. Items before the first heading are untitled. */
 export function policySections(text: string | null | undefined) {
   const out: { title: string | null; items: string[] }[] = [];
   for (const raw of (text ?? '').split(/\r?\n/)) {

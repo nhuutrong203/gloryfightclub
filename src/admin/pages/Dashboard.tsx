@@ -20,7 +20,7 @@ export function Dashboard({ me }: { me: Me }) {
       <p className="-mt-3 mb-5 text-neutral-600">{greet}, <b>{me.fullName.replace(/\s*\(.*\)$/, '')}</b>.</p>
       {loading && !data ? <Loading /> : error ? <ErrorBox message={error} retry={reload} /> : data && (
         <div className="space-y-6">
-          {/* Việc cần làm */}
+          {/* Pending tasks */}
           {(data.trialsNew > 0 || (data.unpaid ?? 0) > 0) && (
             <div className="grid gap-3 sm:grid-cols-2">
               {data.trialsNew > 0 && (
@@ -38,7 +38,7 @@ export function Dashboard({ me }: { me: Me }) {
             </div>
           )}
 
-          {/* Số liệu */}
+          {/* Club statistics */}
           <div className="grid grid-cols-2 gap-px border border-neutral-200 bg-neutral-200 sm:grid-cols-4">
             {can(me, 'students.view') && <Stat label="Đang học" value={data.activeTotal} />}
             {can(me, 'students.view') && <Stat label={`Mới ${monthLabel(data.month).toLowerCase()}`} value={data.newThisMonth} />}
@@ -52,7 +52,7 @@ export function Dashboard({ me }: { me: Me }) {
             </div>
           )}
 
-          {/* Hôm nay */}
+          {/* Today's classes */}
           <section>
             <h2 className="mb-3 font-display text-2xl uppercase">Ca tập hôm nay</h2>
             {data.todayClasses.length === 0 ? (

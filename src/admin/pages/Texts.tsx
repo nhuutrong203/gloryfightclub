@@ -5,7 +5,7 @@ import { Button, ErrorBox, Icon, Loading, Page, inputCls } from '../ui';
 
 type Texts = { vi: Record<string, string>; en: Record<string, string> };
 
-// Nhóm theo tiền tố khoá trong src/i18n.ts → thầy tìm theo trang cho dễ.
+// Group dictionary keys by prefix so staff can find text by page.
 const GROUPS: [string, RegExp][] = [
   ['Menu', /^nav_/],
   ['Nút bấm', /^cta_|^read_more$|^view_coach$|^directions$|^menu$|^close$/],
@@ -52,7 +52,7 @@ export function Texts() {
 
   async function save() {
     setBusy(true);
-    // Chỉ lưu câu đã sửa (khác mặc định, không trống) → câu mặc định đổi sau vẫn có hiệu lực.
+    // Save only nonempty overrides that differ from the defaults.
     const clean = (lang: 'vi' | 'en') => Object.fromEntries(Object.entries(texts[lang]).map(([k, v]) => [k, v.trim()]).filter(([k, v]) => v && v !== dict[lang][k as DictKey]));
     try {
       await api('/admin/settings/texts', { method: 'PUT', body: { vi: clean('vi'), en: clean('en') } });

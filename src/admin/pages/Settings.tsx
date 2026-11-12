@@ -4,19 +4,19 @@ import { Button, ErrorBox, ImageInput, Loading, Page, TextArea, TextInput, ViewO
 import { policyVersionText } from '../../lib/util';
 
 type S = Record<string, any>;
-// Nhóm chưa có trong DB (vd. "about" chưa lưu lần nào): dùng 1 object cố định. `?? {}` tạo object mới mỗi lần vẽ
-// → Group tưởng dữ liệu đổi → xoá chữ đang gõ.
+// Keep a stable empty object for missing settings groups.
+// A new object on each render would reset the form.
 const NONE: S = {};
 
-// Thông tin chung: liên hệ, hero trang chủ, trang Giới thiệu. Mỗi nhóm lưu riêng.
+// Contact, home hero, and About settings are saved by group.
 export function Settings() {
   const { data, error, reload } = useApi<Record<string, S>>('/admin/settings');
-  // Mỗi nhóm lưu riêng → cờ "chưa lưu" của trang = còn nhóm nào đang sửa dở.
+  // The page stays dirty while any group has unsaved changes.
   const [dirty, setDirtyGroups] = useState<Record<string, boolean>>({});
   const markDirty = useDirty();
   useEffect(() => markDirty(Object.values(dirty).some(Boolean)), [dirty]);
   const onDirty = (k: string, on: boolean) => setDirtyGroups((x) => (x[k] === on ? x : { ...x, [k]: on }));
-  // Mở từ menu "Trang chủ" (#hero) / "Giới thiệu · Liên hệ chung" (#club): cuộn tới đúng nhóm khi tải xong.
+  // Scroll to the group named by the menu link after loading.
   useEffect(() => { if (data && location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView(); }, [data]);
   if (error) return <Page title="Trang chủ · Giới thiệu · Liên hệ" back="/admin/them"><ErrorBox message={error} retry={reload} /></Page>;
   if (!data) return <Loading />;
@@ -36,7 +36,7 @@ export function Settings() {
           ['philosophy', 'Triết lý', 'textarea'], ['philosophy_en', 'Philosophy (English)', 'textarea'],
           ['values', 'Giá trị (mỗi dòng một ý)', 'lines'], ['values_en', 'Values (English, one per line)', 'lines'],
         ]} />
-        {/* Quy định CLB: trang /quy-dinh + ô "Tôi đồng ý" ở form học thử. Mỗi lần lưu có phiên bản theo thời điểm. */}
+        {/* Rules appear at /quy-dinh and in the trial form. Each save creates a new version. */}
         <Group title="Quy định CLB" k="policy" view="/quy-dinh" onDirty={onDirty} initial={data.policy ?? NONE}
           note={`Mỗi dòng một ý; dòng bắt đầu bằng số và dấu chấm ("1. Quy định học phí") là tiêu đề mục. Khách đăng ký học thử phải đánh dấu đồng ý (dưới 18 tuổi: phụ huynh xác nhận). Để trống cả hai phần thì ẩn trang và ô đồng ý.${data.policy?.updated ? ` Bản hiện tại: ${policyVersionText(data.policy.updated)}.` : ''}`} fields={[
           ['fees', 'Quy định học phí & bảo lưu', 'long'], ['fees_en', 'Fees & membership freeze (English)', 'long'],
@@ -63,7 +63,7 @@ function Group({ title, k, view, initial, fields, onDirty, note }: { title: stri
       e.preventDefault();
       if (uploading) return toast('Đợi ảnh tải lên xong đã', 'err');
       setBusy(true);
-      // Giữ các khoá cũ không có trên form (vd. dữ liệu thêm sau này).
+      // Preserve existing keys that do not appear on the form.
       const value: S = { ...initial };
       for (const [key, , kind] of fields) {
         const v = form[key];

@@ -1,6 +1,6 @@
 const TZ = 'Asia/Ho_Chi_Minh';
 
-/** Ngày/tháng/thứ hiện tại theo giờ Việt Nam. weekday: '2'..'7', '8' = Chủ nhật (cách gọi lớp 246/357). */
+/** Current date, month, and club weekday in Vietnam time. */
 export function vnNow(d = new Date()) {
   const p = Object.fromEntries(
     new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' })
@@ -20,7 +20,7 @@ export function policyVersionText(version: string, lang: 'vi' | 'en' = 'vi') {
   return `${day} ${time}`;
 }
 
-/** "Lê Thành Trung" → "le-thanh-trung" */
+/** Generate a lowercase, accent-free slug. */
 export function slugify(s: string) {
   return s
     .normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -29,7 +29,7 @@ export function slugify(s: string) {
     .slice(0, 80) || 'muc';
 }
 
-/** Chuẩn hoá SĐT VN: bỏ khoảng trắng/dấu, +84 → 0. Trả null nếu không hợp lệ. */
+/** Normalize Vietnamese phone numbers and reject invalid input. */
 export function normalizePhone(s: string) {
   let d = s.replace(/[\s.\-()]/g, '');
   if (d.startsWith('+84')) d = '0' + d.slice(3);
@@ -37,13 +37,13 @@ export function normalizePhone(s: string) {
   return /^0\d{9}$/.test(d) ? d : null;
 }
 
-/** Link YouTube (watch, youtu.be, shorts, live, embed) → mã video 11 ký tự; link khác → null. */
+/** Extract an 11-character YouTube video ID from supported URLs. */
 export const youtubeId = (url: string | null | undefined) =>
   url?.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([\w-]{11})/)?.[1] ?? null;
 
-/** Đánh lại bậc đai 1, 2, 3… sau khi thêm / sửa / xoá đai (khỏi phải sửa tay từng đai khi chèn đai vào giữa).
- *  Đai vừa sửa (editedId) giữ đúng bậc đã gõ: đai đang ở bậc đó lùi xuống; nếu dời đai XUỐNG dưới (oldRank nhỏ hơn) thì nó đứng sau đai đang ở bậc đó.
- *  Trả về [id, bậc mới] của những đai cần đổi. */
+/** Renumber belts after an insert, move, or deletion.
+ *  Keep the edited belt at its requested rank and shift neighboring belts.
+ *  Return only IDs and new ranks that need updates. */
 export function rerank(rows: { id: number; rank: number }[], editedId = 0, oldRank?: number): [number, number][] {
   const edited = rows.find((r) => r.id === editedId);
   const down = !!edited && oldRank != null && edited.rank > oldRank;
@@ -52,15 +52,15 @@ export function rerank(rows: { id: number; rank: number }[], editedId = 0, oldRa
   return sorted.flatMap((r, i): [number, number][] => (r.rank === i + 1 ? [] : [[r.id, i + 1]]));
 }
 
-/** Khoảng thời gian [đầu, cuối) theo giờ VN của 'YYYY' hoặc 'YYYY-MM' → ms, để lọc published_at. */
+/** Convert a year or month into a half-open timestamp range in Vietnam time. */
 export function vnRange(period: string): [number, number] {
   const [y, m] = period.split('-').map(Number);
   const H7 = 7 * 3600_000;
   return m ? [Date.UTC(y, m - 1, 1) - H7, Date.UTC(y, m, 1) - H7] : [Date.UTC(y, 0, 1) - H7, Date.UTC(y + 1, 0, 1) - H7];
 }
 
-/** Số trang cần hiện ở thanh phân trang: trang đầu, trang cuối, trang đang xem ±1; chỗ bỏ qua là null ("…").
- *  Khoảng bỏ qua chỉ có 1 trang thì hiện luôn số đó (1 2 3 thay vì 1 … 3). Vd. (6, 20) → [1, null, 5, 6, 7, null, 20]. */
+/** Show first, last, and nearby pages, using null for an ellipsis.
+ *  Display the page number when the gap is only one page. */
 export function pageList(page: number, pages: number): (number | null)[] {
   const keep = [...new Set([1, page - 1, page, page + 1, pages])].filter((n) => n >= 1 && n <= pages).sort((a, b) => a - b);
   const out: (number | null)[] = [];

@@ -11,13 +11,13 @@ import type { schema } from '../../db';
 
 interface Props { coach: typeof schema.coaches.$inferSelect & { awards?: { title: string; titleEn: string | null; eventName: string | null; eventDate: string | null }[] }; lang: Lang; i?: number; tone?: 'light' | 'dark'; class?: string }
 const { coach: c, lang, i = 0, tone = 'dark', class: className } = Astro.props;
-// Giống trang HLV: ô chữ "Thành tích" + mục Thành tích gắn HLV này mà ô chữ chưa ghi (extraAwards bỏ dòng trùng, không đếm đôi huy chương).
+// Combine written achievements with linked records and avoid counting the same medal twice.
 const text = lines(tr(c, 'achievements', lang));
 const achievements = [...text, ...extraAwards(text, c.awards ?? [], (a) => ({ title: tr(a, 'title', lang), event: a.eventName })).map((a) => tr(a, 'title', lang))];
-const photo = thumbUrl(c.photoKey); // thẻ HLV → bản 800px; màn hình nét / thẻ to thì srcset lấy ảnh gốc
+const photo = thumbUrl(c.photoKey); // Use the 800px thumbnail with the original available via srcset.
 const medals = tally(achievements);
 const hasMedals = medals.gold + medals.silver + medals.bronze > 0;
-// Chưa có ảnh: hiện chữ viết tắt (vd. "LT") thay vì khung trống.
+// Show initials when no photo is available.
 const initials = c.fullName.trim().split(/\s+/).slice(-2).map((w) => w[0]).join('');
 ---
 <a href={href(`/huan-luyen-vien/${c.slug}`, lang)} class:list={['reveal group block', className]} style={`--i:${i}`}>

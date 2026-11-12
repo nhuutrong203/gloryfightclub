@@ -3,7 +3,7 @@ import Medal from './Medal.astro';
 import { tally, type Tier } from '../../lib/medals';
 import { t, type Lang } from '../../i18n';
 
-// Dải tổng huy chương "🥇2 🥈3 🥉1" (icon SVG). Không có huy chương nào thì không hiện.
+// Show medal totals only when at least one medal exists.
 interface Props { lines: string[]; lang: Lang; size?: 'sm' | 'lg'; class?: string }
 const { lines, lang, size = 'sm', class: className } = Astro.props;
 const total = tally(lines);

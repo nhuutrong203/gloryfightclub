@@ -12,7 +12,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
 ---
 <PublicLayout path="/cam-nhan" title={t(lang, 'testimonials_title')} description={t(lang, 'testimonials_sub')}>
   <PageHero eyebrow={t(lang, 'nav_testimonials')} title={t(lang, 'testimonials_title')} subtitle={t(lang, 'testimonials_sub')} />
-  <!-- Băng chuyền 3 thẻ + mũi tên: 100 cảm nhận vẫn gọn trong 1 hàng. -->
+  <!-- Keep testimonials in one scrollable row with navigation controls. -->
   <section class="py-14 sm:py-20">
     {items.length === 0
       ? <p class="container-x text-white/75">{t(lang, 'testimonials_empty')}</p>

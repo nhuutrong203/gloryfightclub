@@ -17,7 +17,7 @@ export async function api<T = any>(path: string, opts: { method?: string; body?:
       credentials: 'same-origin',
     });
   } catch {
-    // fetch chỉ ném lỗi khi không tới được server ("Failed to fetch" / "Load failed") → câu tiếng Việt dễ hiểu.
+    // Turn fetch connection failures into a readable Vietnamese error.
     throw new ApiError(OFFLINE, 0);
   }
   const data: any = await res.json().catch(() => ({}));
@@ -26,10 +26,10 @@ export async function api<T = any>(path: string, opts: { method?: string; body?:
   return data as T;
 }
 
-/** Tải dữ liệu khi mount / khi path đổi; trả { data, error, loading, reload }. */
+/** Load on mount or path change and return data, error, loading, and reload. */
 export function useApi<T = any>(path: string | null) {
   const [state, setState] = useState<{ data?: T; error?: string; loading: boolean }>({ loading: !!path });
-  // Chỉ nhận phản hồi của lần tải mới nhất: đổi tháng / gõ tìm nhanh trên 4G thì phản hồi cũ về sau không được đè lên.
+  // Ignore stale responses after rapid search or month changes.
   const latest = useRef(0);
   const load = useCallback(() => {
     if (!path) return;
@@ -44,28 +44,28 @@ export function useApi<T = any>(path: string | null) {
   return { ...state, reload: load };
 }
 
-// ───────── Router (đủ dùng, không cần thư viện) ─────────
+// CMS router
 const listeners = new Set<() => void>();
 const subscribe = (fn: () => void) => {
   listeners.add(fn);
   window.addEventListener('popstate', fn);
   return () => { listeners.delete(fn); window.removeEventListener('popstate', fn); };
 };
-// Có cả #… để menu biết đang ở nhóm nào của trang Cài đặt (#hero, #club).
+// Include the hash so the settings menu can highlight the current group.
 export const usePath = () => useSyncExternalStore(subscribe, () => location.pathname + location.search + location.hash);
 
-// ───────── Chống mất dữ liệu đang gõ ─────────
-// URL của form đang có thay đổi chưa lưu (null = không có).
+// Unsaved changes
+// The URL of the dirty form, or null.
 let dirtyAt: string | null = null;
 const LEAVE = 'Bạn có thay đổi chưa lưu. Rời trang và bỏ các thay đổi này?';
 export const setDirty = (on: boolean) => { dirtyAt = on ? location.pathname + location.search : null; };
-/** Form gọi markDirty(true) khi người dùng sửa, markDirty(false) khi lưu xong; rời trang thì tự xoá cờ. */
+/** Mark edits dirty until saved. Leaving the form clears the flag. */
 export function useDirty() {
   useEffect(() => () => setDirty(false), []);
   return setDirty;
 }
 if (typeof window !== 'undefined') {
-  // Nút Back của trình duyệt / Android: hỏi trước; huỷ thì quay lại đúng form (chạy trước router vì đăng ký trước).
+  // Confirm browser or Android Back before the router runs. Restore the form if cancelled.
   window.addEventListener('popstate', () => {
     if (!dirtyAt) return;
     if (confirm(LEAVE)) dirtyAt = null;
@@ -79,7 +79,7 @@ export function navigate(to: string, replace = false) {
   dirtyAt = null;
   history[replace ? 'replaceState' : 'pushState'](null, '', to);
   listeners.forEach((fn) => fn());
-  // Link có #nhóm (vd. /admin/cai-dat#hero): cuộn tới nhóm đó nếu trang đang mở sẵn, không thì lên đầu trang.
+  // Scroll to the target settings group when already on that page.
   const target = to.includes('#') && document.getElementById(to.split('#')[1]);
   if (target) target.scrollIntoView(); else window.scrollTo(0, 0);
 }
@@ -97,8 +97,8 @@ export function toast(text: string, kind: Toast['kind'] = 'ok') {
 }
 export const useToasts = () => useSyncExternalStore((f) => { toastSubs.add(f); return () => toastSubs.delete(f); }, () => toasts);
 
-// ───────── Định dạng ─────────
-//  : không để chữ "đ" rớt xuống dòng riêng.
+// Formatting
+//  Keep the currency symbol with the amount using a nonbreaking space.
 export const vnd = (n: number | null | undefined) => (n == null ? '' : `${n.toLocaleString('vi-VN')} đ`);
 export const fmtDate = (d: string | number | null | undefined) => {
   if (d == null || d === '') return '';
@@ -112,9 +112,9 @@ export const shiftMonth = (m: string, delta: number) => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 };
 
-// ───────── Ảnh: nén trên trình duyệt rồi upload R2 ─────────
-/** Ảnh điện thoại 3–8MB → ≤1600px WebP (~150–300KB). Ảnh đã nhỏ thì gửi thẳng, khỏi nén lại. */
-// Ảnh HEIC của iPhone: Chrome trên Windows / Android không đọc được (iPhone tự đổi sang JPG khi chọn ảnh trên chính iPhone).
+// Browser image compression and R2 upload
+/** Resize phone photos to at most 1600px WebP. Upload already small images as they are. */
+// Windows and Android Chrome may not decode iPhone HEIC files.
 const isHeic = (f: File) => /hei[cf]/i.test(f.type) || /\.hei[cf]$/i.test(f.name);
 export const HEIC = 'Ảnh HEIC của iPhone chưa mở được trên máy này — tải ảnh lên trực tiếp từ iPhone, hoặc đổi ảnh sang JPG rồi thử lại.';
 
@@ -132,19 +132,19 @@ async function shrink(file: File, maxSide: number, keepSmall = true): Promise<Bl
   const encode = (type: string, q: number) =>
     new Promise<Blob>((ok, fail) => canvas.toBlob((b) => (b ? ok(b) : fail(new Error('Không nén được ảnh'))), type, q));
   const blob = await encode('image/webp', 0.82);
-  // Safari cũ không xuất được WebP (trả về PNG) → dùng JPEG.
+  // Fall back to JPEG if Safari cannot encode WebP.
   return blob.type === 'image/webp' ? blob : encode('image/jpeg', 0.85);
 }
 
-// Số ảnh đang tải lên: form khoá nút Lưu khi > 0, kẻo lưu xong mới có key ảnh → mất ảnh.
+// Disable Save while uploads are pending so image keys are not lost.
 let uploads = 0;
 const uploadSubs = new Set<() => void>();
 const setUploads = (d: number) => { uploads += d; uploadSubs.forEach((f) => f()); };
 export const useUploading = () => useSyncExternalStore((f) => { uploadSubs.add(f); return () => uploadSubs.delete(f); }, () => uploads > 0);
 
-/** Upload 1 ảnh, báo tiến trình 0–100 qua onProgress. Trả key R2. */
+/** Upload an image, report progress from 0 to 100, and return its R2 key. */
 export async function uploadImage(file: File, onProgress?: (pct: number) => void, maxSide = 1600): Promise<string> {
-  if (isHeic(file) && !file.type) throw new Error(HEIC); // Windows: file .HEIC thường không có kiểu file → kẻo báo nhầm "không phải ảnh"
+  if (isHeic(file) && !file.type) throw new Error(HEIC); // Windows may omit the MIME type for HEIC files.
   if (!file.type.startsWith('image/')) throw new Error('File này không phải ảnh');
   setUploads(1);
   try { return await send(file, onProgress, maxSide); } finally { setUploads(-1); }
@@ -159,7 +159,7 @@ const asForm = (blob: Blob) => {
 
 async function send(file: File, onProgress: ((pct: number) => void) | undefined, maxSide: number): Promise<string> {
   const form = asForm(await shrink(file, maxSide));
-  // Gửi bản nhỏ cùng ảnh gốc; server tự đặt cả hai key, nên client không thể ghi đè ảnh cũ.
+  // Upload the thumbnail with the original so the server generates both keys.
   try {
     const small = await shrink(file, 800, false);
     if (small.size <= 400_000) form.append('thumbnail', asFile(small));
@@ -167,7 +167,7 @@ async function send(file: File, onProgress: ((pct: number) => void) | undefined,
   return xhrUpload('/api/admin/upload', form, onProgress);
 }
 
-/** POST có % tiến trình (fetch chưa báo được tiến trình gửi lên) → trả key R2 server sinh ra. */
+/** Use XHR to report upload progress and return the server-generated R2 key. */
 function xhrUpload(url: string, body: Blob | FormData, onProgress?: (pct: number) => void, contentType?: string): Promise<string> {
   return new Promise((ok, fail) => {
     const xhr = new XMLHttpRequest();
@@ -184,8 +184,8 @@ function xhrUpload(url: string, body: Blob | FormData, onProgress?: (pct: number
   });
 }
 
-export const MAX_VIDEO_MB = 95; // giới hạn request của Cloudflare Workers là 100MB
-/** Upload 1 video (gửi thẳng file, không nén) → key R2. */
+export const MAX_VIDEO_MB = 95; // Cloudflare Workers allow requests up to 100 MB.
+/** Stream the original video and return its R2 key. */
 export async function uploadVideo(file: File, onProgress?: (pct: number) => void): Promise<string> {
   if (!/^video\/(mp4|quicktime|webm)$/.test(file.type)) throw new Error('Chỉ nhận video MP4, MOV, WebM');
   if (file.size > MAX_VIDEO_MB * 1024 * 1024) throw new Error(`Video ${Math.round(file.size / 1048576)}MB quá lớn (tối đa ${MAX_VIDEO_MB}MB) — quay ngắn hơn / 720p, hoặc đăng YouTube rồi dán link`);
@@ -193,7 +193,7 @@ export async function uploadVideo(file: File, onProgress?: (pct: number) => void
   try { return await xhrUpload('/api/admin/upload-video', file, onProgress, file.type); } finally { setUploads(-1); }
 }
 
-/** Tải nhiều ảnh, 3 ảnh song song; gọi onDone(key, i) khi từng ảnh xong (lỗi thì báo toast, không dừng cả loạt). */
+/** Upload three images at a time and report individual failures without stopping the batch. */
 export async function uploadMany(files: File[], onDone: (key: string, i: number) => void | Promise<void>, onSettled?: () => void) {
   let next = 0;
   const worker = async () => {
@@ -207,12 +207,12 @@ export async function uploadMany(files: File[], onDone: (key: string, i: number)
 }
 
 export const mediaUrl = (key: string | null | undefined) => (key ? `/media/${key}` : '');
-/** Địa chỉ website public. Trên host CMS, link /… bị chuyển về /admin → đổi sang host public (đọc từ thẻ meta do server ghi). Ở localhost dùng chung host. */
+/** Read the public host from the server's meta tag when linking from the CMS. */
 export function siteUrl(path = '/') {
   const [pub, cms] = (document.querySelector<HTMLMetaElement>('meta[name=glory-hosts]')?.content ?? '').split('|');
   return `${location.protocol}//${pub && location.host === cms ? pub : location.host}${path}`;
 }
 
-// ───────── Quyền ─────────
+// Permissions
 export type Me = { id: number; username: string; fullName: string; role: 'owner' | 'coach'; permissions: string[] };
 export const can = (me: Me, p: string) => me.role === 'owner' || me.permissions.includes(p);

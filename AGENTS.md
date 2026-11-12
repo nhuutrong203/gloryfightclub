@@ -99,7 +99,7 @@ Astro 7 allows only **one dev server per project**. Stop it before another comma
 8. **Language**:
    - UI, content and seed data are Vietnamese.
    - Code identifiers are English; DB columns are snake_case.
-   - Markdown docs and commit messages are **English**.
+   - Code comments, developer-facing messages, Markdown docs, and commit messages are **English**.
    - Commit and push only to `nhuutrong203/gloryfightclub`.
 9. **D1 limits**:
    - at most 100 bound parameters per statement, so never `inArray` over a long list;

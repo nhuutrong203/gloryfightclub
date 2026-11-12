@@ -6,7 +6,7 @@ import CtaBand from '../components/public/CtaBand.astro';
 import { t, href, type Lang } from '../i18n';
 import { policyVersionText } from '../lib/util';
 
-// Quy định CLB (sửa trong CMS → Quy định CLB): 2 phần, mỗi phần có neo (#hoc-phi, #an-toan) để form học thử / trang Học phí link thẳng tới.
+// Link to individual sections of the club rules from the trial and fees pages.
 const lang: Lang = Astro.locals.lang;
 const { policy } = Astro.locals.site;
 if (!policy) return Astro.rewrite('/404');

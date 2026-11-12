@@ -23,7 +23,7 @@ trialRoutes.get('/', need('students.view'), async (c) => {
   return c.json({ rows: rows.slice(0, perPage), hasMore: rows.length > perPage, page });
 });
 
-/** Số đăng ký mới cho huy hiệu tab "Học thử" (CMS hỏi mỗi phút → chỉ trả con số). */
+/** Return only the new trial count for the CMS badge. */
 trialRoutes.get('/count', need('students.view'), async (c) => {
   const r = await db.select({ n: sql<number>`count(*)` }).from(t).where(eq(t.status, 'new')).get();
   return c.json({ n: r?.n ?? 0 });
@@ -38,7 +38,7 @@ trialRoutes.put('/:id', need('students.edit'), async (c) => {
   return c.json({ ok: true });
 });
 
-/** 1 click: tạo học viên từ đăng ký học thử. Trẻ dưới 16 tuổi → SĐT đăng ký là của phụ huynh. */
+/** Convert a trial registration. For children under 16, treat the phone as a parent's number. */
 trialRoutes.post('/:id/convert', need('students.edit'), async (c) => {
   const id = idParam(c);
   if (!id) return c.notFound();
@@ -46,7 +46,7 @@ trialRoutes.post('/:id/convert', need('students.edit'), async (c) => {
   if (!trial) return c.notFound();
   if (trial.studentId) return c.json({ error: 'Đã chuyển thành học viên rồi', studentId: trial.studentId }, 409);
   const { date } = vnNow();
-  const age = trial.birthDate ? ageOn(trial.birthDate, date) : trial.age; // tuổi hôm nay (đăng ký cũ chỉ có tuổi lúc đăng ký)
+  const age = trial.birthDate ? ageOn(trial.birthDate, date) : trial.age; // Use current age when a birth date is available.
   const kid = age != null && age < 16;
   const note = [trial.birthDate && `Ngày sinh: ${trial.birthDate.split('-').reverse().join('/')}`, trial.preferredTime && `Giờ mong muốn: ${trial.preferredTime}`,
     trial.agreedAt && `Đã đồng ý Quy định CLB${trial.policyVersion ? ` (bản ${policyVersionText(trial.policyVersion)})` : ''} khi đăng ký học thử${age != null && age < 18 ? ' — phụ huynh xác nhận' : ''}`, trial.note]
@@ -54,7 +54,7 @@ trialRoutes.post('/:id/convert', need('students.edit'), async (c) => {
   for (let attempt = 0; ; attempt++) {
     const code = await nextStudentCode();
     try {
-      // D1 batch là một transaction: chỉ tạo học viên khi đơn còn chưa chuyển, rồi gán lớp và liên kết đơn cùng lúc.
+      // Create the student, assign the class, and link the trial in one transaction.
       const [inserted] = await env.DB.batch([
         env.DB.prepare(`INSERT INTO students (code, full_name, phone, parent_phone, birth_year, location_id, fee_plan_id, joined_at, status, note)
           SELECT ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?

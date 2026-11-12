@@ -16,7 +16,7 @@ const latest = (await publishedPosts(4)).filter((p) => p.id !== post.id).slice(0
 const raw = tr(post, 'content', lang);
 const body = post.format === 'html' ? toText(raw) : raw;
 const title = tr(post, 'title', lang) || body.slice(0, 60) || t(lang, 'news_title');
-// Ảnh khi chia sẻ link: ảnh đầu tiên, hoặc ảnh bìa YouTube.
+// Use the first image or YouTube cover when sharing the post.
 const cover = post.media.find((m) => m.type !== 'video');
 const ogImage = !cover ? null : cover.type === 'image' ? mediaUrl(cover.key) : `https://i.ytimg.com/vi/${youtubeId(cover.key)}/hqdefault.jpg`;
 Astro.response.headers.set('cache-control', 'public, max-age=60');
