@@ -27,7 +27,7 @@ const myClasses = classes.filter((x) => x.coachId === c.id);
 const myDisciplines = disciplines.filter((d) => c.disciplineIds.includes(d.id));
 const photo = mediaUrl(c.photoKey);
 const others = coaches.filter((x) => x.id !== c.id);
-const desc = [tr(c, 'title', lang), achievements[0]].filter(Boolean).join(' — ');
+const desc = [c.fullName, tr(c, 'title', lang), achievements[0]].filter(Boolean).join(' — ').slice(0, 160);
 Astro.response.headers.set('cache-control', 'public, max-age=60');
 ---
 <PublicLayout path={`/huan-luyen-vien/${c.slug}`} title={c.fullName} description={desc} image={photo}>

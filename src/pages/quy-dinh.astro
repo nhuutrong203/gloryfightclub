@@ -6,16 +6,13 @@ import CtaBand from '../components/public/CtaBand.astro';
 import { t as baseT, href, type Lang } from '../i18n';
 const t = (lang: Parameters<typeof baseT>[0], key: Parameters<typeof baseT>[1]) => baseT(lang, key, Astro.locals.site.texts);
 import { policyVersionText } from '../lib/util';
+import { policyParts } from '../lib/site';
 
 // Link to individual sections of the club rules from the trial and fees pages.
 const lang: Lang = Astro.locals.lang;
 const { policy } = Astro.locals.site;
 if (!policy) return Astro.rewrite('/404');
-const pick = (vi: string | null, en?: string | null) => (lang === 'en' ? en || vi : vi);
-const parts = [
-  { id: 'hoc-phi', title: t(lang, 'policy_fees'), text: pick(policy.fees, policy.fees_en) },
-  { id: 'an-toan', title: t(lang, 'policy_safety'), text: pick(policy.safety, policy.safety_en) },
-].filter((p) => p.text);
+const parts = policyParts(policy, lang, t(lang, 'policy_fees'), t(lang, 'policy_safety'));
 const updated = policy.updated ? policyVersionText(policy.updated, lang) : null;
 Astro.response.headers.set('cache-control', 'public, max-age=60');
 ---
@@ -25,7 +22,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
   {parts.length > 1 && (
     <nav class="stick-under-header sticky top-16 z-20 border-b border-white/10 bg-ink/90 backdrop-blur-md" aria-label={t(lang, 'policy_title')}>
       <div class="container-x flex gap-2 overflow-x-auto py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {parts.map((p) => <a href={`#${p.id}`} class="shrink-0 inline-flex min-h-11 items-center border border-white/20 px-4 font-display text-sm uppercase tracking-wider hover:border-glory hover:text-glory">{p.title}</a>)}
+        {parts.map((p) => <a href={`#${p.id}`} class="inline-flex min-h-11 max-w-[75vw] shrink-0 items-center border border-white/20 px-4 py-2 font-display text-sm uppercase tracking-wider [overflow-wrap:anywhere] hover:border-glory hover:text-glory-bright">{p.title}</a>)}
       </div>
     </nav>
   )}
@@ -34,7 +31,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
     <div class="mx-auto max-w-3xl space-y-16">
       {parts.map((p) => (
         <section id={p.id} class="scroll-mt-36">
-          <h2 class="mb-8 text-4xl sm:text-5xl">{p.title}</h2>
+          <h2 class="mb-8 text-4xl [overflow-wrap:anywhere] sm:text-5xl">{p.title}</h2>
           <PolicyText text={p.text} />
         </section>
       ))}

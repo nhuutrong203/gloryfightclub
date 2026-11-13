@@ -50,6 +50,20 @@
       "when": 1794468852049,
       "tag": "0006_polite_lord_tyger",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1794535200000,
+      "tag": "0007_enforce_student_class_location",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1794567656934,
+      "tag": "0008_gallery_location",
+      "breakpoints": true
     }
   ]
 }

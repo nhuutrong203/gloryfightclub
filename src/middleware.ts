@@ -8,6 +8,12 @@ const CMS_PATH = /^\/(admin|api|media)(\/|$)/;
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname, host } = context.url;
 
+  if (host === context.site?.host && context.url.protocol === 'http:') {
+    const secure = new URL(context.url);
+    secure.protocol = 'https:';
+    return new Response(null, { status: 301, headers: { Location: secure.href } });
+  }
+
   // Separate the public and CMS hosts while allowing both on localhost.
   if (host === env.CMS_HOST && !CMS_PATH.test(pathname) && !pathname.startsWith('/_')) {
     return context.redirect('/admin', 302);

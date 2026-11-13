@@ -2,7 +2,7 @@
 -- Local D1 only. The DELETE statements below would erase live CMS edits.
 -- seed/sample.sql contains local demo posts, testimonials, and students.
 
-DELETE FROM settings;
+DELETE FROM settings WHERE key IN ('club', 'hero', 'policy');
 INSERT INTO settings (key, value) VALUES
 ('club', json('{
   "name": "GLORY FIGHT CLUB",

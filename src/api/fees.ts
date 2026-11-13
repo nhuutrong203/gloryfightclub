@@ -18,14 +18,15 @@ export const owesIn = (m: string) => and(eq(schema.students.status, 'active'), l
 feeRoutes.get('/', need('fees.view'), async (c) => {
   const m = month.safeParse(c.req.query('month')).data ?? vnNow().month;
   const paidThisMonth = db.select({ id: schema.payments.studentId }).from(schema.payments).where(eq(schema.payments.month, m));
-  const payments = await db.select().from(schema.payments).where(eq(schema.payments.month, m));
-  const students = await db
+  const paymentsQuery = db.select().from(schema.payments).where(eq(schema.payments.month, m));
+  const studentsQuery = db
     .select({ id: schema.students.id, code: schema.students.code, fullName: schema.students.fullName, phone: schema.students.phone, parentPhone: schema.students.parentPhone, locationId: schema.students.locationId, feePlanId: schema.students.feePlanId, status: schema.students.status })
     .from(schema.students)
     // Use a subquery to stay below D1's 100 bound parameters.
     // A listed student with no payment is unpaid.
     .where(or(owesIn(m), inArray(schema.students.id, paidThisMonth)))
     .orderBy(asc(schema.students.fullName));
+  const [payments, students] = await db.batch([paymentsQuery, studentsQuery]);
   return c.json({ month: m, students, payments });
 });
 

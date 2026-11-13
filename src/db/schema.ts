@@ -165,6 +165,7 @@ export const galleryItems = sqliteTable('gallery_items', {
   caption: text('caption'),
   captionEn: text('caption_en'),
   album: text('album'),
+  locationId: integer('location_id').references(() => locations.id, { onDelete: 'set null' }),
   isPublic: isPublic(),
   sort: sort(),
   createdAt: createdAt(),

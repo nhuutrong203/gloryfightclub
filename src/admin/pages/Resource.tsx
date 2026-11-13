@@ -8,25 +8,30 @@ import type { Lookups } from './Students';
 
 const imageField = (res: ResourceKey) => RESOURCES[res].fields.find((f) => f.type === 'image')?.name;
 
-export function ResourceList({ res, me }: { res: ResourceKey; me: Me }) {
+export function ResourceList({ res, me, spaces = false }: { res: ResourceKey; me: Me; spaces?: boolean }) {
   const r = RESOURCES[res];
   const { data, error, reload } = useApi<any[]>(`/admin/content/${res}`);
-  const lk = useApi<Lookups>('/admin/lookups').data;
+  const lookups = useApi<Lookups>('/admin/lookups');
+  const lk = lookups.data;
   const img = imageField(res);
   // Show reordered items immediately and revert on failure.
   const reorder = r.orderBy === 'sort' && can(me, 'content');
   const [local, setLocal] = useState<any[] | null>(null);
   useEffect(() => setLocal(null), [data]);
   const list = local ?? data;
-  async function move(i: number, d: number) {
+  async function move(row: any, neighbor: any) {
+    const i = list!.indexOf(row);
+    const j = list!.indexOf(neighbor);
     const next = [...list!];
-    [next[i], next[i + d]] = [next[i + d], next[i]];
+    [next[i], next[j]] = [next[j], next[i]];
     setLocal(next);
     try { await api(`/admin/content/${res}/order`, { method: 'PUT', body: { ids: next.map((x) => x.id) } }); }
     catch (e: any) { toast(e.message, 'err'); setLocal(null); }
   }
   // Group classes by location and belts by discipline. Flag hidden disciplines.
-  const groups: { title: string; note?: string; rows: any[] }[] = res === 'classes' && list && lk
+  const groups: { title: string; note?: string; rows: any[]; locationId?: number }[] = spaces
+    ? (lk?.locations ?? []).map((l) => ({ title: l.name, locationId: l.id, rows: (list ?? []).filter((x) => x.type === 'photo' && x.locationId === l.id) }))
+    : res === 'classes' && list && lk
     ? lk.locations.map((l) => ({ title: l.name, rows: list.filter((x) => x.locationId === l.id) }))
     : res === 'belts' && list && lk
       ? lk.disciplines.map((d) => ({ title: d.name, rows: list.filter((x) => x.disciplineId === d.id),
@@ -35,19 +40,23 @@ export function ResourceList({ res, me }: { res: ResourceKey; me: Me }) {
       : [{ title: '', rows: list ?? [] }];
 
   return (
-    <Page title={r.title} back="/admin/them" actions={<>{r.publicPath && <ViewOnSite href={siteUrl(r.publicPath)} />}{can(me, 'content') && <LinkButton to={`/admin/noi-dung/${res}/moi`} icon="plus" variant={res === 'gallery' ? 'ghost' : 'primary'}>Thêm</LinkButton>}</>}>
-      {res === 'gallery' && can(me, 'content') && <GalleryBulk onDone={reload} />}
-      {error ? <ErrorBox message={error} retry={reload} /> : !list ? <Loading /> : list.length === 0 ? <Empty>Chưa có mục nào.</Empty> : (
+    <Page title={spaces ? "Không gian lớp học" : r.title} back="/admin/them" actions={!spaces && <>{r.publicPath && <ViewOnSite href={siteUrl(r.publicPath)} />}{can(me, 'content') && <LinkButton to={`/admin/noi-dung/${res}/moi`} icon="plus" variant={res === 'gallery' ? 'ghost' : 'primary'}>Thêm</LinkButton>}</>}>
+      {!spaces && res === 'gallery' && can(me, 'content') && <GalleryBulk onDone={reload} />}
+      {error ? <ErrorBox message={error} retry={reload} /> : spaces && lookups.error ? <ErrorBox message={lookups.error} retry={lookups.reload} /> : !list || (spaces && !lk) ? <Loading /> : !groups.length || (!spaces && list.length === 0) ? <Empty>Chưa có mục nào.</Empty> : (
         <div className="space-y-6">
           {groups.map((g) => (
             <section key={g.title}>
               {g.title && <h2 className="mb-2 font-display text-xl uppercase">{g.title} <span className="text-neutral-400">({g.rows.length})</span></h2>}
+              {spaces && <div className="mb-3 flex flex-wrap gap-2">
+                <LinkButton to={`/admin/khong-gian/moi/${g.locationId}`} icon="plus">Thêm ảnh</LinkButton>
+                <ViewOnSite href={siteUrl(`/co-so/${g.locationId}#training-space`)} />
+              </div>}
               {g.note && <p className="-mt-1 mb-2 text-sm font-semibold text-amber-800">{g.note}</p>}
-              {g.rows.length === 0 ? <Empty>Chưa có lớp — thêm lớp hoặc up ảnh lịch ở mục Cơ sở.</Empty> : (
+              {g.rows.length === 0 ? <Empty>{spaces ? 'Chưa có ảnh cho cơ sở này.' : 'Chưa có lớp — thêm lớp hoặc up ảnh lịch ở mục Cơ sở.'}</Empty> : (
                 <ul className="divide-y divide-neutral-200 border border-neutral-200 bg-white">
                   {g.rows.map((row, i) => (
                     <li key={row.id} className="flex items-center">
-                      <A to={`/admin/noi-dung/${res}/${row.id}`} className="flex min-h-16 min-w-0 flex-1 items-center gap-3 p-3 hover:bg-neutral-50">
+                      <A to={spaces ? `/admin/khong-gian/${row.id}` : `/admin/noi-dung/${res}/${row.id}`} className="flex min-h-16 min-w-0 flex-1 items-center gap-3 p-3 hover:bg-neutral-50">
                         {img && (
                           <span className="grid size-12 shrink-0 place-items-center overflow-hidden bg-neutral-100">
                             {row[img] ? <img src={mediaUrl(row[img])} alt="" className="size-full object-cover" loading="lazy" /> : <Icon name="image" className="text-neutral-300" />}
@@ -66,8 +75,8 @@ export function ResourceList({ res, me }: { res: ResourceKey; me: Me }) {
                       </A>
                       {reorder && (
                         <span className="flex shrink-0 border-l border-neutral-200">
-                          <button type="button" disabled={i === 0} onClick={() => move(i, -1)} className="grid size-12 place-items-center text-neutral-600 hover:bg-neutral-100 disabled:opacity-25 cursor-pointer disabled:cursor-default" aria-label={`Đưa "${r.listTitle(row)}" lên trên`}><Icon name="up" /></button>
-                          <button type="button" disabled={i === g.rows.length - 1} onClick={() => move(i, 1)} className="grid size-12 place-items-center text-neutral-600 hover:bg-neutral-100 disabled:opacity-25 cursor-pointer disabled:cursor-default" aria-label={`Đưa "${r.listTitle(row)}" xuống dưới`}><Icon name="down" /></button>
+                          <button type="button" disabled={i === 0} onClick={() => move(row, g.rows[i - 1])} className="grid size-12 place-items-center text-neutral-600 hover:bg-neutral-100 disabled:opacity-25 cursor-pointer disabled:cursor-default" aria-label={`Đưa "${r.listTitle(row)}" lên trên`}><Icon name="up" /></button>
+                          <button type="button" disabled={i === g.rows.length - 1} onClick={() => move(row, g.rows[i + 1])} className="grid size-12 place-items-center text-neutral-600 hover:bg-neutral-100 disabled:opacity-25 cursor-pointer disabled:cursor-default" aria-label={`Đưa "${r.listTitle(row)}" xuống dưới`}><Icon name="down" /></button>
                         </span>
                       )}
                     </li>
@@ -87,13 +96,16 @@ const defaults = (fields: Field[]) => Object.fromEntries(fields.flatMap((f) => {
   return f.en ? [[f.name, v], [`${f.name}En`, '']] : [[f.name, v]];
 }));
 
-export function ResourceEdit({ res, id, me }: { res: ResourceKey; id: string; me: Me }) {
+export function ResourceEdit({ res, id, me, spaceLocation }: { res: ResourceKey; id: string; me: Me; spaceLocation?: string }) {
+  const spaces = spaceLocation !== undefined;
+  const root = spaces ? '/admin/khong-gian' : `/admin/noi-dung/${res}`;
   const r = RESOURCES[res];
   const isNew = id === 'moi';
   const list = useApi<any[]>(isNew ? null : `/admin/content/${res}`);
-  const lk = useApi<Lookups>('/admin/lookups').data;
+  const lookups = useApi<Lookups>('/admin/lookups');
+  const lk = lookups.data;
   const existing = list.data?.find((x) => x.id === Number(id));
-  const [form, setForm] = useState<Record<string, any>>(() => defaults(r.fields));
+  const [form, setForm] = useState<Record<string, any>>(() => ({ ...defaults(r.fields), ...(spaces ? { type: 'photo', locationId: spaceLocation } : {}) }));
   const [busy, setBusy] = useState(false);
   const [showEn, setShowEn] = useState(false);
   const editable = can(me, 'content');
@@ -107,7 +119,7 @@ export function ResourceEdit({ res, id, me }: { res: ResourceKey; id: string; me
     setShowEn(r.fields.some((f) => f.en && existing[`${f.name}En`]));
   }, [existing]);
 
-  if (!isNew && !existing) return list.error ? <ErrorBox message={list.error} /> : list.data ? <Page title={r.title} back={`/admin/noi-dung/${res}`}><Empty>Không tìm thấy.</Empty></Page> : <Loading />;
+  if (!isNew && (!existing || (spaces && (existing.type !== 'photo' || !existing.locationId)))) return list.error ? <ErrorBox message={list.error} /> : list.data ? <Page title={r.title} back={root}><Empty>Không tìm thấy.</Empty></Page> : <Loading />;
   if (!lk) return <Loading />;
 
   const refOptions = (key?: ResourceKey) => {
@@ -130,6 +142,7 @@ export function ResourceEdit({ res, id, me }: { res: ResourceKey; id: string; me
         : v === '' ? null : v;
       if (f.en) payload[`${f.name}En`] = form[`${f.name}En`] || null;
     }
+    if (spaces && !lk?.locations.some((location) => location.id === payload.locationId)) return fail('Chọn cơ sở cho ảnh');
     const bad = r.check?.(payload);
     if (bad) return fail(bad);
     setErr('');
@@ -139,7 +152,7 @@ export function ResourceEdit({ res, id, me }: { res: ResourceKey; id: string; me
       else await api(`/admin/content/${res}/${id}`, { method: 'PUT', body: payload });
       markDirty(false);
       toast('Đã lưu');
-      navigate(`/admin/noi-dung/${res}`, true);
+      navigate(root, true);
     } catch (e: any) { fail(e.message); setBusy(false); }
   }
 
@@ -172,14 +185,14 @@ export function ResourceEdit({ res, id, me }: { res: ResourceKey; id: string; me
 
   const hasEn = r.fields.some((f) => f.en);
   return (
-    <Page title={isNew ? `Thêm: ${r.title}` : r.listTitle(existing)} back={`/admin/noi-dung/${res}`}
-      actions={!isNew && r.publicPath && <>
+    <Page title={isNew ? `Thêm: ${spaces ? 'Ảnh không gian lớp học' : r.title}` : r.listTitle(existing)} back={root}
+      actions={!spaces && !isNew && r.publicPath && <>
         {res === 'locations' && <ViewOnSite label="Lịch" href={siteUrl(`/lich-hoc?co-so=${existing.id}`)} />}
         <ViewOnSite label="Xem" href={siteUrl(existing.slug ? `${r.publicPath}/${existing.slug}` : r.publicPath)} />
       </>}>
       <form onSubmit={save} className="space-y-5">
         <fieldset disabled={!editable} className="space-y-4 border border-neutral-200 bg-white p-4">
-          {r.fields.filter(shown).map((f) => <div key={f.name}>{input(f)}</div>)}
+          {r.fields.filter((f) => shown(f) && (!spaces || f.name !== 'type')).map((f) => <div key={f.name}>{input(spaces && f.name === 'locationId' ? { ...f, required: true } : f)}</div>)}
         </fieldset>
         {hasEn && (
           <section className="border border-neutral-200 bg-white p-4">
@@ -202,7 +215,7 @@ export function ResourceEdit({ res, id, me }: { res: ResourceKey; id: string; me
             {!isNew && can(me, 'delete') && (
               <Button type="button" variant="danger" icon="trash" onClick={async () => {
                 if (!confirmDanger('Xoá mục này? Không khôi phục được.')) return;
-                try { await api(`/admin/content/${res}/${id}`, { method: 'DELETE' }); markDirty(false); toast('Đã xoá'); navigate(`/admin/noi-dung/${res}`, true); } catch (e: any) { fail(e.message); }
+                try { await api(`/admin/content/${res}/${id}`, { method: 'DELETE' }); markDirty(false); toast('Đã xoá'); navigate(root, true); } catch (e: any) { fail(e.message); }
               }}>Xoá</Button>
             )}
             </div>

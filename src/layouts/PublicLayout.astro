@@ -18,24 +18,26 @@ interface Props {
   /** Open Graph article type for post pages. */
   ogType?: string;
   noindex?: boolean;
+  canonicalQuery?: string;
+  hasEnglishAlternate?: boolean;
   /** Optional schema.org structured data for the page. */
   jsonLd?: Record<string, unknown>;
 }
 
 const lang: Lang = Astro.locals.lang;
 const { club, locations } = Astro.locals.site;
-const { path = '/', ogType = 'website', noindex = false, jsonLd } = Astro.props;
+const { path = '/', ogType = 'website', noindex = false, jsonLd, canonicalQuery = '', hasEnglishAlternate = true } = Astro.props;
 const title = Astro.props.title ? `${Astro.props.title} | ${club.name}` : `${club.name} — ${club.slogan}`;
 const description = Astro.props.description || (lang === 'en' ? club.tagline_en : club.tagline) || club.tagline;
 const image = new URL(Astro.props.image ?? '/og-default.png', Astro.site).href;
-const canonical = new URL(href(path, lang), Astro.site).href;
+const localizedUrl = (locale: Lang) => new URL(href(path, locale) + canonicalQuery, Astro.site).href;
+const canonical = localizedUrl(hasEnglishAlternate ? lang : 'vi');
 
 // Hide navigation links to sections without content.
 // Keep the class diary link visible even before the first post.
 const counts = (await db.get<Record<string, number>>(sql`select
   (select count(*) from testimonials where is_public = 1) as "/cam-nhan",
   (select count(*) from faqs where is_public = 1) as "/hoi-dap",
-  (select count(*) from gallery_items where is_public = 1) as "/thu-vien",
   (select count(*) from achievements where is_public = 1) as "/thanh-tich",
   (select count(*) from belts b join disciplines d on d.id = b.discipline_id where d.has_belts = 1 and d.is_public = 1) as "/cap-dai"`)) ?? {};
 const hasContent = ([p]: [string, DictKey]) => counts[p] !== 0;
@@ -52,7 +54,6 @@ const more = ([
   ['/gioi-thieu', 'nav_about'],
   ['/thanh-tich', 'nav_achievements'],
   ['/cap-dai', 'nav_belts'],
-  ['/thu-vien', 'nav_gallery'],
   ['/cam-nhan', 'nav_testimonials'],
   ['/hoi-dap', 'nav_faq'],
 ] as [string, DictKey][]).filter(hasContent);
@@ -70,9 +71,13 @@ const onTrialPage = path === '/dang-ky-hoc-thu';
     <meta name="description" content={description} />
     {noindex && <meta name="robots" content="noindex" />}
     <link rel="canonical" href={canonical} />
-    <link rel="alternate" hreflang="vi" href={new URL(href(path, 'vi'), Astro.site).href} />
-    <link rel="alternate" hreflang="en" href={new URL(href(path, 'en'), Astro.site).href} />
-    <link rel="alternate" hreflang="x-default" href={new URL(href(path, 'vi'), Astro.site).href} />
+    {!noindex && hasEnglishAlternate && (
+      <>
+        <link rel="alternate" hreflang="vi" href={localizedUrl('vi')} />
+        <link rel="alternate" hreflang="en" href={localizedUrl('en')} />
+        <link rel="alternate" hreflang="x-default" href={localizedUrl('vi')} />
+      </>
+    )}
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="sitemap" href="/sitemap.xml" />
     <meta name="theme-color" content="#0a0a0a" />
@@ -99,7 +104,7 @@ const onTrialPage = path === '/dang-ky-hoc-thu';
         <nav class="hidden lg:flex items-center gap-7 font-display uppercase tracking-wider" aria-label="Main">
           {main.map(([p, k]) => (
             <a href={href(p, lang)} aria-current={current(p) ? 'page' : undefined}
-              class:list={['relative px-1 py-2 transition-colors hover:text-glory', current(p) && 'text-glory after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:bg-glory']}><span class="roll" data-text={t(lang, k)}><span>{t(lang, k)}</span></span></a>
+              class:list={['relative px-1 py-2 transition-colors hover:text-glory-bright focus-visible:text-glory-bright', current(p) && 'text-glory-bright after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:bg-glory']}>{t(lang, k)}</a>
           ))}
         </nav>
         <div class="flex items-center gap-2 sm:gap-3">

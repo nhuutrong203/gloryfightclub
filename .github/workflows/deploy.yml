@@ -61,3 +61,6 @@ jobs:
 
       - name: Build + deploy
         run: npm run deploy
+
+      - name: Enable student location guard
+        run: npm run db:enable-location-guard:remote

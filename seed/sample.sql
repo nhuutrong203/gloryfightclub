@@ -33,7 +33,10 @@ INSERT INTO students (id, code, full_name, phone, birth_year, parent_name, paren
 (1, 'GF0001', 'Nguyễn Văn A (mẫu)', '0900000001', 1998, NULL, NULL, 1, 1, '2026-08-01', 'active'),
 (2, 'GF0002', 'Trần Thị B (mẫu)', '0900000002', 2005, NULL, NULL, 1, 4, '2026-09-15', 'active'),
 (3, 'GF0003', 'Lê Minh C (mẫu)', NULL, 2015, 'Lê Văn D', '0900000003', 2, 3, '2026-10-05', 'active');
-INSERT INTO student_classes (student_id, class_id) VALUES (1, 8), (2, 11), (3, 11);
+INSERT INTO student_classes (student_id, class_id)
+SELECT s.id, c.id FROM students s JOIN classes c ON c.location_id = s.location_id
+WHERE (s.id = 1 AND c.name = 'MMA' AND c.days = '246' AND c.start_time = '18:30')
+   OR (s.id = 2 AND c.name = 'Kudo' AND c.days = '357' AND c.start_time = '20:00');
 INSERT INTO payments (student_id, fee_plan_id, month, amount, paid_at, method) VALUES
 (1, 1, '2026-10', 1500000, '2026-10-02', 'cash'),
 (1, 1, '2026-11', 1500000, '2026-11-01', 'transfer'),

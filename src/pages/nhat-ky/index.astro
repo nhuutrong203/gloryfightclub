@@ -54,7 +54,7 @@ const on = 'border-glory bg-glory text-white';
 const off = 'border-white/20 hover:border-white';
 Astro.response.headers.set('cache-control', 'public, max-age=60');
 ---
-<PublicLayout path="/nhat-ky" title={t(lang, 'news_title')} description={t(lang, 'news_sub')} noindex={page > pages || (!!period && total === 0)}>
+<PublicLayout path="/nhat-ky" canonicalQuery={!period && page > 1 && page <= pages ? `?trang=${page}` : ''} title={t(lang, 'news_title')} description={t(lang, 'news_sub')} noindex={page > pages || !!period}>
   <PageHero eyebrow={t(lang, 'nav_news')} title={t(lang, 'news_title')} subtitle={t(lang, 'news_sub')} />
 
   {archive.length === 0

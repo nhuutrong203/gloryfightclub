@@ -78,9 +78,15 @@ export const postArchive = () =>
   db.all<{ month: string; n: number }>(sql`select strftime('%Y-%m', published_at / 1000, 'unixepoch', '+7 hours') as month, count(*) as n
     from posts where is_public = 1 and published_at <= ${Date.now()} group by month order by month desc`);
 
-/** Fetch only published slugs for the sitemap to avoid a large media ID query. */
+export const hasEnglishPost = (post: { titleEn: string | null; contentEn: string | null }) =>
+  !!(post.titleEn?.trim() && post.contentEn?.trim());
+
+/** Read translation availability without loading post bodies or media into the sitemap. */
 export const publishedSlugs = (limit: number) =>
-  db.select({ slug: schema.posts.slug }).from(schema.posts).where(postVisible()).orderBy(desc(schema.posts.publishedAt)).limit(limit);
+  db.select({
+    slug: schema.posts.slug,
+    translated: sql<number>`coalesce(length(trim(${schema.posts.titleEn})) > 0 and length(trim(${schema.posts.contentEn})) > 0, 0)`,
+  }).from(schema.posts).where(postVisible()).orderBy(desc(schema.posts.publishedAt)).limit(limit);
 
 export async function postBySlug(slug: string) {
   const [post] = await db.select().from(schema.posts)

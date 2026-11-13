@@ -167,7 +167,6 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
   gallery: {
     key: 'gallery',
     title: 'Thư viện',
-    publicPath: '/thu-vien',
     listTitle: (r) => r.caption || (r.type === 'video' ? 'Video' : 'Ảnh'),
     listSub: (r) => r.album ?? '',
     orderBy: 'sort',
@@ -179,6 +178,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
       { name: 'videoUrl', label: 'Link video', type: 'url', help: 'Link YouTube (hiện ngay trên web) hoặc Facebook. Muốn tải video từ điện thoại lên: đăng ở Nhật ký lớp.', showIf: (r) => r.type === 'video' },
       { name: 'caption', label: 'Chú thích', type: 'text', en: true },
       { name: 'album', label: 'Album', type: 'text', help: 'Vd: Giải đấu 2025' },
+      { name: 'locationId', label: 'Cơ sở', type: 'select', ref: 'locations', help: 'Ảnh công khai có cơ sở sẽ hiện ở Không gian lớp học. Ảnh chưa gắn cơ sở chỉ có trong CMS.', showIf: (r) => r.type === 'photo' },
       pub,
     ],
   },

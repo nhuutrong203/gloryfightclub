@@ -16,8 +16,8 @@ This repo has two parts, and both run as one Cloudflare Worker:
 
 | Part | URL | Who uses it |
 |---|---|---|
-| Public site (bilingual VI at `/`, EN at `/en/...`) | https://gloryfightclub.vn (target) | Visitors. Promotion and trial-class sign-up only. No visitor accounts, likes or comments. |
-| CMS (Vietnamese only, built for phones) | https://cms.gloryfightclub.vn (target) | Club owner (`owner`) and coaches (`coach`, with permissions the owner ticks) |
+| Public site (bilingual VI at `/`, EN at `/en/...`) | https://gloryfightclub.vn | Visitors. Promotion and trial-class sign-up only. No visitor accounts, likes or comments. |
+| CMS (Vietnamese only, built for phones) | https://cms.gloryfightclub.vn | Club owner (`owner`) and coaches (`coach`, with permissions the owner ticks) |
 
 The CMS manages students, monthly fees and **all** public content.
 
@@ -72,13 +72,13 @@ Astro 7 allows only **one dev server per project**. Stop it before another comma
 ## 5. Hard rules
 
 1. **Never deploy without the owner's explicit "deploy" in chat.**
-   - Deploys are manual: `npm run deploy` (it builds, then runs `wrangler deploy`).
-   - The GitHub Actions workflow already deploys pushes to `main`, but cannot run until the `CLOUDFLARE_API_TOKEN` repository secret is configured. The club domain move is prepared locally, not deployed yet.
+   - An authorized push to main runs GitHub Actions and deploys to Cloudflare. Use `npm run deploy` for a manual deployment.
 2. **Schema change**, in this order:
    - edit `src/db/schema.ts`;
    - `npm run db:generate`, and commit the migration;
    - `npm run db:migrate` (local);
    - when deploying: `npm run db:migrate:remote` **before** `npm run deploy`.
+   - after a manual deploy: `npm run db:enable-location-guard:remote`. GitHub Actions runs this after deploying the compatible Worker.
 
    Migrations only add things (columns, tables), because the old code keeps running during the migration. drizzle-kit drops `ON DELETE` on `ALTER … REFERENCES`, so add it by hand.
 3. **Never run `npm run db:seed:remote` and never load `seed/sample.sql` to the cloud.**
@@ -137,18 +137,11 @@ Astro 7 allows only **one dev server per project**. Stop it before another comma
   - is protected by a honeypot field plus a limit of 5 sign-ups per minute per IP.
 - Fees: one payment row per student per month. The "owes this month" rule exists in exactly one place: `owesIn()` in `src/api/fees.ts`.
 
-## 8. Current state (2026-11-06)
+## 8. Production baseline
 
-- **The UX/API review pass and audit fixes are deployed to the two temporary domains for owner review.**
-  - Live Worker version: `0bd6a00a-8a59-4467-b26b-eee29a06fc3f`, deployed from commit `e29d72d`.
-  - Cloud D1 has migrations up to `0005_last_saracen`.
-- The last shipped work:
-  - plan cards show "Phù hợp với: …" (`fee_plans.audience`), with a "Xem chi tiết gói" link to `/hoc-phi#goi-<id>`;
-  - the schedule legend shows "CN" and "7·CN";
-  - Home shows only the coaches marked as featured;
-  - class level badges and class notes appear on the schedule.
-- The full history is the **Status** list in `CLAUDE.md`.
-- The deployed review pass covers trial/API reliability, CMS trial pagination, mobile pricing/schedule/form UX, responsive images, removal of bare decorative number labels and subsequent audit fixes. Seven visible test content rows in cloud D1 were replaced with labeled examples.
+- The public site and CMS run on the club domains. GitHub Actions is configured and deployed commit `73774c4` in run `43180388809`.
+- Cloud D1 has migration `0006_polite_lord_tyger`, which adds partners and sponsors.
+- See `docs/HANDOFF.md` for the latest deployment and `CLAUDE.md` for the history.
 
 **Waiting on the club owner** (content entered in the CMS, no code needed):
 - upload a real hero photo;

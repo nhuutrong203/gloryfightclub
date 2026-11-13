@@ -19,6 +19,26 @@ Promotional website + student-management CMS for **GLORY FIGHT CLUB** (MMA, Kudo
 - Schema changes: create a migration with `npm run db:generate` and commit it — CI applies it to cloud D1 before deploying. Migrations must be backward compatible (add columns/tables only), because the old code keeps running while migrating.
 
 ## Status
+
+- [x] Removed the public Gallery page, navigation link, and sitemap entry. The CMS Gallery remains available, and published branch photos appear on their location pages.
+
+- [x] Kept branch photos on their location pages. They no longer populate the public Gallery or enable its navigation link.
+
+- [x] Added a dedicated Training Space section in the CMS with branch-specific photo lists, add and edit forms, and public preview links. It shares the existing Gallery records and permissions.
+
+- [x] Added a bilingual training-space gallery to each location page. Assign published photos to a location in the CMS Gallery and use its existing sort controls. Migration 0008 adds the optional assignment.
+
+- [x] 2026-11-13 — Deployed the local SEO, custom rules, hover, and audit changes as Worker version `5a6b32dc-3868-4b91-88a1-981374dbd293`. Applied migration 0007 before deployment and enabled the student location guard afterward. Verified the production HTTPS redirect, location pages, sitemap, trial page, rules page, and CMS entry point.
+
+- [x] 2026-11-13 — Added bilingual location pages, localized home metadata, responsive hero sources, and canonical URLs for diary pagination. Untranslated diary posts stay available in the English UI while their Vietnamese URLs are listed in the sitemap. The public hostname redirects HTTP to HTTPS.
+
+- [x] 2026-11-13 — Added CMS-managed custom policy groups with optional English translations, shown on the rules page and in trial consent. Simplified shared hover and home heading effects for readability. No migration required.
+
+- [x] 2026-11-13 — API errors and failed student imports omit database error details from logs. CMS login checks the verified password hash and account status when inserting the session. No migration required for these fixes.
+- [x] 2026-11-13 — Made the student location trigger opt-in until the compatible Worker is deployed. Spreadsheet imports roll back a batch if an expected student update affects zero rows. Monthly fees use one D1 snapshot, and trial conversion skips closed classes. Not deployed.
+- [x] 2026-11-13 — Added D1 triggers to keep enrollments at the student's location, normalized duplicate class IDs, bound import retries to the original payload, and bounded diary publication dates. Added interrupted-import regression coverage. Not deployed.
+- [x] 2026-11-13 — Blocked deletion of students with payments and classes with enrollments, protected converted trials from stale status edits, validated partial content updates against saved values, and made same-session spreadsheet retries resume committed batches. Updated production setup notes. Not deployed.
+- [x] 2026-11-12 — GitHub Actions deployed commit `73774c4` as Worker `fc4abdc5-5e12-453f-8a57-1107d3e96aa7`. Run `43180388809` passed all checks. Verified the interactive partner section on Vietnamese and English Home and About and the CMS route on production.
 - [x] 2026-11-12 — Updated the partner showcase with the site's red spotlight and pointer tilt. Both cards keep equal square artwork frames and open the shared keyboard and swipe image viewer. Not deployed.
 - [x] 2026-11-12 — Standardized code comments, CI labels, CLI messages, and test descriptions in English. Commit messages remain English.
 - [x] 2026-11-12 — Deployed the reviewed local build to both club domains as Worker `4fdc98d6-bb87-4107-8a9f-b7eabd8c07f4` after applying D1 migration `0006`. Uploaded the two supplied partner images to R2 and published both entries as supporters. Verified VI/EN Home and About, both images, the CMS route, and the public admin API returning 404.
@@ -39,7 +59,7 @@ Promotional website + student-management CMS for **GLORY FIGHT CLUB** (MMA, Kudo
 - [x] 2026-11-07 — Removed the obsolete red wipe hover layer from Home discipline cards; it obscured headings after the card redesign. The featured red card now keeps white text. Deployed as Worker `8c23323e-182e-432c-8613-e904cd24d4dc`.
 - [x] 2026-11-07 — Reworked Home discipline grid after owner feedback: featured red MMA card spans two columns on larger screens, other disciplines use separate dark tiles, trial CTA stays light. Checked at 375px and 1600px without horizontal overflow. Awaiting deployment.
 - [x] 2026-11-07 — Home discipline cards redesigned with a restrained circular motif, red accent rule, clearer hover/focus states and more balanced spacing; checked at 375px and 1600px without horizontal overflow. Deployed as Worker `dec89088-5be1-4558-a5c0-be5f2e964e25`.
-> **Next:** read `docs/HANDOFF.md` first. The UX/API pass and audit fixes are live on the temporary domains; the live D1 test content was replaced with clearly marked examples.
+> **Next:** read `docs/HANDOFF.md` for the current production deployment and owner follow-ups.
 
 - [x] 2026-11-07 — Deployed audit fixes from commit `e57297a` as Worker `532a5218-d933-4dda-8434-7c0a9ece4d73` to both temporary domains. Home, English home, fees and CMS login returned HTTP 200.
 - [x] 2026-11-06 — Audit fixes: mobile navigation no longer collapses under a blurred header; CMS uploads cannot overwrite arbitrary thumbnails; trial submissions must match the selected class's discipline and location; the skip link is translated; unused count-up code was removed; remote seeding instructions and script were removed. Added disposable-D1 API smoke tests to CI. Replaced seven visible test testimonials/posts/FAQ rows in cloud D1 with clearly marked example content.
@@ -132,6 +152,7 @@ Commands, deploy and domain details: `README.md`. In the Claude desktop app, `.c
 - `session: false` (sessions are managed in D1), `imageService: 'passthrough'` (images are compressed in the browser).
 - EN version: the middleware rewrites `/en/*` to the same page (query string kept) with `Astro.locals.lang = 'en'`. Use `t()`, `tr(row, 'field', lang)`, `href(path, lang)` from `src/i18n.ts`.
 - Schema change: edit `src/db/schema.ts` → `npm run db:generate` → `npm run db:migrate`.
+- Migration `0007` adds SQLite triggers, which are maintained as SQL because Drizzle does not model them. Delete old class links before changing a student's location, then insert the new links in the same batch.
 - `db:reset` needs the dev server stopped first (Windows locks the SQLite file) — `scripts/clear-local-db.mjs` prints a clear error.
 - `seed/seed.sql` holds real data only (it is loaded to the cloud); fake data goes in `seed/sample.sql`, marked "(mẫu)".
 - D1 limits: max 100 bound parameters per statement (never `inArray` over a long id list — use a subquery or one `json_each(?)` JSON param), only a few `UNION` terms per query (use `EXISTS … OR EXISTS …`), and 50 calls per request on the Free plan (1000 on Paid) → batch multi-row writes with `db.batch`.
@@ -185,6 +206,7 @@ tests/                node --test files (*.test.mjs import the .ts modules direc
 - Parent name / phone are optional at every age (owner's choice); the student form only hints "Nên ghi" for kids.
 
 ## Production
+- GitHub Actions is active. An authorized push to main deploys to the club domains. See the handoff for the verified version.
 - CMS login is limited to 10 attempts/minute/IP by the `LOGIN_LIMITER` binding, the trial form to 5/minute/IP by `TRIAL_LIMITER` (Workers Rate Limiting, `wrangler.jsonc`). After adding a binding run `npx wrangler types`.
 - NEVER load `seed/sample.sql` to the cloud. Schema change → `db:generate` → `db:migrate:remote` BEFORE `npm run deploy` (CI does this automatically once the token secret exists).
 - Local D1 is keyed by `database_id`: after changing the id, run `npm run db:reset` again.

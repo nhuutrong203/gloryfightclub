@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
-import { eq, lt } from 'drizzle-orm';
+import { eq, lt, sql } from 'drizzle-orm';
 import { env } from 'cloudflare:workers';
 import { z } from 'zod';
 import { db, schema } from '../db';
@@ -29,10 +29,20 @@ authRoutes.post('/login', async (c) => {
   if (!user || !ok || !user.isActive) return c.json({ error: 'Sai tên đăng nhập hoặc mật khẩu' }, 401);
 
   const token = newToken();
-  await db.batch([
-    db.delete(schema.sessions).where(lt(schema.sessions.expiresAt, Date.now())),
-    db.insert(schema.sessions).values({ id: await sha256Hex(token), userId: user.id, expiresAt: Date.now() + SESSION_DAYS * 86400_000 }),
+  const sessionId = await sha256Hex(token);
+  const now = Date.now();
+  const [, created] = await db.batch([
+    db.delete(schema.sessions).where(lt(schema.sessions.expiresAt, now)),
+    // A password reset or account lock can happen while password verification is running.
+    db.insert(schema.sessions).select(sql`
+      SELECT ${sessionId}, ${schema.users.id}, ${now + SESSION_DAYS * 86400_000}
+      FROM ${schema.users}
+      WHERE ${schema.users.id} = ${user.id}
+        AND ${schema.users.passwordHash} = ${user.passwordHash}
+        AND ${schema.users.isActive} = 1
+    `).returning({ id: schema.sessions.id }),
   ]);
+  if (!created.length) return c.json({ error: 'Sai tên đăng nhập hoặc mật khẩu' }, 401);
   setCookie(c, SESSION_COOKIE, token, cookieOpts(c));
   return c.json({ ok: true });
 });

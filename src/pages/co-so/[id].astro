@@ -1,0 +1,78 @@
+---
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import PageHero from '../../components/public/PageHero.astro';
+import Icon from '../../components/public/Icon.astro';
+import { and, asc, eq, isNotNull } from 'drizzle-orm';
+import { db, schema } from '../../db';
+import { publicClasses, publicDisciplines } from '../../lib/public';
+import { mediaUrl, telHref, thumbSrcset, thumbUrl } from '../../lib/site';
+import { href, t, tr } from '../../i18n';
+
+const { lang, site } = Astro.locals;
+const location = site.locations.find((row) => String(row.id) === Astro.params.id);
+if (!location) return Astro.rewrite('/404');
+const path = `/co-so/${location.id}`;
+const name = tr(location, 'name', lang);
+const label = (key: Parameters<typeof t>[1]) => t(lang, key, site.texts);
+const gallery = schema.galleryItems;
+const [classes, disciplines, photos] = await Promise.all([
+  publicClasses(), publicDisciplines(),
+  db.select().from(gallery).where(and(eq(gallery.locationId, location.id), eq(gallery.isPublic, true),
+    eq(gallery.type, 'photo'), isNotNull(gallery.key))).orderBy(asc(gallery.sort), asc(gallery.id)),
+]);
+const localClasses = classes.filter((row) => row.locationId === location.id);
+const disciplineIds = new Set(localClasses.flatMap((row) => row.disciplineIds));
+const offered = disciplines.filter((row) => disciplineIds.has(row.id));
+const phone = location.phone || site.club.hotlines[0];
+const url = new URL(href(path, lang), Astro.site).href;
+const jsonLd = {
+  '@type': 'SportsActivityLocation', '@id': new URL(`${path}#gym`, Astro.site).href,
+  name: `${site.club.name} — ${name}`, url, telephone: phone,
+  address: { '@type': 'PostalAddress', streetAddress: location.address, addressCountry: 'VN' },
+  hasMap: location.mapUrl || undefined,
+};
+Astro.response.headers.set('cache-control', 'public, max-age=60');
+---
+<PublicLayout path={path} title={name} description={`${name} — ${location.address}${offered.length ? `. ${offered.map((row) => tr(row, 'name', lang)).join(' · ')}` : ''}`} jsonLd={jsonLd}>
+  <PageHero eyebrow={site.club.name} title={name} subtitle={location.address} />
+  {photos.length > 0 && (
+    <section class="container-x py-10 sm:py-14" aria-labelledby="training-space">
+      <h2 id="training-space" class="mb-6 border-l-4 border-glory pl-4 text-4xl sm:text-5xl">{label('gallery_training_space')}</h2>
+      <div class="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+        {photos.map((photo, index) => {
+          const caption = tr(photo, 'caption', lang);
+          return (
+            <figure class:list={['min-w-0 border border-white/15 bg-coal', index === 0 && 'col-span-2 row-span-2', photos.length === 1 && 'lg:col-span-4']}>
+              <a href={mediaUrl(photo.key)!} data-lightbox="training-space" data-caption={caption} class="group block overflow-hidden focus-visible:outline-2 focus-visible:outline-glory-bright">
+                <img src={thumbUrl(photo.key)!} srcset={thumbSrcset(photo.key)}
+                  sizes={photos.length === 1 ? '100vw' : index === 0 ? '(max-width: 1023px) 100vw, 600px' : '(max-width: 1023px) 50vw, 300px'}
+                  alt={caption || `${label('gallery_training_space')} — ${name} (${index + 1})`}
+                  loading="lazy" decoding="async"
+                  class:list={['w-full object-cover motion-safe:transition-transform motion-safe:group-hover:scale-[1.02]', index === 0 ? 'aspect-[4/3]' : 'aspect-[3/2]', photos.length === 1 && 'lg:aspect-[21/9]']} />
+              </a>
+              {caption && <figcaption class="px-3 py-2 text-sm text-white/85 [overflow-wrap:anywhere]">{caption}</figcaption>}
+            </figure>
+          );
+        })}
+      </div>
+    </section>
+  )}
+  <section class="container-x grid gap-8 py-12 lg:grid-cols-2 lg:items-start">
+    <div class="min-w-0 space-y-5">
+      {phone && <a href={telHref(phone)} class="inline-flex min-h-11 items-center gap-2 hover:text-glory-bright"><Icon name="phone" />{phone}</a>}
+      {offered.length > 0 && <div class="space-y-3">
+        <h2 class="text-3xl">{label('nav_disciplines')}</h2>
+        <ul class="flex flex-wrap gap-2">
+          {offered.map((row) => <li><a class="inline-flex min-h-11 items-center border border-white/20 px-3 hover:text-glory-bright" href={href(`/mon-hoc/${row.slug}`, lang)}>{tr(row, 'name', lang)}</a></li>)}
+        </ul>
+      </div>}
+      <div class="flex flex-wrap gap-3">
+        <a class="btn-red" href={`${href('/dang-ky-hoc-thu', lang)}?co-so=${location.id}`}>{label('cta_trial')}</a>
+        {(localClasses.length > 0 || location.scheduleImageKey) && <a class="btn-ghost" href={`${href('/lich-hoc', lang)}?co-so=${location.id}`}>{label('nav_schedule')}</a>}
+        {location.mapUrl && <a class="btn-ghost" href={location.mapUrl} target="_blank" rel="noopener">{label('directions')}</a>}
+      </div>
+    </div>
+    <iframe class="aspect-[4/3] w-full border border-white/20" loading="lazy" title={`${label('map_title')} — ${name}`}
+      src={`https://www.google.com/maps?q=${encodeURIComponent(location.address)}&output=embed`} referrerpolicy="no-referrer-when-downgrade"></iframe>
+  </section>
+</PublicLayout>

@@ -3,7 +3,7 @@ import PublicLayout from '../../layouts/PublicLayout.astro';
 import PostCard from '../../components/public/PostCard.astro';
 import Icon from '../../components/public/Icon.astro';
 import CtaBand from '../../components/public/CtaBand.astro';
-import { postBySlug, publishedPosts } from '../../lib/public';
+import { hasEnglishPost, postBySlug, publishedPosts } from '../../lib/public';
 import { toText } from '../../lib/html';
 import { youtubeId } from '../../lib/util';
 import { mediaUrl } from '../../lib/site';
@@ -17,12 +17,13 @@ const latest = (await publishedPosts(4)).filter((p) => p.id !== post.id).slice(0
 const raw = tr(post, 'content', lang);
 const body = post.format === 'html' ? toText(raw) : raw;
 const title = tr(post, 'title', lang) || body.slice(0, 60) || t(lang, 'news_title');
+const translated = hasEnglishPost(post);
 // Use the first image or YouTube cover when sharing the post.
 const cover = post.media.find((m) => m.type !== 'video');
 const ogImage = !cover ? null : cover.type === 'image' ? mediaUrl(cover.key) : `https://i.ytimg.com/vi/${youtubeId(cover.key)}/hqdefault.jpg`;
 Astro.response.headers.set('cache-control', 'public, max-age=60');
 ---
-<PublicLayout path={`/nhat-ky/${post.slug}`} title={title} description={body.slice(0, 160)} image={ogImage} ogType="article">
+<PublicLayout path={`/nhat-ky/${post.slug}`} title={title} description={body.replace(/\s+/g, ' ').trim().slice(0, 160)} image={ogImage} ogType="article" hasEnglishAlternate={translated} noindex={lang === 'en' && !translated}>
   <section class="container-x py-10 sm:py-14">
     <div class="mx-auto max-w-2xl">
       <a href={href('/nhat-ky', lang)} class="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-ash hover:text-white"><Icon name="arrow-left" class="size-4" />{t(lang, 'news_title')}</a>

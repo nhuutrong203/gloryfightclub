@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { getCookie, setCookie } from 'hono/cookie';
+import { routePath } from 'hono/route';
 import { and, eq, gt } from 'drizzle-orm';
 import { db, schema } from '../db';
 import { SESSION_COOKIE, SESSION_DAYS, sha256Hex, type SessionUser } from '../lib/auth';
@@ -16,8 +17,9 @@ export type Env = { Variables: { user: SessionUser } };
 
 const app = new Hono<Env>().basePath('/api');
 
-app.onError((err, c) => {
-  console.error(err);
+app.onError((_err, c) => {
+  // Database errors can contain SQL parameters with personal data.
+  console.error('Unhandled API error', c.req.method, routePath(c), c.req.header('cf-ray'));
   return c.json({ error: 'Lỗi máy chủ, vui lòng thử lại.' }, 500);
 });
 

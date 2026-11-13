@@ -26,7 +26,7 @@ const postSchema = z.object({
   titleEn: z.string().trim().max(200).nullish().transform((v) => v || null),
   content: z.string().max(50000).default(''),
   contentEn: z.string().max(50000).nullish(),
-  publishedAt: z.number().int().positive(), // A future timestamp schedules publication.
+  publishedAt: z.number().int().positive().max(253402300799999, 'Ngày đăng không hợp lệ'),
   isPublic: z.boolean(),
   media: z.array(mediaItem).max(24, 'Tối đa 24 ảnh / video mỗi bài').default([]), // Four parameters per item, below D1's limit of 100.
 });

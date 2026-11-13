@@ -182,7 +182,7 @@ export function StudentEdit({ id, me }: { id: string; me: Me }) {
             <Button type="submit" loading={busy} icon="check" className="flex-1 sm:flex-none">{isNew ? 'Thêm học viên' : 'Lưu thay đổi'}</Button>
             {!isNew && can(me, 'delete') && (
               <Button type="button" variant="danger" icon="trash" onClick={async () => {
-                if (!confirmDanger(`Xoá hẳn học viên "${form.fullName}" và toàn bộ lịch sử học phí?\n\nNếu học viên chỉ nghỉ học, hãy đổi trạng thái thành "Đã nghỉ" thay vì xoá.`)) return;
+                if (!confirmDanger(`Xoá hẳn học viên "${form.fullName}"?\n\nNếu học viên chỉ nghỉ học, hãy đổi trạng thái thành "Đã nghỉ".`)) return;
                 try { await api(`/admin/students/${id}`, { method: 'DELETE' }); markDirty(false); toast('Đã xoá'); navigate('/admin/hoc-vien', true); } catch (err: any) { toast(err.message, 'err'); }
               }}>Xoá</Button>
             )}

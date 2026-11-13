@@ -46,21 +46,20 @@ const jsonLd = {
 };
 Astro.response.headers.set('cache-control', 'public, max-age=60');
 ---
-<PublicLayout path="/" jsonLd={jsonLd}>
+<PublicLayout path="/" title={t(lang, 'home_seo_title')} description={t(lang, 'home_seo_description')} image={heroImage} jsonLd={jsonLd}>
   <!-- HERO -->
   <section class="spot grain relative isolate overflow-hidden min-h-[calc(100dvh-8rem)] lg:min-h-[calc(100dvh-4rem)] flex items-end" data-spot>
     {heroImage
-      ? <img src={heroImage} alt="" class="hero-media absolute inset-0 -z-20 size-full object-cover opacity-60" fetchpriority="high" />
+      ? <img src={thumbUrl(hero.image_key) ?? heroImage} srcset={thumbSrcset(hero.image_key)} sizes="100vw" alt="" class="hero-media absolute inset-0 -z-20 size-full object-cover opacity-60" fetchpriority="high" />
       : <Logo class="absolute -z-20 -right-28 top-1/2 -translate-y-1/2 h-[125%] w-auto text-white/[0.05]" title="" />}
     <div class="absolute inset-0 -z-10 bg-gradient-to-t from-ink via-ink/70 to-ink/10"></div>
     <div class="stripe-in absolute -z-10 right-0 top-0 h-full w-24 sm:w-40 origin-right bg-glory/90 -skew-x-[14deg] translate-x-16 sm:translate-x-24"></div>
     <div class="container-x pb-14 pt-24 sm:pb-20">
       <p class="eyebrow hero-in flex items-center gap-3 !text-xs sm:!text-sm"><span class="h-0.5 w-10 shrink-0 bg-glory"></span>{disciplines.map((d) => tr(d, 'name', lang)).join(' · ')}</p>
       <h1 class="text-[clamp(3.5rem,15vw,11rem)]">
-        <!-- Reveal the first line from below and the red line behind a white sweep. -->
-        {titleParts.map((part, i) => i === 0
-          ? <span class="hero-line block" style="--d:120ms">{part.trim()}</span>
-          : <span class="block text-glory"><span class="block-reveal" style={`--d:${260 + i * 120}ms`}>{part.trim()}</span></span>)}
+        {titleParts.map((part, i) => (
+          <span class:list={['hero-in block', i > 0 && 'text-glory']} style={`--d:${120 + i * 120}ms`}>{part.trim()}</span>
+        ))}
       </h1>
       <p class="hero-in mt-6 max-w-xl text-lg sm:text-xl text-white/85" style="--d:380ms">{lang === 'en' ? hero.subtitle_en || hero.subtitle : hero.subtitle}</p>
       <div class="hero-in mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4" style="--d:480ms">
@@ -249,7 +248,7 @@ Astro.response.headers.set('cache-control', 'public, max-age=60');
     <div class="mt-10 grid gap-px bg-white/10 border border-white/10 md:grid-cols-2">
       {locations.map((l, i) => (
         <div class="reveal relative overflow-hidden bg-ink p-7 sm:p-10" style={`--i:${i}`} data-tilt>
-          <p class="eyebrow">{tr(l, 'name', lang)}</p>
+          <p class="eyebrow"><a href={href(`/co-so/${l.id}`, lang)} class="inline-flex min-h-11 items-center underline-offset-4 hover:underline">{tr(l, 'name', lang)}</a></p>
           <p class="relative mt-4 max-w-sm text-lg leading-relaxed">{l.address}</p>
           <div class="relative mt-6 flex flex-wrap gap-3">
             {l.mapUrl && <a href={l.mapUrl} target="_blank" rel="noopener" class="btn-ghost !text-base"><Icon name="map-pin" />{t(lang, 'directions')}</a>}

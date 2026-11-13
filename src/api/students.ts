@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { db, schema } from '../db';
 import { normalizePhone, vnNow } from '../lib/util';
 import { STATUS_IN, byName, fixPhone, fold, parseDate, updatableColumns } from '../lib/import';
-import { can } from '../lib/auth';
+import { can, sha256Hex } from '../lib/auth';
 import { body, csv, idParam, issueText, need, pageNumber } from './guard';
 import { owesIn } from './fees';
 import type { Env } from '.';
@@ -33,7 +33,7 @@ export const studentSchema = z.object({
   joinedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((v) => parseDate(v) === v, 'Ngày không tồn tại'),
   status: z.enum(['active', 'paused', 'quit']),
   note: z.string().trim().max(2000).nullish().transform((v) => v || null),
-  classIds: z.array(z.number().int().positive()).max(20).default([]),
+  classIds: z.array(z.number().int().positive()).max(20).default([]).transform((ids) => [...new Set(ids)]),
 });
 
 export const STUDENT_LABELS = {
@@ -42,9 +42,9 @@ export const STUDENT_LABELS = {
 };
 
 /** Assign classes by student code so creation and assignment can share a batch. */
-const classesByCode = (code: string, classIds: number[]) => db.insert(schema.studentClasses).select(
-  db.select({ studentId: s.id, classId: schema.classes.id }).from(s).innerJoin(schema.classes, inArray(schema.classes.id, classIds)).where(eq(s.code, code)),
-);
+const classesByCode = (code: string, classIds: number[]) => db.insert(schema.studentClasses).select(sql`
+  select ${s.id}, j.value from ${s}, json_each(${JSON.stringify(classIds)}) j where ${s.code} = ${code}
+`);
 
 async function invalidClasses(classIds: number[], locationId: number | null) {
   if (!classIds.length) return false;
@@ -53,6 +53,8 @@ async function invalidClasses(classIds: number[], locationId: number | null) {
 }
 
 export const isUnique = (e: unknown) => /UNIQUE constraint failed/.test(String((e as any)?.cause?.message ?? e));
+const classLocationError = (e: unknown) => /student_class_location_mismatch/.test(String((e as Error)?.cause ?? e));
+const classLocationMessage = 'Lớp không thuộc cơ sở đã chọn';
 
 /** Create the student and class links atomically. Retry on a duplicate code. */
 export async function createStudent(values: Omit<typeof s.$inferInsert, 'code'>, classIds: number[] = []) {
@@ -152,8 +154,18 @@ const importRow = z.object({
 });
 
 studentRoutes.post('/import', need('students.edit'), async (c) => {
-  const [data, err] = await body(c, z.object({ rows: z.array(importRow).min(1).max(2000) }));
+  const [data, err] = await body(c, z.object({ importId: z.uuid(), rows: z.array(importRow).min(1).max(2000) }));
   if (err) return err;
+  const prefix = `student_import:${c.get('user').id}:${data.importId}:`;
+  const fingerprint = await sha256Hex(JSON.stringify(data.rows));
+  const importKey = prefix + 'payload';
+  const [claimed] = await db.insert(schema.settings).values({ key: importKey, value: fingerprint }).onConflictDoNothing().returning();
+  if (!claimed) {
+    const stored = await db.select().from(schema.settings).where(eq(schema.settings.key, importKey)).get();
+    if (stored?.value !== fingerprint) return c.json({ error: 'Nội dung đã thay đổi. Hãy chọn lại file để bắt đầu lần nhập mới.' }, 409);
+  }
+  const progress = await db.select().from(schema.settings).where(sql`${schema.settings.key} >= ${prefix} and ${schema.settings.key} < ${prefix + '~'}`);
+  const committed = new Map(progress.flatMap(({ value }) => Array.isArray(value) ? value as [number, boolean][] : []));
   const [locations, plans, classes, existing, links] = await Promise.all([
     db.select().from(schema.locations), db.select().from(schema.feePlans), db.select().from(schema.classes),
     db.select({ id: s.id, code: s.code, fullName: s.fullName, locationId: s.locationId }).from(s),
@@ -167,13 +179,14 @@ studentRoutes.post('/import', need('students.edit'), async (c) => {
     const code = row.code?.toUpperCase();
     if (code) codeCounts.set(code, (codeCounts.get(code) ?? 0) + 1);
   }
-  const newRows = data.rows.filter((row) => !row.code).length;
+  const newRows = data.rows.filter((row, i) => !row.code && !committed.has(i + 2)).length;
   let next = newRows ? await reserveStudentCodes(newRows) : 0;
   const errors: { row: number; error: string }[] = [];
   const todo: { row: number; isNew: boolean; stmts: BatchItem<'sqlite'>[] }[] = [];
 
   for (const [i, r] of data.rows.entries()) {
     const rowNo = i + 2; // Row 1 contains headers.
+    if (committed.has(rowNo)) continue;
     const code = r.code?.toUpperCase();
     if (code && (codeCounts.get(code) ?? 0) > 1) {
       errors.push({ row: rowNo, error: `mã học viên "${code}" xuất hiện nhiều lần trong file` });
@@ -222,8 +235,11 @@ studentRoutes.post('/import', need('students.edit'), async (c) => {
     }
     if (id) {
       // Update only supplied columns. A present but blank Classes column removes all class links.
-      const stmts: BatchItem<'sqlite'>[] = [db.update(s).set({ ...updatableColumns(values, r), updatedAt: Date.now() }).where(eq(s.id, id))];
+      const stmts: BatchItem<'sqlite'>[] = [];
       if (r.classes !== undefined) stmts.push(db.delete(schema.studentClasses).where(eq(schema.studentClasses.studentId, id)));
+      stmts.push(db.update(s).set({ ...updatableColumns(values, r), updatedAt: Date.now() }).where(eq(s.id, id)));
+      // Invalid JSON aborts the transaction if the preceding update found no student.
+      stmts.push(db.select({ updated: sql`json(case when changes() = 1 then 'true' else 'student_missing' end)` }).from(schema.settings).where(eq(schema.settings.key, importKey)));
       if (r.classes !== undefined && cls.length) stmts.push(db.insert(schema.studentClasses).values(cls.map((classId) => ({ studentId: id, classId }))));
       todo.push({ row: rowNo, isNew: false, stmts });
     } else {
@@ -234,15 +250,23 @@ studentRoutes.post('/import', need('students.edit'), async (c) => {
   }
   // Write 60 rows per D1 transaction to stay within the request query budget.
   // Stop at the first failed batch and report only rows that were not committed.
-  let created = 0, updated = 0;
-  for (let k = 0; k < todo.length; k += 60) {
-    const part = todo.slice(k, k + 60);
-    const [first, ...rest] = part.flatMap((x) => x.stmts);
+  let created = [...committed.values()].filter(Boolean).length;
+  let updated = committed.size - created;
+  for (let k = 0; k < data.rows.length; k += 60) {
+    const part = todo.filter(({ row }) => row >= k + 2 && row < k + 62);
+    if (!part.length) continue;
     try {
-      await db.batch([first, ...rest]);
+      // Commit the retry marker and all student writes in the same transaction.
+      await db.batch([
+        db.insert(schema.settings).values({ key: prefix + k, value: part.map(({ row, isNew }) => [row, isNew]) }),
+        ...part.flatMap((x) => x.stmts),
+      ]);
     } catch (e) {
-      console.error('Nhập học viên lỗi', e);
-      for (const x of todo.slice(k)) errors.push({ row: x.row, error: 'chưa ghi được (lỗi khi lưu) — nhập lại riêng các dòng chưa ghi' });
+      if (isUnique(e) && await db.select().from(schema.settings).where(eq(schema.settings.key, prefix + k)).get()) {
+        return c.json({ error: 'Lần nhập này đang được xử lý. Bấm nhập lại để nhận kết quả.' }, 409);
+      }
+      console.error('Student import batch failed', c.req.header('cf-ray'));
+      for (const x of todo.filter(({ row }) => row >= k + 2)) errors.push({ row: x.row, error: 'chưa ghi được (lỗi khi lưu) — nhập lại riêng các dòng chưa ghi' });
       break;
     }
     for (const x of part) x.isNew ? created++ : updated++;
@@ -288,7 +312,12 @@ studentRoutes.post('/', need('students.edit'), async (c) => {
   if (err) return err;
   const { classIds, ...values } = data;
   if (await invalidClasses(classIds, values.locationId)) return c.json({ error: 'Lớp không thuộc cơ sở đã chọn' }, 400);
-  return c.json(await createStudent(values, classIds), 201);
+  try {
+    return c.json(await createStudent(values, classIds), 201);
+  } catch (e) {
+    if (classLocationError(e)) return c.json({ error: classLocationMessage }, 409);
+    throw e;
+  }
 });
 
 studentRoutes.put('/:id', need('students.edit'), async (c) => {
@@ -300,11 +329,16 @@ studentRoutes.put('/:id', need('students.edit'), async (c) => {
   if (await invalidClasses(classIds, values.locationId)) return c.json({ error: 'Lớp không thuộc cơ sở đã chọn' }, 400);
   // Return a clear 404 if the student was already deleted.
   if (!(await db.select({ id: s.id }).from(s).where(eq(s.id, id)).get())) return c.json({ error: 'Học viên này đã bị xoá' }, 404);
-  await db.batch([
-    db.update(s).set({ ...values, updatedAt: Date.now() }).where(eq(s.id, id)),
-    db.delete(schema.studentClasses).where(eq(schema.studentClasses.studentId, id)),
-    ...(classIds.length ? [db.insert(schema.studentClasses).values(classIds.map((classId) => ({ studentId: id, classId })))] : []),
-  ]);
+  try {
+    await db.batch([
+      db.delete(schema.studentClasses).where(eq(schema.studentClasses.studentId, id)),
+      db.update(s).set({ ...values, updatedAt: Date.now() }).where(eq(s.id, id)),
+      ...(classIds.length ? [db.insert(schema.studentClasses).values(classIds.map((classId) => ({ studentId: id, classId })))] : []),
+    ]);
+  } catch (e) {
+    if (classLocationError(e)) return c.json({ error: classLocationMessage }, 409);
+    throw e;
+  }
   return c.json({ ok: true });
 });
 
@@ -313,9 +347,14 @@ studentRoutes.delete('/:id', need('students.edit'), need('delete'), async (c) =>
   if (!id) return c.notFound();
   // Reset the linked trial to contacted so it can be converted again.
   const tr = schema.trialRegistrations;
-  await db.batch([
-    db.update(tr).set({ status: 'contacted', studentId: null }).where(eq(tr.studentId, id)),
-    db.delete(s).where(eq(s.id, id)),
+  const noPayments = sql`not exists (select 1 from payments where student_id = ${id})`;
+  const [, removed] = await db.batch([
+    db.update(tr).set({ status: 'contacted', studentId: null }).where(and(eq(tr.studentId, id), noPayments)),
+    db.delete(s).where(and(eq(s.id, id), noPayments)).returning({ id: s.id }),
   ]);
+  if (!removed.length) {
+    if (!(await db.select({ id: s.id }).from(s).where(eq(s.id, id)).get())) return c.notFound();
+    return c.json({ error: 'Học viên đã có lịch sử học phí. Hãy chuyển trạng thái sang Đã nghỉ.' }, 409);
+  }
   return c.json({ ok: true });
 });

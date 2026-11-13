@@ -128,11 +128,12 @@ contentRoutes.put('/:res/:id', need('content'), async (c) => {
   if (!key || !id) return c.notFound();
   const [data, err] = await body(c, schemas[key], fieldLabels(RESOURCES[key]));
   if (err) return err;
-  const bad = RESOURCES[key].check?.(data);
-  if (bad) return c.json({ error: bad }, 400);
   const values = pick(data, writableColumns(RESOURCES[key]));
   if (!Object.keys(values).length) return c.json({ error: 'Không có gì để lưu' }, 400);
   const old = await db.select().from(TABLES[key]).where(eq(TABLES[key].id, id)).get();
+  if (!old) return c.notFound();
+  const bad = RESOURCES[key].check?.({ ...old, ...values });
+  if (bad) return c.json({ error: bad }, 400);
   const where = key === 'classes' && values.locationId !== undefined
     ? sql`${schema.classes.id} = ${id} and (${schema.classes.locationId} = ${values.locationId}
         or not exists (select 1 from student_classes where class_id = ${id}))`
@@ -171,7 +172,11 @@ contentRoutes.delete('/:res/:id', need('content'), need('delete'), async (c) => 
     const tr = schema.trialRegistrations;
     const del = db.delete(TABLES[key]).where(eq(TABLES[key].id, id));
     if (key === 'feePlans') await db.batch([db.update(tr).set({ feePlanId: null }).where(eq(tr.feePlanId, id)), del]);
-    else await del;
+    else if (key === 'classes') {
+      const removed = await db.delete(schema.classes).where(sql`${schema.classes.id} = ${id}
+        and not exists (select 1 from student_classes where class_id = ${id})`).returning({ id: schema.classes.id });
+      if (old && !removed.length) return c.json({ error: 'Lớp còn học viên. Hãy đóng lớp hoặc chuyển học viên trước khi xoá.' }, 409);
+    } else await del;
   } catch {
     return c.json({ error: 'Không xoá được vì mục này đang được dùng ở nơi khác (vd. cơ sở đang có lớp).' }, 409);
   }

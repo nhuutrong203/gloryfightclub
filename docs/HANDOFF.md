@@ -1,5 +1,21 @@
 # Handoff — where we left off (2026-11-07)
 
+Training-space galleries are live on Worker version `c94ca0b9-44c3-400f-b03a-d76bbcdb91c3` with migration 0008 applied. Each location displays two labeled AI sample images from the preview album. Replace or unpublish the samples in the CMS Gallery when real photos are available.
+
+2026-11-13: The current local build was deployed directly to Cloudflare as Worker version `5a6b32dc-3868-4b91-88a1-981374dbd293`. Migration 0007 is applied and the student location guard is enabled. The production HTTPS redirect, location pages, sitemap, trial page, rules page, and CMS entry point were verified. Submit the sitemap in Search Console, review public test posts in the CMS, and link each Google Business Profile to its location page (`/co-so/1` or `/co-so/2`).
+
+2026-11-13: Rules settings now support adding, editing, and deleting custom groups. They are included in the public rules page and the trial consent dialog. The home heading and shared navigation, image, and card effects were softened. Pending deployment.
+
+2026-11-13: The local security fixes keep database error details out of API logs and prevent in-flight logins from issuing sessions after a password reset or account lock. No migration required for these fixes. Pending deployment.
+
+2026-11-13: The next release applies migration 0007, deploys the compatible Worker, and then enables the student location guard. GitHub Actions runs all three steps. Before rolling back to a Worker that updates the student before removing old class links, disable the guard by deleting the `enforce_student_location` settings row. The local fixes also protect spreadsheet progress, use a single fee snapshot, and skip closed trial classes.
+
+2026-11-13: The follow-up audit fixes are local. Migration `0007_enforce_student_class_location` protects new enrollments and student location changes. Import retries verify the original payload and resume committed batches. Duplicate class IDs are normalized, and diary timestamps are bounded. Apply migration `0007` before deploying the new code. Existing records are not rewritten.
+
+2026-11-13: The audit fixes are local. Student and class deletion protect payment and enrollment history. Converted trials reject stale status edits. Content updates validate merged values. The open import form reuses an import ID after a lost response, and D1 saves progress with each batch. Reselecting a file starts a new import. No migration. Not deployed.
+
+2026-11-12: GitHub Actions run `43180388809` deployed commit `73774c4` to both domains. Worker version `fc4abdc5-5e12-453f-8a57-1107d3e96aa7` serves the interactive partner section. Verified VI/EN Home and About plus the CMS route. All CI checks passed.
+
 2026-11-12: The Partners & Sponsors interaction refresh is local. Home and About use the shared image viewer and retain equal square artwork frames. Website links remain separate from the image action. No schema change. Not deployed.
 
 2026-11-12: Deployed the reviewed local build as Worker `4fdc98d6-bb87-4107-8a9f-b7eabd8c07f4`. Cloud D1 is at migration `0006_polite_lord_tyger`. Both partner entries and R2 images are live on VI/EN Home and About. The CMS route returned 200 and the public admin API returned 404. The entries use the neutral supporter type pending confirmation of their roles.

@@ -8,7 +8,7 @@ import { ageOn, upcomingSessions } from '../lib/schedule';
 import { publicClasses } from '../lib/public';
 import { body } from './guard';
 import { eq } from 'drizzle-orm';
-import type { Policy } from '../lib/site';
+import { hasPolicy, type Policy } from '../lib/site';
 
 export const publicRoutes = new Hono();
 
@@ -47,11 +47,11 @@ publicRoutes.post('/trial', async (c) => {
   // Require consent when rules exist and record the accepted version and time.
   const policyRow = await db.select({ value: schema.settings.value }).from(schema.settings).where(eq(schema.settings.key, 'policy')).get();
   const policy = policyRow?.value as Policy | undefined;
-  const hasPolicy = !!(policy?.fees || policy?.safety);
-  if ((hasPolicy || data.policyVersion != null) && (data.policyVersion ?? null) !== (hasPolicy ? policy?.updated ?? null : null)) {
+  const requiresConsent = hasPolicy(policy);
+  if ((requiresConsent || data.policyVersion != null) && (data.policyVersion ?? null) !== (requiresConsent ? policy?.updated ?? null : null)) {
     return c.json({ ok: false, code: 'policy_changed' }, 409);
   }
-  if (hasPolicy && data.agree !== true) return c.json({ ok: false, code: 'agree' }, 400);
+  if (requiresConsent && data.agree !== true) return c.json({ ok: false, code: 'agree' }, 400);
 
   // Validate the selected IDs before inserting.
   const [d, l, p, available] = await Promise.all([
@@ -81,8 +81,8 @@ publicRoutes.post('/trial', async (c) => {
     classId: slot?.classId ?? null,
     trialDate: slot?.trialDate ?? null,
     feePlanId: p?.id ?? null,
-    agreedAt: hasPolicy ? Date.now() : null,
-    policyVersion: hasPolicy ? (policy?.updated ?? null) : null,
+    agreedAt: requiresConsent ? Date.now() : null,
+    policyVersion: requiresConsent ? (policy?.updated ?? null) : null,
     preferredTime: data.preferredTime || null,
     note: data.note || null,
   });

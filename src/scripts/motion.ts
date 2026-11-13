@@ -117,8 +117,8 @@ if (finePointer && !reduced) {
       const x = (ev.clientX - r.left) / r.width;
       const y = (ev.clientY - r.top) / r.height;
       t.classList.add('is-tilting');
-      t.style.setProperty('--ry', `${(x - 0.5) * 8}deg`);
-      t.style.setProperty('--rx', `${(0.5 - y) * 8}deg`);
+      t.style.setProperty('--ry', `${(x - 0.5) * 3}deg`);
+      t.style.setProperty('--rx', `${(0.5 - y) * 3}deg`);
       t.style.setProperty('--mx', `${x * 100}%`);
       t.style.setProperty('--my', `${y * 100}%`);
     }

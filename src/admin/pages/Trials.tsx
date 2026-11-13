@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { api, can, fmtDate, navigate, todayVN, toast, useApi, type Me } from '../lib';
+import { api, ApiError, can, fmtDate, navigate, todayVN, toast, useApi, type Me } from '../lib';
 import { ageOn, weekdayOf } from '../../lib/schedule';
 import { policyVersionText } from '../../lib/util';
 import { Badge, Button, Empty, ErrorBox, Icon, Loading, Page, confirmDanger } from '../ui';
@@ -26,7 +26,11 @@ export function Trials({ me }: { me: Me }) {
 
   const setStatus = async (id: number, status: string) => {
     setBusy(id);
-    try { await api(`/admin/trials/${id}`, { method: 'PUT', body: { status } }); reload(); } catch (e: any) { toast(e.message, 'err'); } finally { setBusy(null); }
+    try { await api(`/admin/trials/${id}`, { method: 'PUT', body: { status } }); reload(); }
+    catch (e: any) {
+      toast(e.message, 'err');
+      if (e instanceof ApiError && (e.status === 409 || e.status === 404)) reload();
+    } finally { setBusy(null); }
   };
 
   return (
@@ -86,7 +90,7 @@ export function Trials({ me }: { me: Me }) {
                     try {
                       const r = await api<{ studentId: number; classAssigned: boolean }>(`/admin/trials/${t.id}/convert`, { method: 'POST' });
                       toast(t.classId && !r.classAssigned
-                        ? 'Đã tạo học viên. Lớp học thử không còn ở cơ sở đã chọn, vui lòng chọn lại lớp.'
+                        ? 'Đã tạo học viên. Lớp học thử đã đóng hoặc không còn ở cơ sở đã chọn. Vui lòng chọn lại lớp.'
                         : 'Đã tạo học viên — kiểm tra lại lớp & gói');
                       navigate(`/admin/hoc-vien/${r.studentId}`);
                     } catch (e: any) { toast(e.message, 'err'); setBusy(null); }

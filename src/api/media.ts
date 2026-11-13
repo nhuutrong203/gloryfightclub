@@ -21,7 +21,7 @@ export async function deleteMedia(keys: (string | null | undefined)[]) {
       or exists (select 1 from settings where key = 'hero' and json_extract(value, '$.image_key') = j.value)`);
     const free = list.filter((k) => !used.some((u) => u.k === k));
     if (free.length) await env.MEDIA.delete([...free, ...free.map((k) => k + THUMB)]); // Delete the 800px thumbnail when present.
-  } catch (e) {
-    console.error('Dọn file R2 lỗi', list, e);
+  } catch {
+    console.error('Unreferenced media cleanup failed', { keyCount: list.length });
   }
 }

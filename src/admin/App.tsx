@@ -59,6 +59,9 @@ function Route({ path, me }: { path: string; me: Me }) {
       if (!RESOURCES[res]) return <p className="p-6">Không tìm thấy trang.</p>;
       return seg[2] ? <ResourceEdit key={res} res={res} id={seg[2]} me={me} /> : <ResourceList key={res} res={res} me={me} />;
     }
+    case 'khong-gian':
+      if (!can(me, 'content')) return deny;
+      return seg[1] ? <ResourceEdit key={path} res="gallery" id={seg[1]} me={me} spaceLocation={seg[2] ?? ''} /> : <ResourceList key="training-space" res="gallery" me={me} spaces />;
     case 'cai-dat': return can(me, 'content') ? <Settings /> : deny;
     case 'chu-website': return can(me, 'content') ? <Texts /> : deny;
     case 'tai-khoan': return me.role === 'owner' ? <Users me={me} /> : deny;

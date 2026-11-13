@@ -34,7 +34,12 @@ trialRoutes.put('/:id', need('students.edit'), async (c) => {
   if (!id) return c.notFound();
   const [data, err] = await body(c, z.object({ status: z.enum(['new', 'contacted', 'rejected']), note: z.string().trim().max(1000).nullish() }));
   if (err) return err;
-  await db.update(t).set({ status: data.status, ...(data.note !== undefined ? { note: data.note || null } : {}) }).where(eq(t.id, id));
+  const changed = await db.update(t).set({ status: data.status, ...(data.note !== undefined ? { note: data.note || null } : {}) })
+    .where(sql`${t.id} = ${id} and ${t.studentId} is null and ${t.status} != 'enrolled'`).returning({ id: t.id });
+  if (!changed.length) {
+    if (!(await db.select({ id: t.id }).from(t).where(eq(t.id, id)).get())) return c.notFound();
+    return c.json({ error: 'Đơn đã chuyển thành học viên. Vui lòng tải lại danh sách.' }, 409);
+  }
   return c.json({ ok: true });
 });
 
@@ -64,7 +69,7 @@ trialRoutes.post('/:id/convert', need('students.edit'), async (c) => {
             trial.locationId, trial.feePlanId, date, note, id),
         ...(trial.classId ? [env.DB.prepare(`INSERT INTO student_classes (student_id, class_id)
           SELECT s.id, c.id FROM students s JOIN classes c ON c.location_id = s.location_id
-          WHERE c.id = ? AND s.code = ? AND changes() = 1 RETURNING class_id`).bind(trial.classId, code)] : []),
+          WHERE c.id = ? AND c.is_active = 1 AND s.code = ? AND changes() = 1 RETURNING class_id`).bind(trial.classId, code)] : []),
         env.DB.prepare(`UPDATE trial_registrations SET status = 'enrolled', student_id = (SELECT id FROM students WHERE code = ?)
           WHERE id = ? AND student_id IS NULL AND status != 'enrolled'`).bind(code, id),
       ]);

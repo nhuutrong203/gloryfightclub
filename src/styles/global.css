@@ -41,7 +41,7 @@
   h1, h2, h3, .display { @apply font-display uppercase leading-[1.12] tracking-wide; text-wrap: balance; }
   p, li { text-wrap: pretty; }
   :focus-visible { @apply outline-2 outline-offset-2 outline-glory; }
-  ::selection { @apply bg-glory text-white; }
+  ::selection { background-color: rgb(225 6 0 / .35); color: inherit; }
   a, button, summary, [role='button'] { cursor: pointer; }
   summary::-webkit-details-marker { display: none; }
 }
@@ -80,12 +80,6 @@
 /* Stagger the home hero text on entry. */
 .hero-in { animation: hero-in .8s cubic-bezier(.2,.7,.2,1) both; animation-delay: var(--d, 0ms); }
 @keyframes hero-in { from { opacity: 0; transform: translateY(32px); } }
-/* Leave space above the clipping edge for Vietnamese accents. */
-.hero-line { animation: line-up .9s cubic-bezier(.16,1,.3,1) both; animation-delay: var(--d, 0ms); }
-@keyframes line-up {
-  from { clip-path: inset(-0.35em -0.1em 100% -0.1em); translate: 0 0.5em; }
-  to { clip-path: inset(-0.35em -0.1em -0.35em -0.1em); translate: 0 0; }
-}
 /* Expand the diagonal stripe on entry. */
 .stripe-in { animation: stripe-in .9s cubic-bezier(.7,0,.2,1) .15s both; }
 @keyframes stripe-in { from { scale: 0 1; } }
@@ -129,7 +123,6 @@
 /* Scale revealed images from 1.15 to 1. */
 .reveal [data-zoom] { scale: 1.15; transition: scale 1.2s cubic-bezier(.16,1,.3,1), opacity .3s; }
 .reveal.is-in [data-zoom] { scale: 1; }
-.reveal.is-in:hover [data-zoom] { scale: 1.06; transition-duration: .5s; }
 
 /* Show scroll progress below the header where supported. */
 .scroll-progress { display: none; }
@@ -168,19 +161,13 @@
   transition-duration: .5s, .6s, .6s, .3s, .3s, .3s; transition-timing-function: cubic-bezier(.2,.7,.2,1);
   transition-delay: 0s, calc(var(--i, 0) * 70ms), calc(var(--i, 0) * 70ms), 0s, 0s, 0s; }
 [data-tilt].is-tilting { transition-duration: .12s, .6s, .6s, .3s, .3s, .3s; }
-[data-tilt]::after { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; opacity: 0; transition: opacity .3s;
-  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), rgb(255 255 255 / .13), transparent 60%); }
+[data-tilt]::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .3s;
+  background: radial-gradient(180px circle at var(--mx, 50%) var(--my, 50%), rgb(255 255 255 / .06), transparent 65%); }
 [data-tilt].is-tilting::after { opacity: 1; }
 
 /* Use magnetic movement for a small number of primary buttons. */
 [data-magnetic] { translate: var(--tx, 0) var(--ty, 0); transition: translate .5s cubic-bezier(.2,.7,.2,1), background-color .2s, color .2s, scale .2s; }
 
-/* Reveal the second hero line behind a sweeping white block. */
-.block-reveal { position: relative; display: inline-block; animation: br-text 1ms step-end calc(var(--d, 0ms) + .45s) both; }
-.block-reveal::after { content: ''; position: absolute; inset: .1em -.06em .06em; background: #fff; scale: 0 1; transform-origin: left;
-  animation: br-block .9s cubic-bezier(.7,0,.2,1) var(--d, 0ms) both; }
-@keyframes br-text { from { color: transparent; } }
-@keyframes br-block { 0% { scale: 0 1; transform-origin: left; } 50% { scale: 1 1; transform-origin: left; } 50.01% { transform-origin: right; } 100% { scale: 0 1; transform-origin: right; } }
 
 /* Add subtle grain and a pointer-driven glow with a static fallback. */
 .spot::before { content: ''; position: absolute; inset: 0; z-index: -5; pointer-events: none;
@@ -196,13 +183,6 @@
   @keyframes drift-x { from { translate: 12% 0; } to { translate: -22% 0; } }
 }
 
-/* Roll desktop menu text and keep the decorative copy out of accessible names. */
-.roll { position: relative; display: inline-block; overflow: hidden; vertical-align: top; }
-.roll > span { display: inline-block; transition: translate .4s cubic-bezier(.7,0,.2,1); }
-.roll::before { content: attr(data-text); content: attr(data-text) / ''; position: absolute; inset: 0; translate: 0 100%; color: var(--color-glory);
-  transition: translate .4s cubic-bezier(.7,0,.2,1); }
-a:hover .roll > span, a:focus-visible .roll > span { translate: 0 -100%; }
-a:hover .roll::before, a:focus-visible .roll::before { translate: 0 0; }
 
 /* Animate the highlight around the featured plan border. */
 @property --spin { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
@@ -215,6 +195,9 @@ a:hover .roll::before, a:focus-visible .roll::before { translate: 0 0; }
 @media (hover: hover) and (pointer: fine) {
   .btn-red:hover::after { translate: 400% 0; transition: translate .7s cubic-bezier(.2,.7,.2,1); }
 }
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .reveal.is-in:hover [data-zoom] { scale: 1.025; transition-duration: .35s; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -224,8 +207,6 @@ a:hover .roll::before, a:focus-visible .roll::before { translate: 0 0; }
   #site-header[data-hidden] { translate: none; }
   [data-tilt], [data-magnetic] { transform: none; translate: none; }
   [data-tilt]::after, .btn-red::after { display: none; }
-  .block-reveal, .block-reveal::after, .grain::after, .drift-x, .premium-glow { animation: none; }
-  .block-reveal::after { display: none; }
-  .roll > span, .roll::before { transition: none; }
-  ::view-transition-old(root), ::view-transition-new(root), .hero-in, .hero-line, .stripe-in, #mnav[open] > div, #mnav[open] li { animation: none; }
+  .grain::after, .drift-x, .premium-glow { animation: none; }
+  ::view-transition-old(root), ::view-transition-new(root), .hero-in, .stripe-in, #mnav[open] > div, #mnav[open] li { animation: none; }
 }

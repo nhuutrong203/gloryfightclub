@@ -102,7 +102,16 @@ const aboutSchema = z.object({
   values: z.array(z.string().trim().min(1).max(500)).max(100).optional(),
   values_en: z.array(z.string().trim().min(1).max(500)).max(100).optional(),
 });
-const policySchema = z.object({ fees: policyText, fees_en: policyText, safety: policyText, safety_en: policyText })
+const policySchema = z.object({
+  fees: policyText, fees_en: policyText, safety: policyText, safety_en: policyText,
+  groups: z.array(z.object({
+    id: z.uuid(),
+    title: z.string().trim().min(1).max(160),
+    title_en: z.string().trim().max(160).optional(),
+    text: z.string().trim().min(1).max(20000),
+    text_en: z.string().trim().max(20000).optional(),
+  })).max(20).refine((groups) => new Set(groups.map((group) => group.id)).size === groups.length, 'Nhóm quy định bị trùng').optional(),
+})
   .transform((v) => ({ ...v, updated: new Date().toISOString() }));
 adminRoutes.get('/settings', need('content'), async (c) => {
   const rows = await db.select().from(schema.settings).where(inArray(schema.settings.key, [...SETTING_KEYS]));
@@ -112,10 +121,18 @@ adminRoutes.put('/settings/:key', need('content'), async (c) => {
   const key = c.req.param('key') ?? '';
   if (!SETTING_KEYS.includes(key as any)) return c.notFound();
   const [value, err] = await body<unknown>(c, key === 'texts' ? textsSchema : key === 'club' ? clubSchema : key === 'policy' ? policySchema : key === 'hero' ? heroSchema : aboutSchema,
-    { name: 'Tên CLB', slogan: 'Slogan', hotlines: 'Hotline', zalo: 'Số Zalo', facebook: 'Link Facebook', instagram: 'Link Instagram', fees: 'Quy định học phí', safety: 'Quy định an toàn' });
+    { name: 'Tên CLB', slogan: 'Slogan', hotlines: 'Hotline', zalo: 'Số Zalo', facebook: 'Link Facebook', instagram: 'Link Instagram', fees: 'Quy định học phí', safety: 'Quy định an toàn', groups: 'Nhóm quy định' });
   if (err) return err;
   if (JSON.stringify(value).length > 50_000) return c.json({ error: 'Nội dung quá dài' }, 400);
   const old = key === 'hero' ? await db.select({ value: schema.settings.value }).from(schema.settings).where(eq(schema.settings.key, 'hero')).get() : undefined;
+  // Older CMS tabs omit groups. Keep the stored groups unless the form explicitly sends them.
+  if (key === 'policy' && !Object.hasOwn(value as object, 'groups')) {
+    await db.insert(schema.settings).values({ key, value }).onConflictDoUpdate({
+      target: schema.settings.key,
+      set: { value: sql`json_patch(${schema.settings.value}, ${JSON.stringify(value)})` },
+    });
+    return c.json({ ok: true });
+  }
   await db.insert(schema.settings).values({ key, value }).onConflictDoUpdate({ target: schema.settings.key, set: { value } });
   if (old) await deleteMedia([(old.value as { image_key?: string })?.image_key]); // Keep the old hero image if another record still uses it.
   return c.json({ ok: true });

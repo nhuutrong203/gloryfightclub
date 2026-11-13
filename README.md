@@ -42,7 +42,7 @@ Seed data:
 
 ## 2. Cloudflare resources
 
-The old Worker, D1 database and R2 bucket are in a different Cloudflare account. Before deploying to the club account, create a new `glory-db` D1 database and `glory-media` R2 bucket there, replace **both** `database_id` values in `wrangler.jsonc`, and migrate the current cloud D1 data and R2 objects. Do not run `seed/seed.sql` or `seed/sample.sql` against the destination. Verify student, fee, content, user and media records before enabling the GitHub deployment secret. The old account remains the source until the transfer is checked.
+The club domains already use the production Worker, D1 database, and R2 bucket. The setup steps below are for a new environment. When moving accounts, copy and verify existing data and media before switching production. Never load either seed file into production.
 
 Initial resource setup commands (run while authenticated to the **club account**):
 
@@ -82,7 +82,7 @@ The custom domains are declared in `wrangler.jsonc`; Wrangler attaches them duri
 Worth enabling later (Cloudflare Dashboard, free):
 - **Turnstile** on the trial form (anti-spam) — currently protected by a hidden honeypot field only.
 
-Updating the site after code changes: `npm run deploy`. If the database schema changed: `npm run db:generate` → `npm run db:migrate:remote`, then `npm run deploy`.
+For a manual release, apply pending migrations with `npm run db:migrate:remote`, run `npm run deploy`, then run `npm run db:enable-location-guard:remote`. The last command enables the student location trigger after the compatible Worker is live.
 
 ## Auto deploy (GitHub Actions)
 
@@ -90,7 +90,7 @@ Every **push to `main`** runs `.github/workflows/deploy.yml`:
 TypeScript check → unit and API smoke tests → apply new D1 migrations (if any) → build + deploy to Cloudflare. Follow progress in the repo's **Actions** tab.
 If the TypeScript check or a test fails, it stops and does **not** deploy — the running site is unaffected.
 
-> **Not active yet:** add `CLOUDFLARE_API_TOKEN` only after the destination D1/R2 transfer and domain checks. Until then, runs fail at the first step and cannot deploy an incomplete site.
+> **Active in production:** the repository secret is configured. See `docs/HANDOFF.md` for the latest verified deployment.
 
 **One-time setup:**
 1. Cloudflare Dashboard → top-right profile icon → **My Profile → API Tokens → Create Token**.

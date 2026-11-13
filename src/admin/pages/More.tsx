@@ -29,7 +29,8 @@ export function menuGroups(me: Me): { title: string; items: Item[] }[] {
           res('feePlans', 'wallet', 'Các gói & giá trên trang Học phí'),
         ] : []),
         ...(can(me, 'posts') ? [{ to: '/admin/nhat-ky', label: 'Nhật ký lớp', icon: 'news', sub: 'Viết bài, ảnh, video buổi tập' }] : []),
-        ...(content ? [res('locations', 'home', 'Địa chỉ, bản đồ, ảnh lịch từng cơ sở')] : []),
+        ...(content ? [res('locations', 'home', 'Địa chỉ, bản đồ, ảnh lịch từng cơ sở'),
+          { to: '/admin/khong-gian', label: 'Không gian lớp học', icon: 'image', sub: 'Ảnh phòng tập theo từng cơ sở' }] : []),
       ],
     },
     {

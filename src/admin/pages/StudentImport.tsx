@@ -62,6 +62,7 @@ function downloadFailed(rows: Record<string, string>[]) {
 export function StudentImport({ onDone }: { onDone: () => void }) {
   const ref = useRef<HTMLInputElement>(null);
   const fileRead = useRef(0);
+  const importId = useRef('');
   const [rows, setRows] = useState<Record<string, string>[] | null>(null);
   const [fileName, setFileName] = useState('');
   const [busy, setBusy] = useState(false);
@@ -79,6 +80,7 @@ export function StudentImport({ onDone }: { onDone: () => void }) {
       if (!r.length) throw new Error('File không có dòng học viên nào');
       if (r.length > 2000) throw new Error('Tối đa 2000 học viên mỗi lần nhập');
       setRows(r);
+      importId.current = crypto.randomUUID();
       setFileName(f.name);
     } catch (e: any) { if (read === fileRead.current) toast(e.message, 'err'); }
   }
@@ -87,7 +89,8 @@ export function StudentImport({ onDone }: { onDone: () => void }) {
     if (!rows) return;
     setBusy(true);
     try {
-      const r = await api<Result>('/admin/students/import', { body: { rows } });
+      const r = await api<Result>('/admin/students/import', { body: { importId: importId.current, rows } });
+      importId.current = crypto.randomUUID();
       setResult(r);
       setRows(r.errors.length ? rows.filter((_, i) => r.errors.some((e) => e.row === i + 2)) : null);
       toast(`Đã thêm ${r.created}, cập nhật ${r.updated} học viên`);

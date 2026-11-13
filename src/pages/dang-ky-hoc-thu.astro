@@ -3,6 +3,7 @@ import PublicLayout from '../layouts/PublicLayout.astro';
 import PageHero from '../components/public/PageHero.astro';
 import Icon from '../components/public/Icon.astro';
 import PolicyText from '../components/public/PolicyText.astro';
+import { policyParts } from '../lib/site';
 import { telHref } from '../lib/site';
 import { vnNow } from '../lib/util';
 import { publicClasses, publicCoaches, publicDisciplines, publicPlans } from '../lib/public';
@@ -36,7 +37,8 @@ const data = {
 };
 const json = JSON.stringify(data).replace(/</g, '\\u003c');
 const year = Number(vnNow().date.slice(0, 4));
-const pol = (vi: string | null | undefined, en?: string | null) => (lang === 'en' ? en || vi : vi);
+const parts = policy ? policyParts(policy, lang, t(lang, 'policy_fees'), t(lang, 'policy_safety')) : [];
+const requestedLocation = Astro.url.searchParams.get('co-so');
 const field = 'block w-full min-h-12 bg-ink border-2 border-white/20 px-4 py-3 text-base text-white placeholder:text-white/40 focus:border-glory focus:outline-none';
 const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
 ---
@@ -86,7 +88,7 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
           <label for="f-loc" class={label}>{t(lang, 'f_location')}</label>
           <select id="f-loc" name="locationId" class={field}>
             <option value="">{t(lang, 'f_any')}</option>
-            {locations.map((l) => <option value={l.id}>{tr(l, 'name', lang)}</option>)}
+            {locations.map((l) => <option value={l.id} selected={String(l.id) === requestedLocation}>{tr(l, 'name', lang)}</option>)}
           </select>
         </div>
 
@@ -160,8 +162,9 @@ const label = 'block mb-2 font-display uppercase tracking-wider text-sm';
             <form method="dialog"><button class="grid size-11 place-items-center hover:bg-white/10" aria-label={t(lang, 'close')}><Icon name="x" /></button></form>
           </div>
           <div class="space-y-10 px-5 py-6">
-            {pol(policy.fees, policy.fees_en) && <section><h3 class="mb-4 text-3xl text-glory">{t(lang, 'policy_fees')}</h3><PolicyText text={pol(policy.fees, policy.fees_en)} tone="dialog" /></section>}
-            {pol(policy.safety, policy.safety_en) && <section><h3 class="mb-4 text-3xl text-glory">{t(lang, 'policy_safety')}</h3><PolicyText text={pol(policy.safety, policy.safety_en)} tone="dialog" /></section>}
+            {parts.map((part) => (
+              <section class="[overflow-wrap:anywhere]"><h3 class="mb-4 text-3xl text-glory">{part.title}</h3><PolicyText text={part.text} tone="dialog" /></section>
+            ))}
           </div>
           <div class="sticky bottom-0 flex flex-col-reverse gap-2 border-t border-white/10 bg-coal p-4 sm:flex-row sm:items-center sm:justify-between">
             <a href={href('/quy-dinh', lang)} target="_blank" rel="noopener" class="inline-flex min-h-11 items-center justify-center gap-1 text-sm font-semibold text-white/75 underline-offset-4 hover:text-white hover:underline">{t(lang, 'f_policy_full')}<Icon name="arrow-up-right" class="size-4" /></a>
